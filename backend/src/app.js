@@ -1,18 +1,31 @@
+const path = require('path');
 const express = require('express');
 require('dotenv').config();
 require('./config/db');
 
 const app = express();
 
-app.use(express.json());
+const rootDir = path.join(__dirname, '..');
 
-// Тестовий "пінг", щоб перевірити, чи сервер живий
+app.set('view engine', 'ejs');
+app.set('views', path.join(rootDir, 'views'));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(rootDir, 'public')));
+
 app.get('/status', (req, res) => {
     res.status(200).json({
-        message: "Server is flying!",
+        message: 'Server is flying!',
         timestamp: new Date().toISOString()
     });
 });
+
+const pagesRoutes = require('./routes/pagesRoutes');
+app.use('/', pagesRoutes);
+
+
+
 
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);

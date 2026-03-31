@@ -1,6 +1,5 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const UserModel = require('../models/User');
 const registerValidator = require('../validators/registerValidator');
 const loginValidator = require('../validators/loginValidator');
@@ -13,7 +12,6 @@ const register = async (req, res) => {
         }
 
         const { first_name, last_name, email, password, phone } = req.body;
-
         const password_hash = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS || 10));
 
         const role_id = await UserModel.getDefaultRoleId();
@@ -70,6 +68,13 @@ const login = async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
         );
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
 
         return res.status(200).json({
             message: 'Успішний вхід',

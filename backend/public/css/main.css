@@ -1,0 +1,113 @@
+/* Стилі для сторінок магазину та форм авторизації */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.5;
+    color: #222;
+    background: #faf8f5;
+}
+
+.header {
+    background: #2d5a3d;
+    color: #fff;
+}
+
+.header__inner {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.logo {
+    font-weight: 700;
+    color: inherit;
+    text-decoration: none;
+}
+
+.nav a {
+    color: #e8f5e9;
+    margin-left: 1rem;
+    text-decoration: none;
+}
+
+.nav a:hover {
+    text-decoration: underline;
+}
+
+.main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+}
+
+.auth-card {
+    margin-top: 1rem;
+    max-width: 420px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+.auth-form {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.auth-label {
+    display: grid;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+
+.auth-input {
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background: #fff;
+}
+
+.auth-input:focus {
+    outline: none;
+    border-color: rgba(45, 90, 61, 0.8);
+}
+
+.auth-button {
+    margin-top: 0.4rem;
+    padding: 0.7rem 1rem;
+    border: none;
+    border-radius: 10px;
+    background: #2d5a3d;
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.auth-button:hover {
+    background: #244c31;
+}
+
+.auth-error {
+    margin-top: 0.85rem;
+    color: #b00020;
+    min-height: 1.2em;
+}
+
+.auth-hint {
+    margin-top: 1rem;
+}
+
+.auth-hint a {
+    color: #1e4d6b;
+}
+
