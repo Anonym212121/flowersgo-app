@@ -1,0 +1,52 @@
+<h1>Вхід</h1>
+
+<div class="auth-card">
+    <form id="loginForm" class="auth-form">
+        <label class="auth-label">
+            Email
+            <input class="auth-input" type="email" name="email" autocomplete="email" required />
+        </label>
+
+        <label class="auth-label">
+            Пароль
+            <input class="auth-input" type="password" name="password" autocomplete="current-password" required />
+        </label>
+
+        <button class="auth-button" type="submit">Увійти</button>
+    </form>
+
+    <div id="authError" class="auth-error" aria-live="polite"></div>
+</div>
+
+<p class="auth-hint">Немає акаунту? <a href="/register">Зареєструватися</a></p>
+
+<script>
+    const loginForm = document.getElementById('loginForm');
+    const authError = document.getElementById('authError');
+
+    loginForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        authError.textContent = '';
+
+        const formData = new FormData(loginForm);
+        const payload = {
+            email: formData.get('email'),
+            password: formData.get('password')
+        };
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            authError.textContent = (data && data.message) ? data.message : 'Помилка входу';
+            return;
+        }
+
+        window.location.href = '/';
+    });
+</script>

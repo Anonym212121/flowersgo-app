@@ -12,9 +12,9 @@ const registerValidator = (body) => {
     if (!last_name || typeof last_name !== 'string' || last_name.trim().length < 2) {
         return { ok: false, message: 'Прізвище має бути не менше 2 символів' };
     }
-
+ 
     if (!email || typeof email !== 'string' || !email.includes('@')) {
-        return { ok: false, message: 'Email має бути коректним' };
+        return { ok: false, message:'Email має бути коректним' };
     }
 
     if (!password || typeof password !== 'string' || password.length < 6) {

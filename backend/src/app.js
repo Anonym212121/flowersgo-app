@@ -4,7 +4,6 @@ require('dotenv').config();
 require('./config/db');
 
 const app = express();
-
 const rootDir = path.join(__dirname, '..');
 
 app.set('view engine', 'ejs');
@@ -14,12 +13,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(rootDir, 'public')));
 
-app.get('/status', (req, res) => {
-    res.status(200).json({
-        message: 'Server is flying!',
-        timestamp: new Date().toISOString()
-    });
-});
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);

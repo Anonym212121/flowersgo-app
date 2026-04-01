@@ -16,7 +16,6 @@ const checkSystemHealth = async () => {
         const connection = await pool.getConnection();
         console.log('DATABASE REPORT');
         console.log(`STATUS: Connected to "${process.env.DB_NAME}"`);
-        console.log('--------------------------');
         connection.release();
     } catch (err) {
         console.error('DB CONNECTION ERROR');
@@ -25,4 +24,4 @@ const checkSystemHealth = async () => {
 };
 
 checkSystemHealth();
-module.exports = pool;
+ module.exports = pool;

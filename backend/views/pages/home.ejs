@@ -1,0 +1,5 @@
+<h1>Ласкаво просимо</h1>
+<p>Це головна сторінка магазину.</p>
+<% if (typeof currentUser !== 'undefined' && currentUser) { %>
+    <p>Ви увійшли як: <strong><%= currentUser.role_name %></strong>.</p>
+<% } %>

@@ -1,0 +1,70 @@
+<h1>Реєстрація</h1>
+
+<div class="auth-card">
+    <form id="registerForm" class="auth-form">
+        <label class="auth-label">
+            Ім'я
+            <input class="auth-input" type="text" name="first_name" autocomplete="given-name" required minlength="2" />
+        </label>
+
+        <label class="auth-label">
+            Прізвище
+            <input class="auth-input" type="text" name="last_name" autocomplete="family-name" required minlength="2" />
+        </label>
+
+        <label class="auth-label">
+            Email
+            <input class="auth-input" type="email" name="email" autocomplete="email" required />
+        </label>
+
+        <label class="auth-label">
+            Пароль
+            <input class="auth-input" type="password" name="password" autocomplete="new-password" required minlength="6" />
+        </label>
+
+        <label class="auth-label">
+            Телефон
+            <input class="auth-input" type="tel" name="phone" autocomplete="tel" />
+        </label>
+
+        <button class="auth-button" type="submit">Зареєструватися</button>
+    </form>
+
+    <div id="authError" class="auth-error" aria-live="polite"></div>
+</div>
+
+<p class="auth-hint">Вже є акаунт? <a href="/login">Увійти</a></p>
+
+<script>
+    const registerForm = document.getElementById('registerForm');
+    const authError = document.getElementById('authError');
+
+       registerForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+     authError.textContent = '';
+
+        const  formData = new  FormData(registerForm);
+         const payload = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            email: formData.get('email'),
+            password: formData.get('password'),
+            phone: formData.get('phone')
+        };
+
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            authError.textContent = (data && data.message) ? data.message : 'Помилка реєстрації';
+            return;
+        }
+
+        window.location.href = '/login';
+    });
+</script>
