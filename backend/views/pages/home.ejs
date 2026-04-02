@@ -17,36 +17,46 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
             <% const subCategories = safeCategories.filter(item => item.parent_id); %>
 
             <% for (const parent of parentCategories) { %>
-                <li class="category-parent">
-                    <a
-                        href="/?category_id=<%= parent.id %>"
-                        class="<%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
-                    >
-                        <%= parent.name %>
-                    </a>
-
-                    <% const nested = subCategories.filter(item => Number(item.parent_id) === Number(parent.id)); %>
-                    <% if (nested.length > 0) { %>
-                        <ul class="subcategory-list">
-                            <% for (const sub of nested) { %>
-                                <li>
+                <% const nested = subCategories.filter(item => Number(item.parent_id) === Number(parent.id)); %>
+                <% if (nested.length > 0) { %>
+                    <li class="category-parent category-parent--flyout">
+                        <a
+                            href="/?category_id=<%= parent.id %>"
+                            class="category-parent-link <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                        >
+                            <span class="category-parent-label"><%= parent.name %></span>
+                            <span class="category-chevron" aria-hidden="true">›</span>
+                        </a>
+                        <div class="category-flyout" role="navigation" aria-label="Підкатегорії: <%= parent.name %>">
+                            <div class="category-flyout-grid">
+                                <% for (const sub of nested) { %>
                                     <a
                                         href="/?category_id=<%= sub.id %>"
-                                        class="<%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
+                                        class="category-flyout-item <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
                                     >
-                                        <%= sub.name %>
+                                        <span class="category-flyout-thumb" aria-hidden="true"></span>
+                                        <span class="category-flyout-text"><%= sub.name %></span>
                                     </a>
-                                </li>
-                            <% } %>
-                        </ul>
-                    <% } %>
-                </li>
+                                <% } %>
+                            </div>
+                        </div>
+                    </li>
+                <% } else { %>
+                    <li class="category-parent">
+                        <a
+                            href="/?category_id=<%= parent.id %>"
+                            class="<%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                        >
+                            <%= parent.name %>
+                        </a>
+                    </li>
+                <% } %>
             <% } %>
         </ul>
     </aside>
 
     <section class="catalog-content">
-        <h1>Каталог товарів</h1>
+        <h1 class="catalog-title">Замовляй букети лише у нас!</h1>
 
         <% if (safeProducts.length === 0) { %>
             <p>Товари не знайдено.</p>
@@ -55,6 +65,13 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                 <% for (const product of safeProducts) { %>
                     <article class="product-card">
                         <div class="product-image-wrap">
+                            <% const basePrice = Number(product.base_price || 0); %>
+                            <% const salePrice = Number(product.sale_price || 0); %>
+                            <% const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice; %>
+                            <% const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0; %>
+                            <% if (discountPercent > 0) { %>
+                                <span class="discount-badge"><%= discountPercent %>%</span>
+                            <% } %>
                             <% if (product.image_url) { %>
                                 <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
                             <% } else { %>
@@ -64,20 +81,11 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
 
                         <h4 class="product-title"><%= product.name %></h4>
 
-                        <% if (product.category_name) { %>
-                            <p class="product-category"><%= product.category_name %></p>
-                        <% } %>
-
-                        <p class="product-description">
-                            <%= product.description ? product.description.slice(0, 120) : 'Опис відсутній' %>
-                            <%= product.description && product.description.length > 120 ? '...' : '' %>
-                        </p>
-
                         <p class="product-price">
-                            <% if (Number(product.sale_price) < Number(product.base_price)) { %>
-                                <span class="old-price"><%= product.base_price %> грн</span>
+                            <% if (hasDiscount) { %>
+                                <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
                             <% } %>
-                            <strong><%= product.sale_price %> грн</strong>
+                            <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
                         </p>
 
                         <p class="product-stock">
@@ -87,6 +95,8 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                                 Немає в наявності
                             <% } %>
                         </p>
+
+                        <button class="product-order-btn" type="button">Замовити</button>
                     </article>
                 <% } %>
             </div>
