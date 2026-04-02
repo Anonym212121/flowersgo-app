@@ -33,7 +33,22 @@ const addProduct = async (req, res) => {
         return res.status(500).send('помилка');
     }
 };
+    const deletewishProduct = async (req, res) => {
+        try {
+            const userId = res.locals.currentUser.user_id;
+            const productId = Number(req.body.product_id);
+            if (!Number.isFinite(productId) || productId <= 0) {
+                return res.status(400).send('Невірний товар');
+            }
+            await WishlistModel.remove(userId, productId);
+            const back = req.get('Referer') || '/wishlist';
+            return res.redirect(back);
+        } catch (err) {
+            return res.status(500).send('помилка');
+        }
+};
 module.exports = {
     wishlistPage,
-    addProduct
+    addProduct,
+    deletewishProduct   
 };
