@@ -1,5 +1,6 @@
 <%
 const safeSelectedCategoryId = typeof selectedCategoryId !== 'undefined' ? selectedCategoryId : null;
+const safeSearchQuery = typeof searchQuery !== 'undefined' && typeof searchQuery === 'string' ? searchQuery : '';
 const safeCategories = typeof categories !== 'undefined' && Array.isArray(categories) ? categories : [];
 const safeProducts = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
 %>
@@ -68,7 +69,7 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                         class="catalog-search-input"
                         type="search"
                         name="q"
-                        value=""
+                        value="<%= safeSearchQuery %>"
                         placeholder="Введи назву товару..."
                         autocomplete="off"
                     />

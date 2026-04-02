@@ -15,15 +15,19 @@ const home = async (req, res) => {
     try {
         const selectedCategoryId = req.query.category_id ? Number(req.query.category_id) : null;
 
+        let searchQuery = '';
+        if (typeof req.query.q === 'string') {
+            searchQuery = req.query.q.trim();
+        }
+
         const categories = await CategoryModel.allCategories();
 
-        const products = await ProductModel.allProducts(selectedCategoryId);
+        const products = await ProductModel.allProducts(selectedCategoryId, searchQuery);
         return renderLayout(res, 'Каталог товарів', 'pages/home', {
             categories,
             products,
-            selectedCategoryId
-       
-       
+            selectedCategoryId,
+            searchQuery
         });
     }  catch (err) {
         return res.status(500).send('помилка');
