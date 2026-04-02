@@ -97,9 +97,17 @@ const login = async (req, res) => {
 };
 
 const me = async (req, res) => {
-    return res.status(200).json({
-        user: req.user
-    });
+    try {
+        const profile = await UserModel.getUserid(req.user.user_id);
+
+        if (!profile) {
+            return res.status(404).json({ message: 'Користувача не знайдено' });
+        }
+
+        return res.status(200).json({ user: profile });
+    } catch (err) {
+        return res.status(500).json({ message: 'помика' });
+    }
 };
 
 module.exports = {

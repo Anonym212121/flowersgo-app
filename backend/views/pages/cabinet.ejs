@@ -1,0 +1,7 @@
+<h1>Мій кабінет</h1>
+
+<p><strong>Ім'я:</strong> <%= profile.first_name %> <%= profile.last_name %></p>
+
+<p><strong>Email:</strong> <%= profile.email %></p>
+<p><strong>Телефон:</strong> <%= profile.phone ? profile.phone : '—' %></p>
+<p><strong>Бали лояльності:</strong> <%= profile.loyalty_points != null ? profile.loyalty_points : '—' %></p>
