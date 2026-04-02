@@ -11,11 +11,11 @@ app.set('views', path.join(rootDir, 'views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(rootDir, 'public')));
-
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
+
+app.use(express.static(path.join(rootDir, 'public')));
 
 
 

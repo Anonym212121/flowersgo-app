@@ -16,8 +16,13 @@ const home = async (req, res) => {
         const selectedCategoryId = req.query.category_id ? Number(req.query.category_id) : null;
 
         let searchQuery = '';
-        if (typeof req.query.q === 'string') {
-            searchQuery = req.query.q.trim();
+        const rawQ = req.query.q;
+        if (rawQ !== undefined && rawQ !== null && rawQ !== '') {
+            if (Array.isArray(rawQ)) {
+                searchQuery = String(rawQ[0] ?? '').trim();
+            } else {
+                searchQuery = String(rawQ).trim();
+            }
         }
 
         const categories = await CategoryModel.allCategories();
