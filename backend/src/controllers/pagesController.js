@@ -1,5 +1,6 @@
-const UserModel = require('../models/User');
-
+const UserModel = require('../models/User'); 
+const CategoryModel = require('../models/Category');
+const ProductModel = require('../models/Product');
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
         title,
@@ -10,8 +11,23 @@ const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     });
 };
 
-const home = (req, res) => {
-    return renderLayout(res, 'Доставка квітів', 'pages/home');
+const home = async (req, res) => {
+    try {
+        const selectedCategoryId = req.query.category_id ? Number(req.query.category_id) : null;
+
+        const categories = await CategoryModel.allCategories();
+
+        const products = await ProductModel.allProducts(selectedCategoryId);
+        return renderLayout(res, 'Каталог товарів', 'pages/home', {
+            categories,
+            products,
+            selectedCategoryId
+       
+       
+        });
+    }  catch (err) {
+        return res.status(500).send('помилка');
+    }
 };
 
 const loginPage = (req, res) => {
