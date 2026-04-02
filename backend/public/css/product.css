@@ -176,7 +176,7 @@
     background: #256c2a;
 }
 
-/* Випливаюча панель підкатегорій (рядки з parent_id у БД) */
+/* Випливаюча панель для подарков*/
 .category-parent--flyout {
     position: relative;
 }
@@ -222,7 +222,7 @@
     transition: opacity 0.15s ease, visibility 0.15s ease;
 }
 
-/* «Місток», щоб курсор не губив hover між рядком і панеллю */
+
 .category-flyout::after {
     content: "";
     position: absolute;

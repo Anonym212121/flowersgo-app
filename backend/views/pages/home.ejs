@@ -56,7 +56,27 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
     </aside>
 
     <section class="catalog-content">
-        <h1 class="catalog-title">Замовляй букети лише у нас!</h1>
+        <div class="catalog-toolbar">
+            <form class="catalog-search" method="get" action="/" role="search">
+                <% if (safeSelectedCategoryId) { %>
+                    <input type="hidden" name="category_id" value="<%= safeSelectedCategoryId %>" />
+                <% } %>
+                <label class="catalog-search-label" for="catalog-q">Пошук товарів</label>
+                <div class="catalog-search-row">
+                    <input
+                        id="catalog-q"
+                        class="catalog-search-input"
+                        type="search"
+                        name="q"
+                        value=""
+                        placeholder="Введи назву товару..."
+                        autocomplete="off"
+                    />
+                    <button class="catalog-search-btn" type="submit">Шукати</button>
+                </div>
+            </form>
+        </div>
+
 
         <% if (safeProducts.length === 0) { %>
             <p>Товари не знайдено.</p>
