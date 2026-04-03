@@ -13,8 +13,9 @@ router.get('/login', pagesController.loginPage);
 router.get('/register', pagesController.registerPage);
 router.get('/logout', pagesController.logout);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
-router.get('/wishlist', pageRequireLogin, wishlistController.wishlistPage);
-router.post('/wishlist/add', pageRequireLogin, wishlistController.addProduct);
-router.post('/wishlist/delete', pageRequireLogin, wishlistController.deletewishProduct);
+router.get('/wishlist', wishlistController.wishlistPage);
+router.post('/wishlist/add', wishlistController.addProduct);
+router.post('/wishlist/remove', wishlistController.removeProduct);
+router.post('/wishlist/delete', wishlistController.removeProduct);
 module.exports = router;
 

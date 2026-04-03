@@ -1,0 +1,47 @@
+<%
+const safeProducts = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+%>
+
+<section class="catalog-content">
+    <h1 class="catalog-title">Обране</h1>
+
+    <% if (safeProducts.length === 0) { %>
+        <p>У обраному ще нічого немає.</p>
+        <p><a href="/">Перейти до каталогу</a></p>
+    <% } else { %>
+        <div class="products-grid">
+            <% for (const product of safeProducts) { %>
+                <article class="product-card">
+                    <div class="product-image-wrap">
+                        <% const basePrice = Number(product.base_price || 0); %>
+                        <% const salePrice = Number(product.sale_price || 0); %>
+                        <% const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice; %>
+                        <% const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0; %>
+                        <% if (discountPercent > 0) { %>
+                            <span class="discount-badge"><%= discountPercent %>%</span>
+                        <% } %>
+                        <% if (product.image_url) { %>
+                            <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
+                        <% } else { %>
+                            <div class="product-image product-image--placeholder">Немає фото</div>
+                        <% } %>
+                    </div>
+
+                    <h4 class="product-title"><%= product.name %></h4>
+
+                    <p class="product-price">
+                        <% if (hasDiscount) { %>
+                            <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+                        <% } %>
+                        <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+                    </p>
+
+                    <form method="post" action="/wishlist/remove">
+                        <input type="hidden" name="product_id" value="<%= product.id %>" />
+                        <button class="product-order-btn" type="submit">Прибрати з обраного</button>
+                    </form>
+                </article>
+            <% } %>
+        </div>
+    <% } %>
+</section>

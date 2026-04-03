@@ -44,8 +44,9 @@ const pageAuthContext = (req, res, next) => {
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        const uid = decoded.user_id != null ? decoded.user_id : decoded.id;
         res.locals.currentUser = {
-            user_id: decoded.user_id,
+            user_id: uid,
             role_id: decoded.role_id,
             role_name: decoded.role_name
         };

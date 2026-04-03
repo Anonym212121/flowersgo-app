@@ -1,8 +1,36 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const UserModel = require('../models/User');
+const WishlistModel = require('../models/Wishlist');
 const registerValidator = require('../validators/registerValidator');
 const loginValidator = require('../validators/loginValidator');
+
+const parseGuestWishlist = (cookieHeader) => {
+    if (!cookieHeader || typeof cookieHeader !== 'string') {
+        return [];
+    }
+
+    const part = cookieHeader
+        .split(';')
+        .map((x) => x.trim())
+        .find((x) => x.startsWith('guest_wishlist='));
+
+    if (!part) {
+        return [];
+    }
+
+    try {
+        const raw = decodeURIComponent(part.split('=')[1] || '[]');
+        const arr = JSON.parse(raw);
+        if (!Array.isArray(arr)) return [];
+        return arr
+            .map((id) => Number(id))
+            .filter((id) => Number.isFinite(id) && id > 0)
+            .slice(0, 100);
+    } catch {
+        return [];
+    }
+};
 
 const register = async (req, res) => {
     try {
@@ -75,6 +103,12 @@ const login = async (req, res) => {
             sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
+
+        const guestIds = parseGuestWishlist(req.headers.cookie);
+        if (guestIds.length > 0) {
+            await WishlistModel.addMany(user.id, guestIds);
+            res.clearCookie('guest_wishlist');
+        }
 
         return res.status(200).json({
             message: 'Успішний вхід',

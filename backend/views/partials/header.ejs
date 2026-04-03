@@ -3,6 +3,7 @@
         <a class="logo" href="/">Доставка квітів</a>
         <nav class="nav">
             <% if (headerType === 'guest') { %>
+                <a href="/wishlist">Обране</a>
                 <a href="/login">Увійти</a>
                 <a href="/register">Реєстрація</a>
             <% } else if (headerType === 'admin') { %>
@@ -19,6 +20,7 @@
                 <a href="/">Каталог</a>
                 <a href="#">Кошик</a>
                 <a href="#">Мої замовлення</a>
+                <a href="/wishlist">Обране</a>
                 <a href="/cabinet">Кабінет</a>
                 <a href="/logout">Вийти</a>
             <% } %>
