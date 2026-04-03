@@ -5,6 +5,7 @@ const pagesController = require('../controllers/pagesController');
 const pageAuthContext = require('../middleware/pageAuthContext');
 const pageRequireLogin = require('../middleware/pageRequireLogin');
 const pageRequireAdminPage = require('../middleware/pageRequireAdminPage');
+const requireAdminJson = require('../middleware/requireAdminJson');
 const wishlistController = require('../controllers/wishlistController');
 const productImageController = require('../controllers/productImageController');
 
@@ -39,6 +40,7 @@ router.post('/wishlist/remove', wishlistController.removeProduct);
 router.post('/wishlist/delete', wishlistController.removeProduct);
 router.post(
     '/products/upload-image',
+    requireAdminJson,
     wrapProductImageUpload,
     productImageController.uploadProductImage
 );
