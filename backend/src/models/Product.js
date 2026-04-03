@@ -128,7 +128,27 @@ const productsByIds = async (ids = []) => {
     return rows;
 };
 
+const updateImageUrl = async (productId, imageUrl) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return false;
+    }
+
+    const url = typeof imageUrl === 'string' ? imageUrl.trim() : '';
+    if (!url) {
+        return false;
+    }
+
+    const [result] = await db.execute(
+        'UPDATE products SET image_url = ? WHERE id = ?',
+        [url, id]
+    );
+
+    return result.affectedRows > 0;
+};
+
 module.exports = {
     allProducts,
-    productsByIds
+    productsByIds,
+    updateImageUrl
 };
