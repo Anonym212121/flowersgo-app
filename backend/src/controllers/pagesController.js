@@ -68,10 +68,11 @@ const cabinetPage = async (req, res) => {
         return res.status(500).send('помилка');
     }
 };
+
 module.exports = {
     home,
     loginPage,
     registerPage,
     logout,
-    cabinetPage,
+    cabinetPage
 };
