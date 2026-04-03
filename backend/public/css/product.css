@@ -79,6 +79,77 @@
     color: #202020;
 }
 
+.catalog-toolbar {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 1px solid #e8ebe9;
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(45, 90, 61, 0.06);
+}
+
+.catalog-search {
+    margin: 0;
+}
+
+.catalog-search-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #2d5a3d;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+}
+
+.catalog-search-row {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.catalog-search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    border: 1px solid #cfd8d0;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: #222;
+    background: #fafcfa;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.catalog-search-input::placeholder {
+    color: #8a9390;
+}
+
+.catalog-search-input:focus {
+    outline: none;
+    border-color: #2d7f32;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(45, 127, 50, 0.18);
+}
+
+.catalog-search-btn {
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    background: #2d7f32;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.catalog-search-btn:hover {
+    background: #256c2a;
+}
+
 .products-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -88,10 +159,11 @@
 .product-card {
     background: #fff;
     border: 1px solid #ececec;
-    border-radius: 6px;
-    padding: 8px;
+    border-radius: 8px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 .product-image-wrap {
@@ -138,20 +210,23 @@
     margin: 0 0 6px;
     display: flex;
     align-items: baseline;
+    flex-wrap: wrap;
     gap: 6px;
+    row-gap: 2px;
 }
 
 .old-price {
     color: #999;
     text-decoration: line-through;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .product-price strong {
     color: #17882f;
-    font-size: 34px;
-    line-height: 1;
-    font-weight: 800;
+    font-size: 16px;
+    line-height: 1.25;
+    font-weight: 700;
+    white-space: nowrap;
 }
 
 .product-stock {
@@ -173,13 +248,14 @@
 }
 
 .wishlist-star-btn {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
     border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #fff;
     color: #c9a227;
-    font-size: 22px;
+    font-size: 18px;
     line-height: 1;
     cursor: pointer;
     padding: 0;
@@ -196,16 +272,18 @@
 }
 
 .product-order-btn {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
+    max-width: 100%;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     background: #2d7f32;
     color: #fff;
-    font-size: 20px;
+    font-size: 14px;
     font-weight: 700;
-    padding: 9px 10px;
+    padding: 8px 14px;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .product-order-btn:hover {
@@ -389,5 +467,13 @@
 @media (max-width: 520px) {
     .products-grid {
         grid-template-columns: 1fr;
+    }
+
+    .catalog-search-row {
+        flex-direction: column;
+    }
+
+    .catalog-search-btn {
+        width: 100%;
     }
 }
