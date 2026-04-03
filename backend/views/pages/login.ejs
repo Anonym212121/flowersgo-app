@@ -47,6 +47,11 @@
             return;
         }
 
-        window.location.href = '/';
+        const roleName = data && data.user && data.user.role_name ? data.user.role_name : '';
+        if (roleName === 'admin') {
+            window.location.href = '/admin';
+        } else {
+            window.location.href = '/';
+        }
     });
 </script>
