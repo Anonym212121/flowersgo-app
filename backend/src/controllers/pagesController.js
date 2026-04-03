@@ -69,10 +69,15 @@ const cabinetPage = async (req, res) => {
     }
 };
 
+const adminDashboard = (req, res) => {
+    return renderLayout(res, 'Адмін-панель', 'pages/admin/dashboard');
+};
+
 module.exports = {
     home,
     loginPage,
     registerPage,
     logout,
-    cabinetPage
+    cabinetPage,
+    adminDashboard
 };
