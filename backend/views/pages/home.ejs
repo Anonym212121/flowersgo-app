@@ -117,7 +117,13 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                             <% } %>
                         </p>
 
-                        <button class="product-order-btn" type="button">Замовити</button>
+                        <div class="product-card-actions">
+                            <form method="post" action="/wishlist/add" class="wishlist-form wishlist-ajax">
+                                <input type="hidden" name="product_id" value="<%= product.id %>" />
+                                <button class="wishlist-star-btn" type="submit" title="Додати в обране" aria-label="Додати в обране">☆</button>
+                            </form>
+                            <button class="product-order-btn" type="button">Замовити</button>
+                        </div>
                     </article>
                 <% } %>
             </div>

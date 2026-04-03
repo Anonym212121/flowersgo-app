@@ -70,6 +70,11 @@ const getUserId = (res) => {
     return userId;
 };
 
+const wantsJson = (req) => {
+    const accept = req.headers.accept || '';
+    return accept.includes('application/json');
+};
+
 const wishlistPage = async (req, res) => {
     try {
         let products = [];
@@ -93,6 +98,9 @@ const addProduct = async (req, res) => {
     try {
         const productId = Number(req.body.product_id);
         if (!Number.isFinite(productId) || productId <= 0) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Невірний товар' });
+            }
             return res.status(400).send('Невірний товар');
         }
 
@@ -107,10 +115,17 @@ const addProduct = async (req, res) => {
             writeGuestWishlist(res, ids);
         }
 
+        if (wantsJson(req)) {
+            return res.status(200).json({ ok: true });
+        }
+
         const back = req.get('Referer') || '/';
         return res.redirect(back);
     } catch (err) {
         console.error('addProduct:', err.message);
+        if (wantsJson(req)) {
+            return res.status(500).json({ message: 'помилка' });
+        }
         return res.status(500).send('помилка');
     }
 };
@@ -119,6 +134,9 @@ const removeProduct = async (req, res) => {
     try {
         const productId = Number(req.body.product_id);
         if (!Number.isFinite(productId) || productId <= 0) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Невірний товар' });
+            }
             return res.status(400).send('Невірний товар');
         }
 
@@ -130,10 +148,17 @@ const removeProduct = async (req, res) => {
             writeGuestWishlist(res, ids);
         }
 
+        if (wantsJson(req)) {
+            return res.status(200).json({ ok: true });
+        }
+
         const back = req.get('Referer') || '/wishlist';
         return res.redirect(back);
     } catch (err) {
         console.error('removeProduct:', err.message);
+        if (wantsJson(req)) {
+            return res.status(500).json({ message: 'помилка' });
+        }
         return res.status(500).send('помилка');
     }
 };

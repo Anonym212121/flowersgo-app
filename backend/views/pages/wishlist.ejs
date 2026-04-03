@@ -15,9 +15,9 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                     <div class="product-image-wrap">
                         <% const basePrice = Number(product.base_price || 0); %>
                         <% const salePrice = Number(product.sale_price || 0); %>
-                        <% const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice; %>
+                         <% const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice; %>
                         <% const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0; %>
-                        <% if (discountPercent > 0) { %>
+                     <% if (discountPercent > 0) { %>
                             <span class="discount-badge"><%= discountPercent %>%</span>
                         <% } %>
                         <% if (product.image_url) { %>
@@ -28,7 +28,6 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                     </div>
 
                     <h4 class="product-title"><%= product.name %></h4>
-
                     <p class="product-price">
                         <% if (hasDiscount) { %>
                             <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
@@ -36,7 +35,7 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                         <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
                     </p>
 
-                    <form method="post" action="/wishlist/remove">
+                    <form method="post" action="/wishlist/remove" class="wishlist-ajax">
                         <input type="hidden" name="product_id" value="<%= product.id %>" />
                         <button class="product-order-btn" type="submit">Прибрати з обраного</button>
                     </form>
