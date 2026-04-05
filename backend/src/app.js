@@ -14,7 +14,6 @@ app.use(express.urlencoded({ extended: true }));
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
-
 app.use(express.static(path.join(rootDir, 'public')));
 
 

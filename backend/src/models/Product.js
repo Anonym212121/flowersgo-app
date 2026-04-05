@@ -146,9 +146,108 @@ const updateImageUrl = async (productId, imageUrl) => {
 
     return result.affectedRows > 0;
 };
+const findById = async (productId) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return null;
+    }
 
+     const [rows] = await db.execute(
+        `SELECT
+            p.id, p.category_id, p.name, p.slug, p.description,
+            p.base_price, p.sale_price, p.stock_quantity, p.image_url,
+            p.average_rating, p.is_active, p.unit_type,
+        c.name AS category_name
+FROM products p
+         INNER JOIN categories c ON p.category_id = c.id
+         WHERE p.id = ?
+          LIMIT 1`,
+        [id]
+    );
+
+    return rows[0] || null;
+};
+const updateById = async (productId, payload) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return false;
+    }
+
+    const category_id = Number(payload.category_id);
+    if (!Number.isFinite(category_id) || category_id <= 0) {
+        return false;
+    }
+
+    const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+    if (!name) {
+        return false;
+    }
+    let slug = typeof payload.slug === 'string' ? payload.slug.trim() : '';
+    if (!slug) {
+        slug = name;
+    }
+
+    const descriptionRaw = payload.description;
+    const description =
+        typeof descriptionRaw === 'string' && descriptionRaw.trim() !== ''
+            ? descriptionRaw.trim()
+            : null;
+    const base_price = Number(payload.base_price);
+    const sale_price = Number(payload.sale_price);
+    if (!Number.isFinite(base_price) || base_price < 0) {
+        return false;
+    }
+    if (!Number.isFinite(sale_price) || sale_price < 0) {
+        return false;
+    }
+
+
+
+
+
+    const stock_quantity = Number(payload.stock_quantity);
+    if (!Number.isFinite(stock_quantity) || stock_quantity < 0) {
+        return false;
+    }
+    const unitRaw = payload.unit_type;
+    const unit_type =
+        typeof unitRaw === 'string' && unitRaw.trim() !== '' ? unitRaw.trim() : 'шт';
+
+    let is_active = 1;
+    if (
+        payload.is_active === false ||
+        payload.is_active === 0 ||
+        payload.is_active === '0'
+    ) {
+        is_active = 0;
+    }
+
+    const [result] = await db.execute(
+        `UPDATE products SET
+            category_id = ?, name = ?, slug = ?, description = ?,
+             base_price = ?, sale_price = ?, stock_quantity = ?,
+        unit_type = ?, is_active = ?
+         WHERE id = ?`,
+        [
+            category_id,
+            name,
+            slug,
+            description,
+            base_price,
+            sale_price,
+            stock_quantity,
+            unit_type,
+            is_active,
+            id
+        ]
+    );
+
+    return result.affectedRows > 0;
+};
 module.exports = {
     allProducts,
     productsByIds,
-    updateImageUrl
+    updateImageUrl,
+    findById,
+    updateById
 };
