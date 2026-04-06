@@ -244,10 +244,41 @@ const updateById = async (productId, payload) => {
 
     return result.affectedRows > 0;
 };
+const create = async (payload) => {
+    const category_id = Number(payload.category_id);
+    if (!Number.isFinite(category_id) || category_id <= 0) {
+        return false;
+    }
+    const name = typeof payload.name === 'string' ? payload.name.trim() : '';
+    if (!name) {
+        return false;
+    }
+    let sku = typeof payload.sku === 'string' ? payload.sku.trim() : '';
+    if(sku === ''){
+        sku = null;
+    } 
+    let slug = typeof payload.slug === 'string' ? payload.slug.trim() : '';
+    if(slug === ''){
+        slug = null;
+    }        
+    const descriptionRaw = payload.description;
+    const description =
+        typeof descriptionRaw === 'string' && descriptionRaw.trim() !== ''
+            ? descriptionRaw.trim() : null;
+    const base_price = Number(payload.base_price);
+    const sale_price = Number(payload.sale_price);
+    if (!Number.isFinite(base_price) || base_price < 0) {
+        return false;
+    }
+    if (!Number.isFinite(sale_price) || sale_price < 0) {
+        return false;
+    }
+};
 module.exports = {
     allProducts,
     productsByIds,
     updateImageUrl,
     findById,
-    updateById
+    updateById,
+    create
 };
