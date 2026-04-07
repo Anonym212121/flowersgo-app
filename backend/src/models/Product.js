@@ -268,11 +268,67 @@ const create = async (payload) => {
     const base_price = Number(payload.base_price);
     const sale_price = Number(payload.sale_price);
     if (!Number.isFinite(base_price) || base_price < 0) {
-        return false;
+        return null;
     }
     if (!Number.isFinite(sale_price) || sale_price < 0) {
-        return false;
+        return null;
     }
+    if (!Number.isFinite(sale_price) || sale_price < 0) {
+        return null;
+    }
+    const stock_quantity = Number(payload.stock_quantity);
+    const sq = Number.isFinite(stock_quantity) && stock_quantity >= 0 ? stock_quantity : 0;
+    const unitRaw = payload.unit_type;
+    const unit_type =
+        typeof unitRaw === 'string' && unitRaw.trim() !== '' ? unitRaw.trim() : 'шт';
+    let is_active = 1;
+    if (
+        payload.is_active === false ||
+        payload.is_active === 0 ||
+        payload.is_active === '0'
+    ) {
+        is_active = 0;
+    }
+    try {
+        const [result] = await db.execute(
+            `INSERT INTO products (
+                category_id, sku, name, slug, description,
+                base_price, sale_price, stock_quantity, unit_type, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                category_id,
+                sku,
+                name,
+                slug,
+                description,
+                base_price,
+                sale_price,
+                sq,
+                unit_type,
+                is_active
+            ]
+        );
+        return result.insertId;
+    } catch (err) {
+        if (err && err.code === 'ER_DUP_ENTRY') {
+            throw new Error('помилка');
+        }
+        throw err;
+    }
+
+};
+const allForAdmin = async () => {
+    const [rows] = await db.execute(
+        `SELECT
+            p.id, p.category_id, p.sku, p.name, p.slug,
+            p.base_price, p.sale_price, p.stock_quantity,
+            p.is_active, p.image_url,
+            c.name AS category_name
+         FROM products p
+         INNER JOIN categories c ON p.category_id = c.id
+         ORDER BY p.id DESC`
+    );
+    return rows;
 };
 module.exports = {
     allProducts,
@@ -280,5 +336,6 @@ module.exports = {
     updateImageUrl,
     findById,
     updateById,
-    create
+    create,
+    allForAdmin
 };
