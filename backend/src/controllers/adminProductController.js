@@ -10,6 +10,20 @@ const listForAdmin = async (req, res) => {
     }
 };
 
+const getOneForAdmin = async (req, res) => {
+    try {
+        const product = await ProductModel.findById(req.params.id);
+        if (!product) {
+            return res.status(404).json({ message: 'Товар не знайдено' });
+        }
+        return res.status(200).json({ product });
+    } catch (err) {
+        console.error('getOneForAdmin:', err.message);
+        return res.status(500).json({ message: 'помилка' });
+    }
+};
+
 module.exports = {
-    listForAdmin
+    listForAdmin,
+    getOneForAdmin
 };
