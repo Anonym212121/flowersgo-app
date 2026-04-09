@@ -4,6 +4,7 @@ const router = express.Router();
 
 router.get('/products', adminProductController.listForAdmin);
 router.get('/products/:id', adminProductController.getOneForAdmin);
+router.post('/products', adminProductController.createForAdmin);
 
 router.get('/ping', (req, res) => {
     return res.status(200).json({ ok: true });
