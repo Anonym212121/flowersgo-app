@@ -41,8 +41,32 @@ const createForAdmin = async (req, res) => {
     }
 };
 
+const updateForAdmin = async (req, res) => {
+    try {
+        const exists = await ProductModel.findById(req.params.id);
+        if (!exists) {
+            return res.status(404).json({ message: 'Товар не знайдено' });
+        }
+
+        const updated = await ProductModel.updateById(req.params.id, req.body || {});
+        if (!updated) {
+            return res.status(400).json({ message: 'Невірні дані товару' });
+        }
+
+        const product = await ProductModel.findById(req.params.id);
+        return res.status(200).json({ message: 'Товар оновлено', product });
+    } catch (err) {
+        if (err && err.message) {
+            return res.status(400).json({ message: err.message });
+        }
+        console.error('updateForAdmin:', err.message);
+        return res.status(500).json({ message: 'помилка' });
+    }
+};
+
 module.exports = {
     listForAdmin,
     getOneForAdmin,
-    createForAdmin
+    createForAdmin,
+    updateForAdmin
 };
