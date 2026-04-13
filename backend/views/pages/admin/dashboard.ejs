@@ -1,4 +1,22 @@
-<section>
-    <h1>Адмін-панель</h1>
-    <p>нплопрдлзщоолии.</p>
+<section class="admin-panel-shell">
+    <aside class="admin-panel-menu">
+        <h2 class="admin-panel-menu__title">Меню</h2>
+
+        <button type="button" id="admin-show-list" class="admin-menu-btn">
+            Редагування товару
+        </button>
+        <button type="button" id="admin-show-create" class="admin-menu-btn">
+            Додати новий товар
+        </button>
+    </aside>
+
+    <section class="admin-panel-workspace">
+        <h1 class="admin-panel-workspace__title">Панель адміністратора</h1>
+        <p class="admin-panel-workspace__subtitle">Оберіть дію в меню ліворуч.</p>
+
+        <div id="admin-panel-message" class="admin-panel-message" aria-live="polite"></div>
+        <div id="admin-panel-content" class="admin-panel-content"></div>
+    </section>
 </section>
+
+<script src="/js/admin-panel.js" defer></script>

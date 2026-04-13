@@ -1,7 +1,9 @@
 const express = require('express');
 const adminProductController = require('../controllers/adminProductController');
+const adminCategoryController = require('../controllers/adminCategoryController');
 const router = express.Router();
 
+router.get('/categories', adminCategoryController.listForAdmin);
 router.get('/products', adminProductController.listForAdmin);
 router.get('/products/:id', adminProductController.getOneForAdmin);
 router.post('/products', adminProductController.createForAdmin);

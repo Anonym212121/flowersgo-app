@@ -1,5 +1,49 @@
 const db = require('../config/db');
 
+const cyrillicToLatin = {
+    а: 'a', б: 'b', в: 'v', г: 'h', ґ: 'g', д: 'd', е: 'e', є: 'ie', ё: 'e', ж: 'zh', з: 'z',
+    и: 'y', і: 'i', ї: 'i', й: 'i', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r',
+    с: 's', т: 't', у: 'u', ф: 'f', х: 'kh', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'shch', ь: '',
+    ъ: '', ы: 'y', э: 'e', ю: 'iu', я: 'ia'
+};
+
+const slugFromName = (raw) => {
+    const s = String(raw || '').trim().toLowerCase();
+    let out = '';
+    for (let i = 0; i < s.length; i += 1) {
+        const ch = s[i];
+        if (cyrillicToLatin[ch]) {
+            out += cyrillicToLatin[ch];
+        } else if (/[a-z0-9]/.test(ch)) {
+            out += ch;
+        } else if (ch === ' ' || ch === '-' || ch === '_') {
+            out += '-';
+        }
+    }
+    out = out.replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return out || 'tovar';
+};
+
+const ensureUniqueSlug = async (base, excludeId) => {
+    let candidate = base;
+    let n = 0;
+    while (n < 50) {
+        let sql = 'SELECT id FROM products WHERE slug = ? LIMIT 1';
+        const params = [candidate];
+        if (excludeId != null) {
+            sql = 'SELECT id FROM products WHERE slug = ? AND id != ? LIMIT 1';
+            params.push(excludeId);
+        }
+        const [rows] = await db.execute(sql, params);
+        if (rows.length === 0) {
+            return candidate;
+        }
+        n += 1;
+        candidate = `${base}-${n}`;
+    }
+    return `${base}-${Date.now().toString(36)}`;
+};
+
 const splitSearchWords = (raw) => {
     if (!raw || typeof raw !== 'string') {
         return [];
@@ -182,10 +226,7 @@ const updateById = async (productId, payload) => {
     if (!name) {
         return false;
     }
-    let slug = typeof payload.slug === 'string' ? payload.slug.trim() : '';
-    if (!slug) {
-        slug = name;
-    }
+    const slug = await ensureUniqueSlug(slugFromName(name), id);
 
     const descriptionRaw = payload.description;
     const description =
@@ -253,14 +294,8 @@ const create = async (payload) => {
     if (!name) {
         return false;
     }
-    let sku = typeof payload.sku === 'string' ? payload.sku.trim() : '';
-    if(sku === ''){
-        sku = null;
-    } 
-    let slug = typeof payload.slug === 'string' ? payload.slug.trim() : '';
-    if(slug === ''){
-        slug = null;
-    }        
+    const sku = null;
+    const slug = await ensureUniqueSlug(slugFromName(name), null);
     const descriptionRaw = payload.description;
     const description =
         typeof descriptionRaw === 'string' && descriptionRaw.trim() !== ''
@@ -268,9 +303,6 @@ const create = async (payload) => {
     const base_price = Number(payload.base_price);
     const sale_price = Number(payload.sale_price);
     if (!Number.isFinite(base_price) || base_price < 0) {
-        return null;
-    }
-    if (!Number.isFinite(sale_price) || sale_price < 0) {
         return null;
     }
     if (!Number.isFinite(sale_price) || sale_price < 0) {
