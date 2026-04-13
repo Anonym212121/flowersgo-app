@@ -225,6 +225,49 @@ body {
     text-align: left;
 }
 
+.admin-table-photo {
+    width: 84px;
+    max-width: 84px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+.admin-table-thumb {
+    display: block;
+    width: 72px;
+    height: 72px;
+    max-width: 72px;
+    max-height: 72px;
+    margin: 0 auto;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #dbe3dd;
+}
+
+.admin-product-photo-block {
+    display: grid;
+    gap: 8px;
+    max-width: 360px;
+}
+
+.admin-photo-hint {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #5a6b61;
+}
+
+.admin-product-thumb {
+    display: block;
+    max-width: 100%;
+    width: auto;
+    max-height: 200px;
+    height: auto;
+    object-fit: contain;
+    border-radius: 8px;
+    border: 1px solid #dbe3dd;
+}
+
 .admin-form {
     display: grid;
     gap: 10px;

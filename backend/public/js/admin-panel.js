@@ -40,6 +40,27 @@
         return data;
     };
 
+    const uploadProductPhoto = async (productId, file) => {
+        const id = Number(productId);
+        if (!Number.isFinite(id) || id <= 0 || !file) {
+            return null;
+        }
+        const body = new FormData();
+        body.append('image', file);
+        body.append('product_id', String(id));
+        const res = await fetch('/products/upload-image', {
+            method: 'POST',
+            credentials: 'include',
+            body
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data && data.message ? data.message : 'Помилка завантаження фото';
+            throw new Error(msg);
+        }
+        return data.image_url || null;
+    };
+
     const categoryOptionLabel = (list, cat) => {
         if (cat.parent_id == null) {
             return cat.name;
@@ -234,6 +255,19 @@
                         <option value="0" ${product && Number(product.is_active) === 0 ? 'selected' : ''}>Ні</option>
                     </select>
                 </label>
+                <div class="admin-product-photo-block">
+                    <label class="admin-photo-label">Фото товару (jpeg, png, webp, gif, до 5 МБ)
+                        <input type="file" id="admin-product-image" accept="image/jpeg,image/png,image/gif,image/webp">
+                    </label>
+                    <p class="admin-photo-hint">${
+                        product && product.image_url
+                    }</p>
+                    <img id="admin-product-image-preview" class="admin-product-thumb" alt="Фото товару"${
+                        product && product.image_url
+                            ? ` src="${escapeHtml(product.image_url)}"`
+                            : ' hidden'
+                    }>
+                </div>
                 <div class="admin-form-actions">
                     <button type="submit" class="admin-primary-btn">${isEdit ? 'Зберегти зміни' : 'Створити товар'}</button>
                     <button type="button" id="admin-back-to-list" class="admin-secondary-btn">Повернутися до списку</button>
@@ -313,21 +347,50 @@
                 }
             }
             const payload = buildProductPayload(form);
+            const fileInput = form.querySelector('#admin-product-image');
+            const photoFile = fileInput && fileInput.files && fileInput.files[0];
             try {
+                let targetId = productId;
                 if (isEdit) {
                     await apiFetch(`/api/admin/products/${productId}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    showMessage('Товар оновлено');
                 } else {
-                    await apiFetch('/api/admin/products', {
+                    const data = await apiFetch('/api/admin/products', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-                    showMessage('Товар створено');
+                    targetId =
+                        data.product && data.product.id != null
+                            ? data.product.id
+                            : null;
+                }
+
+                if (photoFile && targetId) {
+                    try {
+                        await uploadProductPhoto(targetId, photoFile);
+                    } catch (upErr) {
+                        const baseMsg = isEdit ? 'Товар оновлено.' : 'Товар створено.';
+                        showMessage(
+                            `${baseMsg} Фото не збережено: ${upErr.message}`,
+                            true
+                        );
+                        await loadProductList();
+                        return;
+                    }
+                }
+
+                if (photoFile && targetId) {
+                    showMessage(
+                        isEdit
+                            ? 'Товар і фото оновлено'
+                            : 'Товар і фото збережено'
+                    );
+                } else {
+                    showMessage(isEdit ? 'Товар оновлено' : 'Товар створено');
                 }
                 await loadProductList();
             } catch (err) {
@@ -340,6 +403,11 @@
         const rows = products.map((p) => `
             <tr>
                 <td>${p.id}</td>
+                <td class="admin-table-photo">${
+                    p.image_url
+                        ? `<img class="admin-table-thumb" src="${escapeHtml(p.image_url)}" alt="">`
+                        : '—'
+                }</td>
                 <td>${escapeHtml(p.name)}</td>
                 <td>${escapeHtml(p.category_name)}</td>
                 <td>${escapeHtml(p.sale_price)}</td>
@@ -355,6 +423,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Фото</th>
                             <th>Назва</th>
                             <th>Категорія</th>
                             <th>Ціна</th>
@@ -363,7 +432,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${rows || '<tr><td colspan="6">Товари відсутні</td></tr>'}
+                        ${rows || '<tr><td colspan="7">Товари відсутні</td></tr>'}
                     </tbody>
                 </table>
             </div>
