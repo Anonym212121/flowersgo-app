@@ -29,6 +29,7 @@ const router = express.Router();
 router.use(pageAuthContext);
 
 router.get('/', pagesController.home);
+router.get('/product/:id', pagesController.productPage);
 router.get('/login', pagesController.loginPage);
 router.get('/register', pagesController.registerPage);
 router.get('/logout', pagesController.logout);

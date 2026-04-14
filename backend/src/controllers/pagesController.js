@@ -69,15 +69,45 @@ const cabinetPage = async (req, res) => {
     }
 };
 
+const productPage = async (req, res) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isFinite(id) || id <= 0) {
+            return res.status(404).send('Товар не знайдено');
+        }
+
+        const product = await ProductModel.findById(id);
+        if (!product || Number(product.is_active) === 0) {
+            return res.status(404).send('Товар не знайдено');
+        }
+
+        return renderLayout(res, product.name, 'pages/product', { product });
+    } catch (err) {
+        return res.status(500).send('помилка');
+    }
+};
+
 const adminDashboard = (req, res) => {
     return renderLayout(res, 'Адмін-панель', 'pages/admin/dashboard');
 };
-
+const adminProductsList = async (req, res) => {
+    try {
+        const products = await ProductModel.allForAdmin();
+        return renderLayout(res, 'Товари', 'pages/admin/products-list', {
+            products
+        });
+    } catch (err) {
+        console.error('adminProductsList:', err.message);
+        return res.status(500).send('помилка');
+    }
+};
 module.exports = {
     home,
+    productPage,
     loginPage,
     registerPage,
     logout,
     cabinetPage,
-    adminDashboard
+    adminDashboard,
+    adminProductsList
 };

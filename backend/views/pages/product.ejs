@@ -1,0 +1,66 @@
+<%
+const basePrice = Number(product.base_price || 0);
+const salePrice = Number(product.sale_price || 0);
+const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice;
+const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0;
+%>
+
+<section class="catalog-content product-detail-section">
+    <nav class="breadcrumb-nav" aria-label="Навігація">
+        <a href="/">Головна</a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <a href="/?category_id=<%= product.category_id %>"><%= product.category_name %></a>
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="breadcrumb-current"><%= product.name %></span>
+    </nav>
+
+    <div class="product-detail-grid">
+        <div class="product-detail-image-wrap">
+            <% if (discountPercent > 0) { %>
+                <span class="discount-badge discount-badge--large"><%= discountPercent %>%</span>
+            <% } %>
+            <% if (product.image_url) { %>
+                <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-detail-image" />
+            <% } else { %>
+                <div class="product-detail-image product-detail-image--placeholder">Немає фото</div>
+            <% } %>
+        </div>
+
+        <div class="product-detail-info">
+            <h1 class="product-detail-title"><%= product.name %></h1>
+
+            <p class="product-detail-price">
+                <% if (hasDiscount) { %>
+                    <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+                <% } %>
+                <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+            </p>
+
+            <p class="product-detail-meta">
+                Категорія: <a href="/?category_id=<%= product.category_id %>"><%= product.category_name %></a>
+            </p>
+
+            <p class="product-detail-meta">
+                <% if (Number(product.stock_quantity) > 0) { %>
+                    В наявності: <%= product.stock_quantity %> <%= product.unit_type || 'шт' %>
+                <% } else { %>
+                    Немає в наявності
+                <% } %>
+            </p>
+
+            <p class="product-detail-order">
+                <button class="product-order-btn" type="button">Замовити</button>
+            </p>
+
+            <% if (product.description && String(product.description).trim() !== '') { %>
+                <div class="product-detail-desc">
+                    <%= product.description %>
+                </div>
+            <% } %>
+
+            <p class="product-detail-back">
+                <a href="/">← До каталогу</a>
+            </p>
+        </div>
+    </div>
+</section>
