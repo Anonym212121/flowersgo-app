@@ -101,8 +101,38 @@ const adminProductsList = async (req, res) => {
         return res.status(500).send('помилка');
     }
 };
+
+const catalogProductsJson = async (req, res) => {
+    try {
+        const rawCat = req.query.category_id;
+        let selectedCategoryId = null;
+        if (rawCat !== undefined && rawCat !== null && rawCat !== '') {
+            const n = Number(rawCat);
+            if (Number.isFinite(n) && n > 0) {
+                selectedCategoryId = n;
+            }
+        }
+
+        let searchQuery = '';
+        const rawQ = req.query.q;
+        if (rawQ !== undefined && rawQ !== null && rawQ !== '') {
+            if (Array.isArray(rawQ)) {
+                searchQuery = String(rawQ[0] ?? '').trim();
+            } else {
+                searchQuery = String(rawQ).trim();
+            }
+        }
+
+        const products = await ProductModel.allProducts(selectedCategoryId, searchQuery);
+        return res.json({ products });
+    } catch (err) {
+        return res.status(500).json({ message: 'Не вдалося завантажити товари' });
+    }
+};
+
 module.exports = {
     home,
+    catalogProductsJson,
     productPage,
     loginPage,
     registerPage,

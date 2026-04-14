@@ -11,7 +11,7 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
 
         <ul class="category-list">
             <li>
-                <a href="/" class="<%= !safeSelectedCategoryId ? 'active' : '' %>">Усі товари</a>
+                <a href="/" class="catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>" data-category-id="">Усі товари</a>
             </li>
 
             <% const parentCategories = safeCategories.filter(item => !item.parent_id); %>
@@ -23,7 +23,8 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                     <li class="category-parent category-parent--flyout">
                         <a
                             href="/?category_id=<%= parent.id %>"
-                            class="category-parent-link <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                            class="category-parent-link catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                            data-category-id="<%= parent.id %>"
                         >
                             <span class="category-parent-label"><%= parent.name %></span>
                             <span class="category-chevron" aria-hidden="true">›</span>
@@ -33,7 +34,8 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                                 <% for (const sub of nested) { %>
                                     <a
                                         href="/?category_id=<%= sub.id %>"
-                                        class="category-flyout-item <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
+                                        class="category-flyout-item catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
+                                        data-category-id="<%= sub.id %>"
                                     >
                                         <span class="category-flyout-thumb" aria-hidden="true"></span>
                                         <span class="category-flyout-text"><%= sub.name %></span>
@@ -46,7 +48,8 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                     <li class="category-parent">
                         <a
                             href="/?category_id=<%= parent.id %>"
-                            class="<%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                            class="catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                            data-category-id="<%= parent.id %>"
                         >
                             <%= parent.name %>
                         </a>
@@ -79,6 +82,7 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
         </div>
 
 
+        <div id="catalog-products-root">
         <% if (safeProducts.length === 0) { %>
             <p>Товари не знайдено.</p>
         <% } else { %>
@@ -130,5 +134,6 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                 <% } %>
             </div>
         <% } %>
+        </div>
     </section>
 </div>
