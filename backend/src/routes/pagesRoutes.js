@@ -13,7 +13,7 @@ const wrapProductImageUpload = (req, res, next) => {
     productImageController.uploadMiddleware(req, res, (err) => {
         if (err) {
             if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
-                return res.status(400).json({ message: 'Файл завеликий (максимум 5 МБ)' });
+                return res.status(400).json({ message: 'Файл завеликий' });
             }
             const msg =
                 err.message && typeof err.message === 'string'
