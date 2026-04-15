@@ -3,14 +3,16 @@
     const message = document.getElementById('admin-panel-message');
     const showListBtn = document.getElementById('admin-show-list');
     const showCreateBtn = document.getElementById('admin-show-create');
+    const showReviewsBtn = document.getElementById('admin-show-reviews');
 
-    if (!content || !message || !showListBtn || !showCreateBtn) {
+    if (!content || !message || !showListBtn || !showCreateBtn || !showReviewsBtn) {
         return;
     }
 
     const setActiveMenu = (mode) => {
         showListBtn.classList.toggle('active', mode === 'list');
         showCreateBtn.classList.toggle('active', mode === 'create');
+        showReviewsBtn.classList.toggle('active', mode === 'reviews');
     };
 
     const showMessage = (text, isError = false) => {
@@ -382,7 +384,6 @@
                         return;
                     }
                 }
-
                 if (photoFile && targetId) {
                     showMessage(
                         isEdit
@@ -475,6 +476,13 @@
         } catch (err) {
             showMessage(err.message, true);
         }
+    });
+
+    showReviewsBtn.addEventListener('click', () => {
+        showMessage('');
+        setActiveMenu('reviews');
+        content.innerHTML =
+            '<p class="admin-panel-placeholder">відгукт</p>';
     });
 
     setActiveMenu('list');
