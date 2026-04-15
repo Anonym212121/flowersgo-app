@@ -81,9 +81,25 @@ const deleteById = async (reviewId) => {
     return result.affectedRows > 0;
 };
 
+const listPendingForAdmin = async () => {
+    const [rows] = await db.execute(
+        `SELECT r.id, r.product_id, r.user_id, r.rating, r.comment, r.\`createdAt\`,
+                u.first_name, u.last_name,
+                p.name AS product_name
+         FROM reviews r
+         INNER JOIN users u ON r.user_id = u.id
+         INNER JOIN products p ON r.product_id = p.id
+         WHERE r.is_visible = 0
+         ORDER BY r.id DESC`
+    );
+
+    return rows;
+};
+
 module.exports = {
     listVisibleByProductId,
     create,
     approveById,
-    deleteById
+    deleteById,
+    listPendingForAdmin
 };
