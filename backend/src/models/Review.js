@@ -70,8 +70,20 @@ const approveById = async (reviewId) => {
     return result.affectedRows > 0;
 };
 
+const deleteById = async (reviewId) => {
+    const id = Number(reviewId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return false;
+    }
+
+    const [result] = await db.execute('DELETE FROM reviews WHERE id = ?', [id]);
+
+    return result.affectedRows > 0;
+};
+
 module.exports = {
     listVisibleByProductId,
     create,
-    approveById
+    approveById,
+    deleteById
 };
