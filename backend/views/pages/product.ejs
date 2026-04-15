@@ -66,29 +66,55 @@ const safeReviews = typeof reviews !== 'undefined' && Array.isArray(reviews) ? r
     </div>
 
     <div class="product-reviews-wrap">
-        <h2 class="product-reviews-title">Відгуки</h2>
-        <% if (safeReviews.length === 0) { %>
-            <p class="product-reviews-empty">Поки немає відгуків.</p>
-        <% } else { %>
-            <ul class="product-reviews-list">
-                <% for (const rev of safeReviews) { %>
-                    <% const revDate = rev.createdAt || rev.createdat; %>
-                    <li class="product-review-item">
-                        <p class="product-review-meta">
-                            <strong><%= rev.first_name %> <%= rev.last_name %></strong>
-                            <% if (rev.rating != null && rev.rating !== '') { %>
-                                · оцінка <%= rev.rating %>/5
-                            <% } %>
-                            <% if (revDate) { %>
-                                · <%= new Date(revDate).toLocaleString('uk-UA') %>
-                            <% } %>
-                        </p>
-                        <% if (rev.comment && String(rev.comment).trim() !== '') { %>
-                            <p class="product-review-body"><%= rev.comment %></p>
-                        <% } %>
-                    </li>
+        <div class="product-reviews-layout">
+            <div class="product-reviews-col product-reviews-col--form">
+                <% if (currentUser) { %>
+                    <h2 class="product-review-form-title">Ваш відгук</h2>
+                    <form class="product-review-form" method="post" action="/product/<%= product.id %>/reviews">
+                        <textarea
+                            id="review-comment"
+                            class="product-review-textarea"
+                            name="comment"
+                            rows="4"
+                            maxlength="2000"
+                            required
+                            minlength="2"
+                            placeholder="Напиши враження про товар..."
+                        ></textarea>
+                        <button class="product-review-submit" type="submit">Надіслати відгук</button>
+                    </form>
+                <% } else { %>
+                    <p class="product-review-login-hint">
+                        <a href="/login">Увійди</a>, щоб залишити відгук.
+                    </p>
                 <% } %>
-            </ul>
-        <% } %>
+            </div>
+            <div class="product-reviews-col product-reviews-col--list">
+                <h2 class="product-reviews-title">Відгуки</h2>
+                <% if (safeReviews.length === 0) { %>
+                    <p class="product-reviews-empty">Поки немає відгуків.</p>
+                <% } else { %>
+                    <ul class="product-reviews-list">
+                        <% for (const rev of safeReviews) { %>
+                            <% const revDate = rev.createdAt || rev.createdat; %>
+                            <li class="product-review-item">
+                                <p class="product-review-meta">
+                                    <strong><%= rev.first_name %> <%= rev.last_name %></strong>
+                                    <% if (rev.rating != null && rev.rating !== '') { %>
+                                        · оцінка <%= rev.rating %>/5
+                                    <% } %>
+                                    <% if (revDate) { %>
+                                        · <%= new Date(revDate).toLocaleString('uk-UA') %>
+                                    <% } %>
+                                </p>
+                                <% if (rev.comment && String(rev.comment).trim() !== '') { %>
+                                    <p class="product-review-body"><%= rev.comment %></p>
+                                <% } %>
+                            </li>
+                        <% } %>
+                    </ul>
+                <% } %>
+            </div>
+        </div>
     </div>
 </section>

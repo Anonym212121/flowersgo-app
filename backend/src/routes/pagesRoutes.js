@@ -7,6 +7,7 @@ const pageRequireLogin = require('../middleware/pageRequireLogin');
 const pageRequireAdminPage = require('../middleware/pageRequireAdminPage');
 const requireAdminJson = require('../middleware/requireAdminJson');
 const wishlistController = require('../controllers/wishlistController');
+const reviewController = require('../controllers/reviewController');
 const productImageController = require('../controllers/productImageController');
 
 const wrapProductImageUpload = (req, res, next) => {
@@ -31,6 +32,7 @@ router.use(pageAuthContext);
 router.get('/', pagesController.home);
 router.get('/api/catalog/products', pagesController.catalogProductsJson);
 router.get('/product/:id', pagesController.productPage);
+router.post('/product/:id/reviews', pageRequireLogin, reviewController.createPageReview);
 router.get('/login', pagesController.loginPage);
 router.get('/register', pagesController.registerPage);
 router.get('/logout', pagesController.logout);
