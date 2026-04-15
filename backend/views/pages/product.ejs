@@ -3,6 +3,7 @@ const basePrice = Number(product.base_price || 0);
 const salePrice = Number(product.sale_price || 0);
 const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice;
 const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0;
+const safeReviews = typeof reviews !== 'undefined' && Array.isArray(reviews) ? reviews : [];
 %>
 
 <section class="catalog-content product-detail-section">
@@ -62,5 +63,32 @@ const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / base
                 <a href="/">← До каталогу</a>
             </p>
         </div>
+    </div>
+
+    <div class="product-reviews-wrap">
+        <h2 class="product-reviews-title">Відгуки</h2>
+        <% if (safeReviews.length === 0) { %>
+            <p class="product-reviews-empty">Поки немає відгуків.</p>
+        <% } else { %>
+            <ul class="product-reviews-list">
+                <% for (const rev of safeReviews) { %>
+                    <% const revDate = rev.createdAt || rev.createdat; %>
+                    <li class="product-review-item">
+                        <p class="product-review-meta">
+                            <strong><%= rev.first_name %> <%= rev.last_name %></strong>
+                            <% if (rev.rating != null && rev.rating !== '') { %>
+                                · оцінка <%= rev.rating %>/5
+                            <% } %>
+                            <% if (revDate) { %>
+                                · <%= new Date(revDate).toLocaleString('uk-UA') %>
+                            <% } %>
+                        </p>
+                        <% if (rev.comment && String(rev.comment).trim() !== '') { %>
+                            <p class="product-review-body"><%= rev.comment %></p>
+                        <% } %>
+                    </li>
+                <% } %>
+            </ul>
+        <% } %>
     </div>
 </section>

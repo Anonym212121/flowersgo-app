@@ -1,6 +1,7 @@
 const UserModel = require('../models/User'); 
 const CategoryModel = require('../models/Category');
 const ProductModel = require('../models/Product');
+const ReviewModel = require('../models/Review');
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
         title,
@@ -81,7 +82,9 @@ const productPage = async (req, res) => {
             return res.status(404).send('Товар не знайдено');
         }
 
-        return renderLayout(res, product.name, 'pages/product', { product });
+        const reviews = await ReviewModel.listVisibleByProductId(id);
+
+        return renderLayout(res, product.name, 'pages/product', { product, reviews });
     } catch (err) {
         return res.status(500).send('помилка');
     }
