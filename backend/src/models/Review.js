@@ -56,7 +56,22 @@ const create = async ({ user_id, product_id, order_id, rating, comment }) => {
     return result.insertId > 0;
 };
 
+const approveById = async (reviewId) => {
+    const id = Number(reviewId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return false;
+    }
+
+    const [result] = await db.execute(
+        'UPDATE reviews SET is_visible = 1 WHERE id = ?',
+        [id]
+    );
+
+    return result.affectedRows > 0;
+};
+
 module.exports = {
     listVisibleByProductId,
-    create
+    create,
+    approveById
 };
