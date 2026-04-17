@@ -44,3 +44,35 @@ module.exports = {
     getPendingStatusId,
     normalizeItems
 };
+
+const create = async (payload) => {
+    const user_id = Number(payload && payload.user_id);
+    if (!Number.isFinite(user_id) || user_id <= 0) {
+        return null;
+    }
+
+    const delivery_address =
+        typeof payload.delivery_address === 'string' ? payload.delivery_address.trim() : '';
+    if (!delivery_address) {
+        return null;
+    }
+
+    const items = normalizeItems(payload && payload.items);
+    if (items.length === 0) {
+        return null;
+    }
+
+    const status_id = await getPendingStatusId();
+    if (!status_id) {
+        return null;
+    }
+
+    return {
+        user_id,
+        delivery_address,
+        items_count: items.length,
+        status_id
+    };
+};
+
+module.exports.create = create;
