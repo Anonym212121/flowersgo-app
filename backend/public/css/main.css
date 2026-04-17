@@ -181,6 +181,23 @@ body {
     font-size: 15px;
 }
 
+.admin-review-comment-cell {
+    max-width: 260px;
+    font-size: 13px;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+.admin-review-actions-cell {
+    white-space: normal;
+    vertical-align: top;
+}
+
+.admin-review-actions-cell .admin-primary-btn,
+.admin-review-actions-cell .admin-secondary-btn {
+    margin: 0 6px 6px 0;
+}
+
 .admin-panel-workspace {
     background: #fff;
     border: 1px solid #d6ddd8;

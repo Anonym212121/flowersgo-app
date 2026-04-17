@@ -461,6 +461,111 @@
             showMessage(err.message, true);
         }
     };
+    const formatReviewDate = (rev) => {
+        const raw = rev.createdAt || rev.createdat;
+           if (!raw) {
+            return '—';
+        }
+     try {
+            return new Date(raw).toLocaleString('uk-UA');
+        } catch (e) {
+            return '—';
+        }
+    };
+const renderPendingReviewsList = (reviews) => {
+        if (!Array.isArray(reviews) || reviews.length === 0) {
+            content.innerHTML =
+                '<h3>Відгуки на модерацію</h3><p class="admin-panel-placeholder">Немає відгуків, що очікують рішення.</p>';
+            return;
+        }
+
+        const rows = reviews
+            .map((r) => {
+                const author =
+                    `${escapeHtml(r.first_name || '')} ${escapeHtml(r.last_name || '')}`.trim() ||
+                    '—';
+            const rating =
+                    r.rating != null && r.rating !== ''
+                        ? escapeHtml(String(r.rating))
+                        : '—';
+                   const fullComment = String(r.comment || '');
+                const commentPreview = escapeHtml(fullComment.slice(0, 200));
+                const tail = fullComment.length > 200 ? '…' : '';
+
+                return `
+            <tr>
+                <td>${r.id}</td>
+                <td>${escapeHtml(r.product_name || '—')}</td>
+                <td>${author}</td>
+                <td>${rating}</td>
+                <td>${escapeHtml(formatReviewDate(r))}</td>
+                <td class="admin-review-comment-cell">${commentPreview}${tail}</td>
+                <td class="admin-review-actions-cell">
+                    <button type="button" class="admin-primary-btn admin-review-approve" data-id="${r.id}">Схвалити</button>
+                    <button type="button" class="admin-secondary-btn admin-review-delete" data-id="${r.id}">Видалити</button>
+                </td>
+            </tr>`;
+            })
+            .join('');
+
+        content.innerHTML = `
+            <h3>Відгуки на модерацію</h3>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                          <th>Товар</th>
+                            <th>Автор</th>
+                            <th>Оцінка</th>
+                            <th>Дата</th>
+                            <th>Текст</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+        `;
+
+    content.querySelectorAll('.admin-review-approve').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+            try {
+                    await apiFetch(`/api/admin/reviews/${id}/approve`, { method: 'POST' });
+                    showMessage('Відгук схвалено');
+                    await loadPendingReviews();
+                } catch (err) {
+                    showMessage(err.message, true);
+                }
+            });
+        });
+
+        content.querySelectorAll('.admin-review-delete').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                if (!window.confirm('Видалити цей відгук назавжди?')) {
+                    return;
+                }
+                   try {
+                  await apiFetch(`/api/admin/reviews/${id}`, { method: 'DELETE' });
+                    showMessage('Відгук видалено');
+                       await loadPendingReviews();
+                } catch (err) {
+                    showMessage(err.message, true);
+            }
+            });
+        });
+    };
+
+    const loadPendingReviews = async () => {
+        try {
+     const data = await apiFetch('/api/admin/reviews');
+            renderPendingReviewsList(Array.isArray(data.reviews) ? data.reviews : []);
+     } catch (err) {
+               showMessage(err.message, true);
+        }
+    };
 
     showListBtn.addEventListener('click', () => {
         showMessage('');
@@ -481,8 +586,7 @@
     showReviewsBtn.addEventListener('click', () => {
         showMessage('');
         setActiveMenu('reviews');
-        content.innerHTML =
-            '<p class="admin-panel-placeholder">відгукт</p>';
+        loadPendingReviews();
     });
 
     setActiveMenu('list');
