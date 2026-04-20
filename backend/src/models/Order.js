@@ -63,6 +63,40 @@ const create = async (payload) => {
         return null;
     }
 
+    const delivery_datetime =
+        typeof payload.delivery_datetime === 'string' && payload.delivery_datetime.trim() !== ''
+            ? payload.delivery_datetime.trim()
+            : null;
+    const total_price = Number(payload && payload.total_price);
+    if (!Number.isFinite(total_price) || total_price < 0) {
+        return null;
+    }
+
+    const order_id = await insertOrderRow({
+        user_id,
+        status_id,
+        delivery_address,
+        delivery_datetime,
+        total_price
+    });
+    if (!order_id) {
+        return null;
+    }
+
+    for (const item of items) {
+        const ok = await insertOrderItemRow({
+            order_id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_price: item.unit_price
+        });
+        if (!ok) {
+            return null;
+        }
+    }
+
+    return order_id;
+
     return {
         user_id,
         delivery_address,
@@ -73,12 +107,6 @@ const create = async (payload) => {
 
 module.exports.create = create;
 
-
-module.exports = {
-    create,
-    normalizeItems,
-    getPendingStatusId
-};
 
 const insertOrderRow = async ({ user_id, status_id, delivery_address, delivery_datetime, total_price }) => {
     const [result] = await db.execute(
@@ -96,3 +124,23 @@ const insertOrderRow = async ({ user_id, status_id, delivery_address, delivery_d
 };
 
 module.exports.insertOrderRow = insertOrderRow;
+
+
+const insertOrderItemRow = async ({ order_id, product_id, quantity, unit_price }) => {
+    const [result] = await db.execute(
+        `INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+         VALUES (?, ?, ?, ?)`,
+        [order_id, product_id, quantity, unit_price]
+    );
+
+    return result && result.affectedRows > 0;
+};
+
+module.exports.insertOrderRow = insertOrderRow;
+module.exports.insertOrderItemRow = insertOrderItemRow;
+
+module.exports = {
+    create,
+    normalizeItems,
+    getPendingStatusId
+};
