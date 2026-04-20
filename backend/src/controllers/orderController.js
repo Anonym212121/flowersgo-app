@@ -9,4 +9,9 @@ const getUserId = (res) => {
     return userId;
 };
 
+const wantsJson = (req) => {
+    const accept = req.headers.accept || '';
+    return accept.includes('application/json');
+};
+
 module.exports = {};
