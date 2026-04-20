@@ -32,4 +32,28 @@ const parseItemsFromBody = (raw) => {
     return [];
 };
 
+const createOrder = async (req, res) => {
+    try {
+        const userId = getUserId(res);
+        if (!userId) {
+            if (wantsJson(req)) {
+                return res.status(401).json({ message: 'Потрібно увійти' });
+            }
+            return res.redirect('/login');
+        }
+
+        if (wantsJson(req)) {
+            return res.status(501).json({ message: 'Оформлення замовлення ще підключається' });
+        }
+        return res.status(501).send('Оформлення замовлення ще підключається');
+    } catch (err) {
+        console.error('createOrder:', err.message);
+        if (wantsJson(req)) {
+            return res.status(500).json({ message: 'помилка' });
+        }
+        return res.status(500).send('помилка');
+    }
+};
+
 module.exports = {};
+module.exports.createOrder = createOrder;
