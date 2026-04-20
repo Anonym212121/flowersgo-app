@@ -132,11 +132,6 @@ const insertOrderItemRow = async ({ order_id, product_id, quantity, unit_price }
 module.exports.insertOrderRow = insertOrderRow;
 module.exports.insertOrderItemRow = insertOrderItemRow;
 
-module.exports = {
-    create,
-    normalizeItems,
-    getPendingStatusId
-};
 
 module.exports.insertOrderRow = insertOrderRow;
 module.exports.insertOrderItemRow = insertOrderItemRow;
@@ -211,3 +206,13 @@ const createWithTransaction = async (payload) => {
 };
 
 module.exports.createWithTransaction = createWithTransaction;
+
+module.exports = {
+    create,
+    normalizeItems,
+    getPendingStatusId
+};
+
+module.exports.createWithTransaction = createWithTransaction;
+module.exports.insertOrderRow = insertOrderRow;
+module.exports.insertOrderItemRow = insertOrderItemRow;
