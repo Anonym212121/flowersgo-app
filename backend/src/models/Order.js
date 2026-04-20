@@ -40,10 +40,6 @@ const normalizeItems = (items) => {
     return cleaned;
 };
 
-module.exports = {
-    getPendingStatusId,
-    normalizeItems
-};
 
 const create = async (payload) => {
     const user_id = Number(payload && payload.user_id);
@@ -76,3 +72,27 @@ const create = async (payload) => {
 };
 
 module.exports.create = create;
+
+
+module.exports = {
+    create,
+    normalizeItems,
+    getPendingStatusId
+};
+
+const insertOrderRow = async ({ user_id, status_id, delivery_address, delivery_datetime, total_price }) => {
+    const [result] = await db.execute(
+        `INSERT INTO orders (user_id, status_id, delivery_address, delivery_datetime, total_price)
+         VALUES (?, ?, ?, ?, ?)`,
+        [user_id, status_id, delivery_address, delivery_datetime, total_price]
+    );
+
+    const orderId = Number(result && result.insertId);
+    if (!Number.isFinite(orderId) || orderId <= 0) {
+        return null;
+    }
+
+    return orderId;
+};
+
+module.exports.insertOrderRow = insertOrderRow;
