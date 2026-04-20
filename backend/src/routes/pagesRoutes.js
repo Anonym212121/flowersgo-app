@@ -7,6 +7,7 @@ const pageRequireLogin = require('../middleware/pageRequireLogin');
 const pageRequireAdminPage = require('../middleware/pageRequireAdminPage');
 const requireAdminJson = require('../middleware/requireAdminJson');
 const wishlistController = require('../controllers/wishlistController');
+const orderController = require('../controllers/orderController');
 const reviewController = require('../controllers/reviewController');
 const productImageController = require('../controllers/productImageController');
 
@@ -37,6 +38,7 @@ router.get('/login', pagesController.loginPage);
 router.get('/register', pagesController.registerPage);
 router.get('/logout', pagesController.logout);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
+router.post('/orders', pageRequireLogin, orderController.createOrder);
 router.get('/admin', pageRequireAdminPage, pagesController.adminDashboard);
 router.get('/wishlist', wishlistController.wishlistPage);
 router.post('/wishlist/add', wishlistController.addProduct);

@@ -42,6 +42,15 @@ const createOrder = async (req, res) => {
             return res.redirect('/login');
         }
 
+        const delivery_address =
+            typeof req.body.delivery_address === 'string' ? req.body.delivery_address.trim() : '';
+        if (!delivery_address) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Вкажи адресу доставки' });
+            }
+            return res.status(400).send('Вкажи адресу доставки');
+        }
+
         if (wantsJson(req)) {
             return res.status(501).json({ message: 'Оформлення замовлення ще підключається' });
         }
