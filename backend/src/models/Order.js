@@ -96,13 +96,6 @@ const create = async (payload) => {
     }
 
     return order_id;
-
-    return {
-        user_id,
-        delivery_address,
-        items_count: items.length,
-        status_id
-    };
 };
 
 module.exports.create = create;
@@ -144,3 +137,77 @@ module.exports = {
     normalizeItems,
     getPendingStatusId
 };
+
+module.exports.insertOrderRow = insertOrderRow;
+module.exports.insertOrderItemRow = insertOrderItemRow;
+
+const createWithTransaction = async (payload) => {
+    const user_id = Number(payload && payload.user_id);
+    if (!Number.isFinite(user_id) || user_id <= 0) {
+        return null;
+    }
+
+    const delivery_address =
+        typeof payload.delivery_address === 'string' ? payload.delivery_address.trim() : '';
+    if (!delivery_address) {
+        return null;
+    }
+
+    const items = normalizeItems(payload && payload.items);
+    if (items.length === 0) {
+        return null;
+    }
+
+    const status_id = await getPendingStatusId();
+    if (!status_id) {
+        return null;
+    }
+
+    const delivery_datetime =
+        typeof payload.delivery_datetime === 'string' && payload.delivery_datetime.trim() !== ''
+            ? payload.delivery_datetime.trim()
+            : null;
+    const total_price = Number(payload && payload.total_price);
+    if (!Number.isFinite(total_price) || total_price < 0) {
+        return null;
+    }
+
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+
+        const [orderResult] = await conn.execute(
+            `INSERT INTO orders (user_id, status_id, delivery_address, delivery_datetime, total_price)
+             VALUES (?, ?, ?, ?, ?)`,
+            [user_id, status_id, delivery_address, delivery_datetime, total_price]
+        );
+
+        const orderId = Number(orderResult && orderResult.insertId);
+        if (!Number.isFinite(orderId) || orderId <= 0) {
+            await conn.rollback();
+            return null;
+        }
+
+        for (const item of items) {
+            const [itemResult] = await conn.execute(
+                `INSERT INTO order_items (order_id, product_id, quantity, unit_price)
+                 VALUES (?, ?, ?, ?)`,
+                [orderId, item.product_id, item.quantity, item.unit_price]
+            );
+            if (!itemResult || itemResult.affectedRows <= 0) {
+                await conn.rollback();
+                return null;
+            }
+        }
+
+        await conn.commit();
+        return orderId;
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+};
+
+module.exports.createWithTransaction = createWithTransaction;
