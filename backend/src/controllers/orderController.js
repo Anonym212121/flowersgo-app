@@ -51,6 +51,22 @@ const createOrder = async (req, res) => {
             return res.status(400).send('Вкажи адресу доставки');
         }
 
+        const total_price = Number(req.body.total_price);
+        if (!Number.isFinite(total_price) || total_price < 0) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Невірна сума замовлення' });
+            }
+            return res.status(400).send('Невірна сума замовлення');
+        }
+
+        const items = parseItemsFromBody(req.body.items);
+        if (items.length === 0) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Додай хоча б один товар до замовлення' });
+            }
+            return res.status(400).send('Додай хоча б один товар до замовлення');
+        }
+
         if (wantsJson(req)) {
             return res.status(501).json({ message: 'Оформлення замовлення ще підключається' });
         }
