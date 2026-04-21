@@ -469,3 +469,20 @@ align-items: center;
     margin-top: 1.25rem;
     margin-bottom: 0.5rem;
 }
+
+.checkout-step1-form {
+    max-width: 420px;
+}
+
+.checkout-product-name {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+
+.checkout-unit-price {
+    margin: 0 0 0.5rem;
+}
+
+.checkout-line-total {
+    margin: 0.5rem 0 1.25rem;
+}
