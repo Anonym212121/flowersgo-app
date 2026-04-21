@@ -73,8 +73,27 @@ const cabinetPage = async (req, res) => {
     }
 };
 
-const checkoutPage = (req, res) => {
-    return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {});
+const checkoutPage = async (req, res) => {
+    try {
+        const rawId = req.query.product_id;
+        let id = null;
+        if (rawId !== undefined && rawId !== null && rawId !== '') {
+            id = Number(rawId);
+        }
+        if (!Number.isFinite(id) || id <= 0) {
+            return res.status(400).send('помилка');
+        }
+
+        const product = await ProductModel.findById(id);
+        if (!product || Number(product.is_active) === 0) {
+            return res.status(404).send('Товар не знайдено');
+        }
+
+        return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', { product });
+    } catch (err) {
+        console.error('checkoutPage:', err.message);
+        return res.status(500).send('помилка');
+    }
 };
 
 const productPage = async (req, res) => {
