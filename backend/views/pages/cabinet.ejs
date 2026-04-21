@@ -1,3 +1,7 @@
+<%
+const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+%>
+
 <h1>Мій кабінет</h1>
 
 <p><strong>Ім'я:</strong> <%= profile.first_name %> <%= profile.last_name %></p>
@@ -5,3 +9,26 @@
 <p><strong>Email:</strong> <%= profile.email %></p>
 <p><strong>Телефон:</strong> <%= profile.phone ? profile.phone : '—' %></p>
 
+<h2>Мої замовлення</h2>
+<% if (safeOrders.length === 0) { %>
+    <p>Поки немає замовлень.</p>
+<% } else { %>
+    <table class="cabinet-orders-table">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Статус</th>
+                <th>Сума</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% for (const o of safeOrders) { %>
+                <tr>
+                    <td><%= o.id %></td>
+                    <td><%= o.status_name %></td>
+                    <td><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+<% } %>

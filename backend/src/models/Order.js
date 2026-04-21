@@ -216,3 +216,24 @@ module.exports = {
 module.exports.createWithTransaction = createWithTransaction;
 module.exports.insertOrderRow = insertOrderRow;
 module.exports.insertOrderItemRow = insertOrderItemRow;
+
+const listByUserId = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return [];
+    }
+
+    const [rows] = await db.execute(
+        `SELECT o.id, o.total_price, o.delivery_address, o.delivery_datetime,
+                o.status_id, s.status_name AS status_name
+         FROM orders o
+         INNER JOIN statuses s ON o.status_id = s.id
+         WHERE o.user_id = ?
+         ORDER BY o.id DESC`,
+        [uid]
+    );
+
+    return rows;
+};
+
+module.exports.listByUserId = listByUserId;

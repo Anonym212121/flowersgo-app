@@ -42,15 +42,6 @@ const createOrder = async (req, res) => {
             return res.redirect('/login');
         }
 
-        const delivery_address =
-            typeof req.body.delivery_address === 'string' ? req.body.delivery_address.trim() : '';
-        if (!delivery_address) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: 'Вкажи адресу доставки' });
-            }
-            return res.status(400).send('Вкажи адресу доставки');
-        }
-
         const total_price = Number(req.body.total_price);
         if (!Number.isFinite(total_price) || total_price < 0) {
             if (wantsJson(req)) {
@@ -67,10 +58,25 @@ const createOrder = async (req, res) => {
             return res.status(400).send('Додай хоча б один товар до замовлення');
         }
 
-        if (wantsJson(req)) {
-            return res.status(501).json({ message: 'Оформлення замовлення ще підключається' });
+        const orderId = await OrderModel.createWithTransaction({
+            user_id: userId,
+            delivery_address: '—',
+            delivery_datetime: null,
+            total_price,
+            items
+        });
+
+        if (!orderId) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Не вдалося оформити замовлення' });
+            }
+            return res.status(400).send('Не вдалося оформити замовлення');
         }
-        return res.status(501).send('Оформлення замовлення ще підключається');
+
+        if (wantsJson(req)) {
+            return res.status(200).json({ ok: true, order_id: orderId });
+        }
+        return res.redirect('/cabinet');
     } catch (err) {
         console.error('createOrder:', err.message);
         if (wantsJson(req)) {

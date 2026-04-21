@@ -436,3 +436,30 @@ align-items: center;
     justify-content: center;
      padding: 1.5rem 1rem;
 }
+
+.cabinet-orders-table {
+    width: 100%;
+    max-width: 900px;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+    background: #fff;
+    border: 1px solid #d6ddd8;
+    font-size: 14px;
+}
+
+.cabinet-orders-table th,
+.cabinet-orders-table td {
+    border: 1px solid #e2e8e4;
+    padding: 0.5rem 0.65rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.cabinet-orders-table th {
+    background: #eef4ef;
+    font-weight: 600;
+}
+
+.cabinet-orders-table tbody tr:nth-child(even) {
+    background: #fafcf9;
+}

@@ -2,6 +2,7 @@ const UserModel = require('../models/User');
 const CategoryModel = require('../models/Category');
 const ProductModel = require('../models/Product');
 const ReviewModel = require('../models/Review');
+const OrderModel = require('../models/Order');
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
         title,
@@ -64,10 +65,16 @@ const cabinetPage = async (req, res) => {
             return res.redirect('/login');
         }
 
-        return renderLayout(res, 'Мій кабінет', 'pages/cabinet', { profile });
+        const orders = await OrderModel.listByUserId(current.user_id);
+
+        return renderLayout(res, 'Мій кабінет', 'pages/cabinet', { profile, orders });
     } catch (err) {
         return res.status(500).send('помилка');
     }
+};
+
+const checkoutPage = (req, res) => {
+    return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {});
 };
 
 const productPage = async (req, res) => {
@@ -141,6 +148,7 @@ module.exports = {
     registerPage,
     logout,
     cabinetPage,
+    checkoutPage,
     adminDashboard,
     adminProductsList
 };

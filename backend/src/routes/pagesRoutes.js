@@ -38,6 +38,7 @@ router.get('/login', pagesController.loginPage);
 router.get('/register', pagesController.registerPage);
 router.get('/logout', pagesController.logout);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
+router.get('/checkout', pageRequireLogin, pagesController.checkoutPage);
 router.post('/orders', pageRequireLogin, orderController.createOrder);
 router.get('/admin', pageRequireAdminPage, pagesController.adminDashboard);
 router.get('/wishlist', wishlistController.wishlistPage);
