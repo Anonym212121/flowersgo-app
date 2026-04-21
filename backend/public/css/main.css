@@ -463,3 +463,9 @@ align-items: center;
 .cabinet-orders-table tbody tr:nth-child(even) {
     background: #fafcf9;
 }
+
+.checkout-step-heading {
+    font-size: 1.15rem;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+}

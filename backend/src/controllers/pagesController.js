@@ -89,6 +89,10 @@ const checkoutPage = async (req, res) => {
             return res.status(404).send('Товар не знайдено');
         }
 
+        if (Number(product.stock_quantity) <= 0) {
+            return res.status(400).send('Товар недоступний для замовлення');
+        }
+
         return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', { product });
     } catch (err) {
         console.error('checkoutPage:', err.message);
