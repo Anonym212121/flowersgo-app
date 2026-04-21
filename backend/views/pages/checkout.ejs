@@ -7,5 +7,17 @@
         Email (необов'язково)
         <input class="auth-input" type="email" name="customer_email" autocomplete="email" />
     </label>
+    <label class="auth-label">
+        Ім'я
+        <input class="auth-input" type="text" name="customer_first_name" autocomplete="given-name" required minlength="2" />
+    </label>
+    <label class="auth-label">
+        Прізвище
+        <input class="auth-input" type="text" name="customer_last_name" autocomplete="family-name" required minlength="2" />
+    </label>
+    <label class="auth-label">
+        Номер телефону
+        <input class="auth-input" type="tel" name="customer_phone" autocomplete="tel" required />
+    </label>
 
 </section>
