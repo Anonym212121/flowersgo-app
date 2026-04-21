@@ -486,3 +486,11 @@ align-items: center;
 .checkout-line-total {
     margin: 0.5rem 0 1.25rem;
 }
+
+.checkout-future-step {
+    max-width: 420px;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8e4;
+    opacity: 0.78;
+}

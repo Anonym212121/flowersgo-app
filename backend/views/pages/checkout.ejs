@@ -1,31 +1,40 @@
 <%
 const checkoutUnitPrice = Number(product.sale_price || 0);
 const checkoutMaxQty = Number(product.stock_quantity || 0);
+const checkoutProductId = Number(product.id);
+const initialItemsJson = JSON.stringify([
+    { product_id: checkoutProductId, quantity: 1, unit_price: checkoutUnitPrice }
+]);
+const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 %>
 
 <section class="catalog-content">
     <h1>Оформлення замовлення</h1>
-    <p class="checkout-product-name"><%= product.name %></p>
-    <p class="checkout-unit-price">
-        <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн за <%= product.unit_type || 'шт' %>
-    </p>
-    <label class="auth-label checkout-qty-label">
-        Кількість
-        <input
-            class="auth-input"
-            type="number"
-            id="checkoutQty"
-            name="line_quantity"
-            min="1"
-            max="<%= checkoutMaxQty %>"
-            value="1"
-        />
-    </label>
-    <p class="checkout-line-total">
-        Разом: <strong id="checkoutLineTotal"><%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн</strong>
-    </p>
 
-    <form id="checkoutStep1Form" class="checkout-step1-form" onsubmit="return false">
+    <form method="post" action="/orders" id="checkoutOrderForm" class="checkout-step1-form">
+        <input type="hidden" name="total_price" id="checkoutTotalPrice" value="<%= checkoutUnitPrice %>" />
+        <input type="hidden" name="items" id="checkoutItemsJson" value="<%= initialItemsAttr %>" />
+
+        <p class="checkout-product-name"><%= product.name %></p>
+        <p class="checkout-unit-price">
+            <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн за <%= product.unit_type || 'шт' %>
+        </p>
+        <label class="auth-label checkout-qty-label">
+            Кількість
+            <input
+                class="auth-input"
+                type="number"
+                id="checkoutQty"
+                name="line_quantity"
+                min="1"
+                max="<%= checkoutMaxQty %>"
+                value="1"
+            />
+        </label>
+        <p class="checkout-line-total">
+            Разом: <strong id="checkoutLineTotal"><%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн</strong>
+        </p>
+
         <h2 class="checkout-step-heading">1. Ваші дані</h2>
         <label class="auth-label">
             Email (необов'язково)
@@ -43,8 +52,15 @@ const checkoutMaxQty = Number(product.stock_quantity || 0);
             Номер телефону
             <input class="auth-input" type="tel" name="customer_phone" autocomplete="tel" required />
         </label>
-        <button type="button" class="auth-button" id="checkoutStep1Continue">Продовжити</button>
+        <button type="submit" class="auth-button" id="checkoutSubmitOrder">Оформити замовлення</button>
     </form>
+
+    <div class="checkout-future-step">
+        <h2 class="checkout-step-heading">2. Кому доставити</h2>
+    </div>
+    <div class="checkout-future-step">
+        <h2 class="checkout-step-heading">3. Куди доставити</h2>
+    </div>
 
 </section>
 
@@ -52,9 +68,12 @@ const checkoutMaxQty = Number(product.stock_quantity || 0);
 (function () {
     var q = document.getElementById('checkoutQty');
     var out = document.getElementById('checkoutLineTotal');
-    if (!q || !out) {
+    var hidTotal = document.getElementById('checkoutTotalPrice');
+    var hidItems = document.getElementById('checkoutItemsJson');
+    if (!q || !out || !hidTotal || !hidItems) {
         return;
     }
+    var pid = <%= checkoutProductId %>;
     var unit = <%= checkoutUnitPrice %>;
     var maxQ = <%= checkoutMaxQty %>;
     function upd() {
@@ -66,9 +85,15 @@ const checkoutMaxQty = Number(product.stock_quantity || 0);
             n = maxQ;
         }
         q.value = String(n);
-        out.textContent = (n * unit).toLocaleString('uk-UA') + ' грн';
+        var lineTotal = n * unit;
+        out.textContent = lineTotal.toLocaleString('uk-UA') + ' грн';
+        hidTotal.value = String(lineTotal);
+        hidItems.value = JSON.stringify([
+            { product_id: pid, quantity: n, unit_price: unit }
+        ]);
     }
     q.addEventListener('input', upd);
     q.addEventListener('change', upd);
+    upd();
 })();
 </script>
