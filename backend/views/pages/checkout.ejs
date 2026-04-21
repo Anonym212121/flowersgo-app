@@ -52,15 +52,61 @@ const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '
             Номер телефону
             <input class="auth-input" type="tel" name="customer_phone" autocomplete="tel" required />
         </label>
+
+        <div class="checkout-future-step checkout-future-step--active">
+            <h2 class="checkout-step-heading">2. Кому доставити</h2>
+            <fieldset class="checkout-recipient-mode">
+                <legend class="sr-only">Одержувач</legend>
+                <label class="checkout-radio-label">
+                    <input type="radio" name="recipient_mode" value="self" checked />
+                    Я одержувач
+                </label>
+                <label class="checkout-radio-label">
+                    <input type="radio" name="recipient_mode" value="other" id="recipientModeOther" />
+                    Доставити іншій особі
+                </label>
+            </fieldset>
+            <div id="recipientOtherFields" class="checkout-recipient-other" hidden>
+                <label class="auth-label">
+                    Ім'я одержувача
+                    <input class="auth-input" type="text" name="recipient_first_name" autocomplete="section-recipient given-name" />
+                </label>
+                <label class="auth-label">
+                    Прізвище одержувача
+                    <input class="auth-input" type="text" name="recipient_last_name" autocomplete="section-recipient family-name" />
+                </label>
+                <label class="auth-label">
+                    Телефон одержувача
+                    <input class="auth-input" type="tel" name="recipient_phone" autocomplete="section-recipient tel" />
+                </label>
+                <label class="auth-label">
+                    Коментар до доставки (необов'язково)
+                    <textarea class="auth-input" name="recipient_note" rows="2"></textarea>
+                </label>
+            </div>
+        </div>
+
+        <div class="checkout-future-step checkout-future-step--active">
+            <h2 class="checkout-step-heading">3. Куди доставити</h2>
+            <label class="auth-label">
+                Адреса доставки
+                <textarea
+                    class="auth-input"
+                    name="delivery_place"
+                    rows="3"
+                    required
+                    minlength="8"
+                    placeholder="Місто, вулиця, будинок…"
+                ></textarea>
+            </label>
+            <label class="auth-label">
+                Дата й час доставки
+                <input class="auth-input" type="datetime-local" name="delivery_datetime" />
+            </label>
+        </div>
+
         <button type="submit" class="auth-button" id="checkoutSubmitOrder">Оформити замовлення</button>
     </form>
-
-    <div class="checkout-future-step">
-        <h2 class="checkout-step-heading">2. Кому доставити</h2>
-    </div>
-    <div class="checkout-future-step">
-        <h2 class="checkout-step-heading">3. Куди доставити</h2>
-    </div>
 
 </section>
 
@@ -95,5 +141,29 @@ const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '
     q.addEventListener('input', upd);
     q.addEventListener('change', upd);
     upd();
+})();
+
+(function () {
+    var panel = document.getElementById('recipientOtherFields');
+    var radioOther = document.getElementById('recipientModeOther');
+    if (!panel || !radioOther) {
+        return;
+    }
+    var radios = document.querySelectorAll('input[name="recipient_mode"]');
+    function sync() {
+        var show = radioOther.checked;
+        panel.hidden = !show;
+        var reqNames = ['recipient_first_name', 'recipient_last_name', 'recipient_phone'];
+        for (var i = 0; i < reqNames.length; i++) {
+            var el = panel.querySelector('[name="' + reqNames[i] + '"]');
+            if (el) {
+                el.required = show;
+            }
+        }
+    }
+    for (var j = 0; j < radios.length; j++) {
+        radios[j].addEventListener('change', sync);
+    }
+    sync();
 })();
 </script>

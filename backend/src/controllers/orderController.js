@@ -72,6 +72,45 @@ const createOrder = async (req, res) => {
             }
         }
 
+        const delivery_place =
+            typeof req.body.delivery_place === 'string' ? req.body.delivery_place.trim() : '';
+
+        if (first && last && phone && !delivery_place) {
+            if (wantsJson(req)) {
+                return res.status(400).json({ message: 'Вкажи адресу доставки' });
+            }
+            return res.status(400).send('Вкажи адресу доставки');
+        }
+
+        let delivery_datetime = null;
+        const rawDt = req.body.delivery_datetime;
+        if (typeof rawDt === 'string' && rawDt.trim() !== '') {
+            let d = rawDt.trim().replace('T', ' ');
+            if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(d)) {
+                d = `${d}:00`;
+            }
+            delivery_datetime = d;
+        }
+
+        const recipient_mode = req.body.recipient_mode === 'other' ? 'other' : 'self';
+        const recFirst =
+            typeof req.body.recipient_first_name === 'string' ? req.body.recipient_first_name.trim() : '';
+        const recLast =
+            typeof req.body.recipient_last_name === 'string' ? req.body.recipient_last_name.trim() : '';
+        const recPhone =
+            typeof req.body.recipient_phone === 'string' ? req.body.recipient_phone.trim() : '';
+        const recNote =
+            typeof req.body.recipient_note === 'string' ? req.body.recipient_note.trim() : '';
+
+        if (first && last && phone && recipient_mode === 'other') {
+            if (!recFirst || !recLast || !recPhone) {
+                if (wantsJson(req)) {
+                    return res.status(400).json({ message: "Заповни ім'я, прізвище та телефон одержувача" });
+                }
+                return res.status(400).send("Заповни ім'я, прізвище та телефон одержувача");
+            }
+        }
+
         let delivery_address = '—';
         if (first && last && phone) {
             const lineName = `${first} ${last}`.replace(/\s+/g, ' ').trim();
@@ -79,13 +118,28 @@ const createOrder = async (req, res) => {
             if (emailOpt) {
                 parts.push(`Email: ${emailOpt}`);
             }
+            if (recipient_mode === 'other' && recFirst && recLast && recPhone) {
+                const recLineName = `${recFirst} ${recLast}`.replace(/\s+/g, ' ').trim();
+                parts.push('');
+                parts.push('Одержувач:');
+                parts.push(recLineName);
+                parts.push(`Тел: ${recPhone}`);
+                if (recNote) {
+                    parts.push(recNote);
+                }
+            }
+            if (delivery_place) {
+                parts.push('');
+                parts.push('Адреса доставки:');
+                parts.push(delivery_place);
+            }
             delivery_address = parts.join('\n');
         }
 
         const orderId = await OrderModel.createWithTransaction({
             user_id: userId,
             delivery_address,
-            delivery_datetime: null,
+            delivery_datetime,
             total_price,
             items
         });

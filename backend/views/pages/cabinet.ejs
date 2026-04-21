@@ -19,6 +19,8 @@ const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orde
                 <th>№</th>
                 <th>Статус</th>
                 <th>Сума</th>
+                <th>Доставка</th>
+                <th>Контакт</th>
             </tr>
         </thead>
         <tbody>
@@ -27,6 +29,14 @@ const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orde
                     <td><%= o.id %></td>
                     <td><%= o.status_name %></td>
                     <td><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</td>
+                    <td>
+                        <% if (o.delivery_datetime) { %>
+                            <%= new Date(o.delivery_datetime).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) %>
+                        <% } else { %>
+                            —
+                        <% } %>
+                    </td>
+                    <td class="cabinet-orders-contact"><%= o.delivery_address %></td>
                 </tr>
             <% } %>
         </tbody>
