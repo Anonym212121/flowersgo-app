@@ -50,7 +50,11 @@ const safeReviews = typeof reviews !== 'undefined' && Array.isArray(reviews) ? r
             </p>
 
             <p class="product-detail-order">
-                <button class="product-order-btn" type="button">Замовити</button>
+                <% if (Number(product.stock_quantity) > 0) { %>
+                    <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
+                <% } else { %>
+                    <button class="product-order-btn" type="button" disabled>Замовити</button>
+                <% } %>
             </p>
 
             <% if (product.description && String(product.description).trim() !== '') { %>

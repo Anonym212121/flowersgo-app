@@ -128,7 +128,11 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                                 <input type="hidden" name="product_id" value="<%= product.id %>" />
                                 <button class="wishlist-star-btn" type="submit" title="Додати в обране" aria-label="Додати в обране">☆</button>
                             </form>
-                            <button class="product-order-btn" type="button">Замовити</button>
+                            <% if (Number(product.stock_quantity) > 0) { %>
+                                <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
+                            <% } else { %>
+                                <button class="product-order-btn" type="button" disabled>Замовити</button>
+                            <% } %>
                         </div>
                     </article>
                 <% } %>

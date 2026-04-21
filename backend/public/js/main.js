@@ -91,6 +91,11 @@ function buildCatalogProductsHtml(products) {
                 ? `В наявності: ${stockQty} ${unitEsc}`
                 : 'Немає в наявності';
 
+        const orderBtn =
+            stockQty > 0
+                ? `<a class="product-order-btn" href="/checkout?product_id=${product.id}">Замовити</a>`
+                : `<button class="product-order-btn" type="button" disabled>Замовити</button>`;
+
         return `<article class="product-card">
                         <a href="/product/${product.id}" class="product-card-link">
                         <div class="product-image-wrap">
@@ -115,7 +120,7 @@ function buildCatalogProductsHtml(products) {
                                 <input type="hidden" name="product_id" value="${product.id}" />
                                 <button class="wishlist-star-btn" type="submit" title="Додати в обране" aria-label="Додати в обране">☆</button>
                             </form>
-                            <button class="product-order-btn" type="button">Замовити</button>
+                            ${orderBtn}
                         </div>
                     </article>`;
     });

@@ -290,6 +290,22 @@
     background: #256c2a;
 }
 
+a.product-order-btn {
+    display: inline-block;
+    text-align: center;
+    text-decoration: none;
+}
+
+.product-order-btn:disabled {
+    background: #9aa89e;
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.product-order-btn:disabled:hover {
+    background: #9aa89e;
+}
+
 /* Випливаюча панель для подарков*/
 .category-parent--flyout {
     position: relative;
