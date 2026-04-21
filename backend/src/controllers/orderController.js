@@ -58,9 +58,33 @@ const createOrder = async (req, res) => {
             return res.status(400).send('Додай хоча б один товар до замовлення');
         }
 
+        const first = typeof req.body.customer_first_name === 'string' ? req.body.customer_first_name.trim() : '';
+        const last = typeof req.body.customer_last_name === 'string' ? req.body.customer_last_name.trim() : '';
+        const phone = typeof req.body.customer_phone === 'string' ? req.body.customer_phone.trim() : '';
+        const emailOpt = typeof req.body.customer_email === 'string' ? req.body.customer_email.trim() : '';
+
+        if (first || last || phone) {
+            if (!first || !last || !phone) {
+                if (wantsJson(req)) {
+                    return res.status(400).json({ message: "Заповни ім'я, прізвище та телефон" });
+                }
+                return res.status(400).send("Заповни ім'я, прізвище та телефон");
+            }
+        }
+
+        let delivery_address = '—';
+        if (first && last && phone) {
+            const lineName = `${first} ${last}`.replace(/\s+/g, ' ').trim();
+            const parts = [lineName, `Тел: ${phone}`];
+            if (emailOpt) {
+                parts.push(`Email: ${emailOpt}`);
+            }
+            delivery_address = parts.join('\n');
+        }
+
         const orderId = await OrderModel.createWithTransaction({
             user_id: userId,
-            delivery_address: '—',
+            delivery_address,
             delivery_datetime: null,
             total_price,
             items
