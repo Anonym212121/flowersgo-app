@@ -254,3 +254,37 @@ const listAllForWarehouse = async () => {
 };
 
 module.exports.listAllForWarehouse = listAllForWarehouse;
+
+const listStatusesForWarehouse = async () => {
+    const [rows] = await db.execute(
+        `SELECT id, status_name
+         FROM statuses
+         WHERE status_name IN ('pending', 'processing', 'shipped', 'completed', 'cancelled')
+         ORDER BY FIELD(status_name, 'pending', 'processing', 'shipped', 'completed', 'cancelled')`
+    );
+
+    return rows;
+};
+
+const updateStatusByWarehouse = async (orderId, statusId) => {
+    const oid = Number(orderId);
+    const sid = Number(statusId);
+    if (!Number.isFinite(oid) || oid <= 0) {
+        return false;
+    }
+    if (!Number.isFinite(sid) || sid <= 0) {
+        return false;
+    }
+
+    const [result] = await db.execute(
+        `UPDATE orders
+         SET status_id = ?
+         WHERE id = ?`,
+        [sid, oid]
+    );
+
+    return result && result.affectedRows > 0;
+};
+
+module.exports.listStatusesForWarehouse = listStatusesForWarehouse;
+module.exports.updateStatusByWarehouse = updateStatusByWarehouse;

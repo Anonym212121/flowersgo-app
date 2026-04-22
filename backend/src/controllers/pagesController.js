@@ -127,7 +127,8 @@ const adminDashboard = (req, res) => {
 const warehouseOrdersPage = async (req, res) => {
     try {
         const orders = await OrderModel.listAllForWarehouse();
-        return renderLayout(res, 'Замовлення складу', 'pages/warehouse/orders', { orders });
+        const statuses = await OrderModel.listStatusesForWarehouse();
+        return renderLayout(res, 'Замовлення складу', 'pages/warehouse/orders', { orders, statuses });
     } catch (err) {
         console.error('warehouseOrdersPage:', err.message);
         return res.status(500).send('помилка');

@@ -164,5 +164,35 @@ const createOrder = async (req, res) => {
     }
 };
 
+const updateOrderStatusForWarehouse = async (req, res) => {
+    try {
+        const orderId = Number(req.params.id);
+        const statusId = Number(req.body.status_id);
+        if (!Number.isFinite(orderId) || orderId <= 0) {
+            return res.status(400).send('Невірне замовлення');
+        }
+        if (!Number.isFinite(statusId) || statusId <= 0) {
+            return res.status(400).send('Невірний статус');
+        }
+
+        const allowedStatuses = await OrderModel.listStatusesForWarehouse();
+        const allowedStatusIds = allowedStatuses.map((row) => Number(row.id));
+        if (!allowedStatusIds.includes(statusId)) {
+            return res.status(400).send('Статус недоступний');
+        }
+
+        const ok = await OrderModel.updateStatusByWarehouse(orderId, statusId);
+        if (!ok) {
+            return res.status(400).send('Не вдалося оновити статус');
+        }
+
+        return res.redirect('/warehouse/orders');
+    } catch (err) {
+        console.error('updateOrderStatusForWarehouse:', err.message);
+        return res.status(500).send('помилка');
+    }
+};
+
 module.exports = {};
 module.exports.createOrder = createOrder;
+module.exports.updateOrderStatusForWarehouse = updateOrderStatusForWarehouse;

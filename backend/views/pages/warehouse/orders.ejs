@@ -1,5 +1,6 @@
 <%
 const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+const safeStatuses = typeof statuses !== 'undefined' && Array.isArray(statuses) ? statuses : [];
 %>
 
 <h1>Замовлення складу</h1>
@@ -22,7 +23,18 @@ const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orde
             <% for (const o of safeOrders) { %>
                 <tr>
                     <td><%= o.id %></td>
-                    <td><%= o.status_name %></td>
+                    <td>
+                        <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
+                            <select name="status_id" class="auth-input warehouse-status-select">
+                                <% for (const s of safeStatuses) { %>
+                                    <option value="<%= s.id %>" <%= Number(s.id) === Number(o.status_id) ? 'selected' : '' %>>
+                                        <%= s.status_name %>
+                                    </option>
+                                <% } %>
+                            </select>
+                            <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
+                        </form>
+                    </td>
                     <td class="warehouse-orders-customer">
                         <% const nm = (o.customer_name || '').trim(); %>
                         <% if (nm) { %>

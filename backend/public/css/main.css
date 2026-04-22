@@ -483,6 +483,21 @@ align-items: center;
     font-size: 13px;
 }
 
+.warehouse-status-form {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.warehouse-status-select {
+    min-width: 135px;
+}
+
+.warehouse-status-save {
+    padding: 0.35rem 0.6rem;
+    font-size: 12px;
+}
+
 .checkout-step-heading {
     font-size: 1.15rem;
     margin-top: 1.25rem;

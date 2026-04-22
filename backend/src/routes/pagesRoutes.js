@@ -43,6 +43,7 @@ router.get('/checkout', pageRequireLogin, pagesController.checkoutPage);
 router.post('/orders', pageRequireLogin, orderController.createOrder);
 router.get('/admin', pageRequireAdminPage, pagesController.adminDashboard);
 router.get('/warehouse/orders', pageRequireWarehousePage, pagesController.warehouseOrdersPage);
+router.post('/warehouse/orders/:id/status', pageRequireWarehousePage, orderController.updateOrderStatusForWarehouse);
 router.get('/wishlist', wishlistController.wishlistPage);
 router.post('/wishlist/add', wishlistController.addProduct);
 router.post('/wishlist/remove', wishlistController.removeProduct);
