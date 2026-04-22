@@ -193,6 +193,18 @@ const createWithTransaction = async (payload) => {
                 await conn.rollback();
                 return null;
             }
+
+            const [stockResult] = await conn.execute(
+                `UPDATE products
+                 SET stock_quantity = stock_quantity - ?
+                 WHERE id = ?
+                   AND stock_quantity >= ?`,
+                [item.quantity, item.product_id, item.quantity]
+            );
+            if (!stockResult || stockResult.affectedRows <= 0) {
+                await conn.rollback();
+                return null;
+            }
         }
 
         await conn.commit();
