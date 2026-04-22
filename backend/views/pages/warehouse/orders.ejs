@@ -1,0 +1,46 @@
+<%
+const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+%>
+
+<h1>Замовлення складу</h1>
+
+<% if (safeOrders.length === 0) { %>
+    <p>Замовлень поки немає.</p>
+<% } else { %>
+    <table class="cabinet-orders-table warehouse-orders-table">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Статус</th>
+                <th>Клієнт</th>
+                <th>Сума</th>
+                <th>Доставка</th>
+                <th>Контакт / адреса</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% for (const o of safeOrders) { %>
+                <tr>
+                    <td><%= o.id %></td>
+                    <td><%= o.status_name %></td>
+                    <td class="warehouse-orders-customer">
+                        <% const nm = (o.customer_name || '').trim(); %>
+                        <% if (nm) { %>
+                            <%= nm %><br />
+                        <% } %>
+                        <span class="warehouse-orders-email"><%= o.customer_email || '—' %></span>
+                    </td>
+                    <td><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</td>
+                    <td>
+                        <% if (o.delivery_datetime) { %>
+                            <%= new Date(o.delivery_datetime).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) %>
+                        <% } else { %>
+                            —
+                        <% } %>
+                    </td>
+                    <td class="cabinet-orders-contact"><%= o.delivery_address %></td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+<% } %>

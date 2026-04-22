@@ -237,3 +237,20 @@ const listByUserId = async (userId) => {
 };
 
 module.exports.listByUserId = listByUserId;
+
+const listAllForWarehouse = async () => {
+    const [rows] = await db.execute(
+        `SELECT o.id, o.user_id, o.total_price, o.delivery_address, o.delivery_datetime,
+                o.status_id, s.status_name AS status_name,
+                u.email AS customer_email,
+                TRIM(CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, ''))) AS customer_name
+         FROM orders o
+         INNER JOIN statuses s ON o.status_id = s.id
+         INNER JOIN users u ON o.user_id = u.id
+         ORDER BY o.id DESC`
+    );
+
+    return rows;
+};
+
+module.exports.listAllForWarehouse = listAllForWarehouse;

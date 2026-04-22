@@ -123,6 +123,16 @@ const productPage = async (req, res) => {
 const adminDashboard = (req, res) => {
     return renderLayout(res, 'Адмін-панель', 'pages/admin/dashboard');
 };
+
+const warehouseOrdersPage = async (req, res) => {
+    try {
+        const orders = await OrderModel.listAllForWarehouse();
+        return renderLayout(res, 'Замовлення складу', 'pages/warehouse/orders', { orders });
+    } catch (err) {
+        console.error('warehouseOrdersPage:', err.message);
+        return res.status(500).send('помилка');
+    }
+};
 const adminProductsList = async (req, res) => {
     try {
         const products = await ProductModel.allForAdmin();
@@ -173,5 +183,6 @@ module.exports = {
     cabinetPage,
     checkoutPage,
     adminDashboard,
-    adminProductsList
+    adminProductsList,
+    warehouseOrdersPage
 };

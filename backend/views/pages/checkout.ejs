@@ -11,7 +11,15 @@ const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '
 <section class="catalog-content">
     <h1>Оформлення замовлення</h1>
 
-    <form method="post" action="/orders" id="checkoutOrderForm" class="checkout-step1-form">
+    <form
+        method="post"
+        action="/orders"
+        id="checkoutOrderForm"
+        class="checkout-step1-form"
+        data-product-id="<%= checkoutProductId %>"
+        data-unit-price="<%= checkoutUnitPrice %>"
+        data-max-qty="<%= checkoutMaxQty %>"
+    >
         <input type="hidden" name="total_price" id="checkoutTotalPrice" value="<%= checkoutUnitPrice %>" />
         <input type="hidden" name="items" id="checkoutItemsJson" value="<%= initialItemsAttr %>" />
 
@@ -112,16 +120,17 @@ const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '
 
 <script>
 (function () {
+    var form = document.getElementById('checkoutOrderForm');
     var q = document.getElementById('checkoutQty');
     var out = document.getElementById('checkoutLineTotal');
     var hidTotal = document.getElementById('checkoutTotalPrice');
     var hidItems = document.getElementById('checkoutItemsJson');
-    if (!q || !out || !hidTotal || !hidItems) {
+    if (!form || !q || !out || !hidTotal || !hidItems) {
         return;
     }
-    var pid = <%= checkoutProductId %>;
-    var unit = <%= checkoutUnitPrice %>;
-    var maxQ = <%= checkoutMaxQty %>;
+    var pid = Number(form.dataset.productId);
+    var unit = Number(form.dataset.unitPrice);
+    var maxQ = Number(form.dataset.maxQty);
     function upd() {
         var n = parseInt(q.value, 10);
         if (!isFinite(n) || n < 1) {
