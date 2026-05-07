@@ -21,5 +21,5 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           GITLAB_REPO: ${{ secrets.GITLAB_REPO }}
         run: |
-          git remote add gitlab https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@git.ztu.edu.ua/${GITLAB_REPO}.git
+          git remote add gitlab https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@git.ztu.edu.ua/ipz/2022-2026/ipz-22-4/skovlyuk-matviy/diplomaflowersdelivery.git
           git push gitlab HEAD:${GITHUB_REF_NAME}
