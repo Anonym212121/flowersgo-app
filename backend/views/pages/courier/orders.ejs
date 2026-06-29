@@ -1,0 +1,238 @@
+<%
+const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+const safeStatuses = typeof statuses !== 'undefined' && Array.isArray(statuses) ? statuses : [];
+const safeTransitions = typeof statusTransitions !== 'undefined' && statusTransitions ? statusTransitions : {};
+const stats = typeof courierStats !== 'undefined' && courierStats ? courierStats : {};
+const dayFilter = typeof filterDay !== 'undefined' ? filterDay : '';
+const statusFilter = typeof filterStatus !== 'undefined' ? filterStatus : '';
+const shiftOn = typeof onShift !== 'undefined' ? !!onShift : false;
+const successText = typeof successMessage === 'string' ? successMessage : '';
+const errorText = typeof errorMessage === 'string' ? errorMessage : '';
+const ordersListView = typeof listView === 'string' ? listView : 'active';
+const historyFilterVal = typeof historyFilter === 'string' ? historyFilter : 'done';
+const pollCount = typeof pollListCount === 'number' ? pollListCount : safeOrders.length;
+const pollMaxId = typeof pollMaxOrderId === 'number' ? pollMaxOrderId : 0;
+
+const statusBadgeClass = (statusName) => {
+    if (statusName === 'ready_for_pickup') {
+        return 'warehouse-badge--ready';
+    }
+    if (statusName === 'shipped') {
+        return 'warehouse-badge--shipped';
+    }
+    if (statusName === 'delivered') {
+        return 'warehouse-badge--delivered';
+    }
+    if (statusName === 'accepted') {
+        return 'warehouse-badge--accepted';
+    }
+    return 'warehouse-badge--status';
+};
+
+let shippedStatusId = '';
+let deliveredStatusId = '';
+for (const s of safeStatuses) {
+    if (s.status_name === 'shipped') {
+        shippedStatusId = String(s.id);
+    }
+    if (s.status_name === 'delivered') {
+        deliveredStatusId = String(s.id);
+    }
+}
+%>
+
+<div class="warehouse-page courier-page" id="courierOrdersPage"
+     data-day-filter="<%= dayFilter %>"
+     data-list-count="<%= pollCount %>"
+     data-max-order-id="<%= pollMaxId %>"
+     data-list-view="<%= ordersListView %>">
+    <h1><%= ordersListView === 'history' ? 'Історія доставок' : 'Мої доставки' %></h1>
+
+    <div class="warehouse-view-tabs">
+        <a class="warehouse-view-tab <%= ordersListView === 'active' ? 'warehouse-view-tab--active' : '' %>" href="/courier/orders">Активні</a>
+        <a class="warehouse-view-tab <%= ordersListView === 'history' ? 'warehouse-view-tab--active' : '' %>" href="/courier/orders?view=history">Історія</a>
+    </div>
+
+    <% if (!shiftOn) { %>
+        <p class="warehouse-feedback warehouse-feedback--error courier-shift-banner">
+            Зміна вимкнена — <a href="/courier/shift">увімкни зміну</a>, щоб оновлювати статуси.
+        </p>
+    <% } %>
+
+    <div class="warehouse-stats">
+        <div class="warehouse-stat">
+            <span class="warehouse-stat-num" data-stat="total"><%= Number(stats.total || 0) %></span>
+            <span class="warehouse-stat-label">активних</span>
+        </div>
+        <div class="warehouse-stat">
+            <span class="warehouse-stat-num" data-stat="today"><%= Number(stats.today || 0) %></span>
+            <span class="warehouse-stat-label">на сьогодні</span>
+        </div>
+        <div class="warehouse-stat warehouse-stat--warn">
+            <span class="warehouse-stat-num" data-stat="soon"><%= Number(stats.soon || 0) %></span>
+            <span class="warehouse-stat-label">скоро</span>
+        </div>
+        <div class="warehouse-stat warehouse-stat--danger">
+            <span class="warehouse-stat-num" data-stat="overdue"><%= Number(stats.overdue || 0) %></span>
+            <span class="warehouse-stat-label">прострочено</span>
+        </div>
+    </div>
+
+    <% if (ordersListView === 'active') { %>
+    <p class="warehouse-poll-hint" id="courierPollHint" hidden>
+        Є зміни —
+        <button type="button" class="warehouse-poll-refresh" id="courierPollRefresh">оновити</button>
+    </p>
+    <% } %>
+
+    <form method="get" action="/courier/orders" class="warehouse-filters">
+        <% if (ordersListView === 'history') { %>
+            <input type="hidden" name="view" value="history" />
+            <label class="warehouse-filter-label">
+                Показати
+                <select name="history" class="auth-input warehouse-filter-select">
+                    <option value="done" <%= historyFilterVal === 'done' ? 'selected' : '' %>>Виконані</option>
+                    <option value="cancelled" <%= historyFilterVal === 'cancelled' ? 'selected' : '' %>>Скасовані</option>
+                    <option value="all" <%= historyFilterVal === 'all' ? 'selected' : '' %>>Усі</option>
+                </select>
+            </label>
+        <% } %>
+        <label class="warehouse-filter-label">
+            День
+            <select name="day" class="auth-input warehouse-filter-select">
+                <option value="" <%= dayFilter === '' ? 'selected' : '' %>>Усі</option>
+                <option value="today" <%= dayFilter === 'today' ? 'selected' : '' %>>Сьогодні</option>
+                <option value="tomorrow" <%= dayFilter === 'tomorrow' ? 'selected' : '' %>>Завтра</option>
+            </select>
+        </label>
+        <button type="submit" class="auth-button warehouse-filter-btn">Фільтр</button>
+    </form>
+
+    <% if (successText) { %><p class="warehouse-feedback warehouse-feedback--ok"><%= successText %></p><% } %>
+    <% if (errorText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p><% } %>
+
+    <% if (safeOrders.length === 0) { %>
+        <p class="warehouse-empty"><%= ordersListView === 'history' ? 'У історії поки нічого немає.' : 'Активних доставок немає. Перевір, чи увімкнена зміна і чи є призначення від складу.' %></p>
+    <% } else { %>
+        <div class="warehouse-orders-list" data-list-pager data-list-pager-item=".warehouse-order-card">
+            <% for (const o of safeOrders) { %>
+                <% const phoneLinks = o.phone_links && o.phone_links.ok ? o.phone_links : null; %>
+                <% const cardUrgency = o.is_overdue ? 'warehouse-order-card--overdue' : (o.is_soon ? 'warehouse-order-card--soon' : ''); %>
+                <% const isCod = o.payment_status === 'cod'; %>
+                <article class="warehouse-order-card <%= cardUrgency %>">
+                    <div class="warehouse-order-top">
+                        <div class="warehouse-order-top-main">
+                            <a class="warehouse-order-no" href="/courier/orders/<%= o.id %>">№<%= o.id %></a>
+                            <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+                        </div>
+                        <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
+                    </div>
+
+                    <div class="warehouse-order-badges">
+                        <span class="warehouse-badge <%= statusBadgeClass(o.status_name) %>"><%= o.status_label || o.status_name %></span>
+                        <% if (o.status_name === 'processing') { %>
+                            <span class="warehouse-badge pay-cod">Чекає збірку</span>
+                        <% } else if (o.status_name === 'ready_for_pickup') { %>
+                            <span class="warehouse-badge pay-ok">Забрати на складі</span>
+                        <% } %>
+                        <% if (isCod) { %><span class="warehouse-badge pay-cod">При отриманні — <%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span><% } %>
+                        <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
+                        <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
+                    </div>
+
+                    <div class="warehouse-order-details">
+                        <div class="warehouse-order-detail warehouse-order-detail--full">
+                            <span class="warehouse-order-detail-label">Кому</span>
+                            <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+                        </div>
+                        <div class="warehouse-order-detail warehouse-order-detail--full">
+                            <span class="warehouse-order-detail-label">Адреса</span>
+                            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+                        </div>
+                        <div class="warehouse-order-detail warehouse-order-detail--full">
+                            <span class="warehouse-order-detail-label">Зібрати</span>
+                            <span class="warehouse-order-detail-value"><%= o.products_summary || '—' %></span>
+                        </div>
+                    </div>
+
+                    <div class="warehouse-order-foot">
+                        <% if (phoneLinks) { %>
+                            <%- include('../../partials/warehouse-phone-actions', { phoneLinks: phoneLinks }) %>
+                        <% } %>
+                        <% if (shiftOn) { %>
+                            <% if (o.status_name === 'ready_for_pickup' && shippedStatusId) { %>
+                                <div class="courier-finish-block warehouse-quick-action">
+                                    <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                                        <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                        <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
+                                        <button type="submit" class="auth-button courier-finish-btn">Забрав на складі — в дорозі</button>
+                                    </form>
+                                </div>
+                            <% } else if (o.status_name === 'shipped' && deliveredStatusId) { %>
+                                <div class="courier-finish-block warehouse-quick-action">
+                                    <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                                        <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                        <input type="hidden" name="status_id" value="<%= deliveredStatusId %>" />
+                                        <button type="submit" class="auth-button courier-finish-btn">Доставлено клієнту</button>
+                                    </form>
+                                </div>
+                            <% } else if (o.status_name === 'delivered') { %>
+                                <div class="courier-finish-block warehouse-quick-action">
+                                    <p class="courier-finish-hint">Підтверди оплату (якщо при отриманні) і закрий замовлення.</p>
+                                    <% if (isCod) { %>
+                                        <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
+                                            <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                            <button type="submit" class="auth-button courier-finish-btn">Оплату отримано</button>
+                                        </form>
+                                    <% } %>
+                                    <% if (o.payment_status === 'paid') { %>
+                                        <form method="post" action="/courier/orders/<%= o.id %>/close" class="courier-finish-form">
+                                            <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                            <button type="submit" class="auth-button courier-finish-btn courier-finish-btn--close">Завершити замовлення</button>
+                                        </form>
+                                    <% } %>
+                                </div>
+                            <% } %>
+                            <% if (o.status_name !== 'delivered' && o.status_name !== 'accepted') { %>
+                            <details class="warehouse-status-details">
+                                <summary class="warehouse-status-details__summary">Інший статус</summary>
+                                <form method="post" action="/courier/orders/<%= o.id %>/status" class="warehouse-status-form">
+                                    <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                    <label class="warehouse-status-label">
+                                        Статус
+                                        <select name="status_id" class="auth-input warehouse-status-select">
+                                            <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
+                                            <% const currentId = Number(o.status_id); %>
+                                            <% for (const s of safeStatuses) { %>
+                                                <% const sid = Number(s.id); %>
+                                                <% const isCurrent = sid === currentId; %>
+                                                <% const canChoose = isCurrent || nextIds.includes(sid); %>
+                                                <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
+                                                    <%= s.label_uk || s.status_name %>
+                                                </option>
+                                            <% } %>
+                                        </select>
+                                    </label>
+                                    <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
+                                </form>
+                            </details>
+                            <% } %>
+                            <a class="warehouse-order-detail-link warehouse-order-detail-link--block" href="/courier/orders/<%= o.id %>">Деталі / маршрут</a>
+                        <% } %>
+                    </div>
+                </article>
+            <% } %>
+        </div>
+    <% } %>
+</div>
+
+<script src="/js/courier-orders.js" defer></script>
+<script>
+(function () {
+    if (typeof window.showToast !== 'function') return;
+    var okEl = document.querySelector('.warehouse-feedback--ok');
+    var errEl = document.querySelector('.warehouse-feedback--error');
+    if (okEl && okEl.textContent.trim()) { window.showToast(okEl.textContent.trim(), 'ok'); okEl.remove(); }
+    if (errEl && errEl.textContent.trim()) { window.showToast(errEl.textContent.trim(), 'error'); errEl.remove(); }
+})();
+</script>

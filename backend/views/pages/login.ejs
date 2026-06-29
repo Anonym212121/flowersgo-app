@@ -15,14 +15,109 @@
         <button class="auth-button" type="submit">Увійти</button>
     </form>
 
+    <% if (typeof googleClientId !== 'undefined' && googleClientId) { %>
+        <div class="auth-or"><span>або</span></div>
+        <div id="googleSignInBtn" class="auth-google-btn"></div>
+    <% } %>
+
     <div id="authError" class="auth-error" aria-live="polite"></div>
 </div>
 
-<p class="auth-hint">Немає акаунту? <a href="/register">Зареєструватися</a></p>
+<p class="auth-hint">Немає акаунту? <a href="/register<% if (typeof authNext !== 'undefined' && authNext) { %>?next=<%= encodeURIComponent(authNext) %><% } %>">Зареєструватися</a></p>
+
+<% if (typeof googleClientId !== 'undefined' && googleClientId) { %>
+<script src="/js/google-auth.js" defer></script>
+<script defer>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof window.initGoogleAuthButton === 'function') {
+            window.initGoogleAuthButton({
+                clientId: <%- JSON.stringify(googleClientId) %>,
+                authNext: <%- JSON.stringify(typeof authNext !== 'undefined' ? authNext : '') %>
+            });
+        }
+    });
+</script>
+<% } %>
 
 <script>
     const loginForm = document.getElementById('loginForm');
     const authError = document.getElementById('authError');
+    const authNext = <%- JSON.stringify(typeof authNext !== 'undefined' ? authNext : '') %>;
+    const loginDraftKey = 'login_draft';
+
+    const saveLoginDraft = () => {
+        const emailInput = loginForm.querySelector('[name="email"]');
+        if (!emailInput || !emailInput.value.trim()) {
+            sessionStorage.removeItem(loginDraftKey);
+            return;
+        }
+        sessionStorage.setItem(loginDraftKey, JSON.stringify({ email: emailInput.value.trim() }));
+    };
+
+    const loadLoginDraft = () => {
+        const raw = sessionStorage.getItem(loginDraftKey);
+        if (!raw) {
+            return false;
+        }
+        let data = null;
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            return false;
+        }
+        const emailInput = loginForm.querySelector('[name="email"]');
+        if (!emailInput || !data || !data.email) {
+            return false;
+        }
+        emailInput.value = data.email;
+        return true;
+    };
+
+    loginForm.addEventListener('input', (event) => {
+        if (event.target && event.target.name === 'email') {
+            saveLoginDraft();
+        }
+    });
+
+    if (loadLoginDraft() && typeof window.restoreFormProgress === 'function') {
+        window.restoreFormProgress({
+            restored: true,
+            form: loginForm,
+            steps: [
+                {
+                    name: 'email',
+                    title: 'Email',
+                    check: function (val) {
+                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
+                    }
+                },
+                {
+                    name: 'password',
+                    title: 'Пароль',
+                    check: function () {
+                        return false;
+                    }
+                }
+            ],
+            messagePrefix: 'Продовжуємо вхід — '
+        });
+    }
+
+    const getRedirectUrl = (roleName) => {
+        if (authNext && authNext.startsWith('/')) {
+            return authNext;
+        }
+        if (roleName === 'admin') {
+            return '/admin';
+        }
+        if (roleName === 'warehouse_worker') {
+            return '/warehouse/orders';
+        }
+        if (roleName === 'courier') {
+            return '/courier/orders';
+        }
+        return '/';
+    };
 
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -43,15 +138,19 @@
 
         const data = await response.json().catch(() => null);
         if (!response.ok) {
-            authError.textContent = (data && data.message) ? data.message : 'Помилка входу';
+            const msg = (data && data.message) ? data.message : 'Помилка входу';
+            if (data && data.blocked) {
+                sessionStorage.setItem('blocked_login_email', String(payload.email || ''));
+                authError.innerHTML = msg + ' <a href="/account-blocked" class="auth-error-link">Дізнатися причину</a>';
+            } else {
+                authError.textContent = msg;
+            }
             return;
         }
 
+        sessionStorage.removeItem(loginDraftKey);
+
         const roleName = data && data.user && data.user.role_name ? data.user.role_name : '';
-        if (roleName === 'admin') {
-            window.location.href = '/admin';
-        } else {
-            window.location.href = '/';
-        }
+        window.location.href = getRedirectUrl(roleName);
     });
 </script>

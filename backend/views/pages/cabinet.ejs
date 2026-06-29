@@ -1,44 +1,885 @@
 <%
 const safeOrders = typeof orders !== 'undefined' && Array.isArray(orders) ? orders : [];
+const safeReviews = typeof myReviews !== 'undefined' && Array.isArray(myReviews) ? myReviews : [];
+const activeOrdersCount = safeOrders.filter((o) => Number(o.is_archived) !== 1).length;
+const archivedOrdersCount = safeOrders.filter((o) => Number(o.is_archived) === 1).length;
+const successMessage = typeof cabinetSuccessMessage === 'string' ? cabinetSuccessMessage : '';
+const errorMessage = typeof cabinetErrorMessage === 'string' ? cabinetErrorMessage : '';
+const avatarUrl = profile && profile.avatar_url ? String(profile.avatar_url) : '';
+const savedStreet = profile && profile.saved_delivery_street ? String(profile.saved_delivery_street) : '';
+const savedHouse = profile && profile.saved_delivery_house ? String(profile.saved_delivery_house) : '';
+const savedApartment = profile && profile.saved_delivery_apartment ? String(profile.saved_delivery_apartment) : '';
+let savedAddressText = '—';
+if (savedStreet && savedHouse) {
+    savedAddressText = savedStreet + ', буд. ' + savedHouse;
+    if (savedApartment) {
+        savedAddressText += ', кв./офіс ' + savedApartment;
+    }
+}
 %>
 
-<h1>Мій кабінет</h1>
+<div class="cabinet-page">
+    <div class="cabinet-page-head">
+        <h1>Мій кабінет</h1>
+        <p class="cabinet-page-sub"><%= profile.first_name %> <%= profile.last_name %></p>
+    </div>
 
-<p><strong>Ім'я:</strong> <%= profile.first_name %> <%= profile.last_name %></p>
+    <div id="cabinetGlobalFeedback">
+        <% if (successMessage) { %>
+            <div class="warehouse-feedback warehouse-feedback--ok"><%= successMessage %></div>
+        <% } %>
+        <% if (errorMessage) { %>
+            <div class="warehouse-feedback warehouse-feedback--error"><%= errorMessage %></div>
+        <% } %>
+    </div>
 
-<p><strong>Email:</strong> <%= profile.email %></p>
-<p><strong>Телефон:</strong> <%= profile.phone ? profile.phone : '—' %></p>
+    <nav class="cabinet-tabs" id="cabinetTabs">
+        <button type="button" class="cabinet-tab" data-tab="orders">
+            Замовлення<% if (activeOrdersCount > 0) { %> <span class="cabinet-tab-count"><%= activeOrdersCount %></span><% } %>
+        </button>
+        <button type="button" class="cabinet-tab" data-tab="reviews">
+            Відгуки<% if (safeReviews.length > 0) { %> <span class="cabinet-tab-count"><%= safeReviews.length %></span><% } %>
+        </button>
+        <button type="button" class="cabinet-tab cabinet-tab--active" data-tab="profile">Профіль</button>
+    </nav>
 
-<h2>Мої замовлення</h2>
-<% if (safeOrders.length === 0) { %>
-    <p>Поки немає замовлень.</p>
-<% } else { %>
-    <table class="cabinet-orders-table">
-        <thead>
-            <tr>
-                <th>№</th>
-                <th>Статус</th>
-                <th>Сума</th>
-                <th>Доставка</th>
-                <th>Контакт</th>
-            </tr>
-        </thead>
-        <tbody>
-            <% for (const o of safeOrders) { %>
-                <tr>
-                    <td><%= o.id %></td>
-                    <td><%= o.status_name %></td>
-                    <td><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</td>
-                    <td>
-                        <% if (o.delivery_datetime) { %>
-                            <%= new Date(o.delivery_datetime).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) %>
-                        <% } else { %>
-                            —
-                        <% } %>
-                    </td>
-                    <td class="cabinet-orders-contact"><%= o.delivery_address %></td>
-                </tr>
+    <section class="cabinet-panel" data-panel="orders" hidden>
+        <div class="cabinet-panel-toolbar">
+            <% if (archivedOrdersCount > 0) { %>
+                <button type="button" class="cabinet-history-toggle" id="toggleOrderHistoryBtn" aria-expanded="false">
+                    Архів
+                </button>
             <% } %>
-        </tbody>
-    </table>
-<% } %>
+        </div>
+
+        <% if (safeOrders.length === 0) { %>
+            <p class="cabinet-empty">Поки немає замовлень.</p>
+        <% } else if (activeOrdersCount === 0) { %>
+            <p class="cabinet-empty">Активних замовлень немає. Відкрий архів.</p>
+        <% } %>
+
+        <% if (safeOrders.length > 0) { %>
+            <div class="cabinet-orders-list" id="cabinetOrdersList" <%= activeOrdersCount === 0 ? 'hidden' : '' %>>
+                <% for (const o of safeOrders) { %>
+                    <% const pay = o.payment_status || 'unpaid'; %>
+                    <% const isArchived = Number(o.is_archived) === 1; %>
+                    <%
+                    let statusShort = o.status_label || o.status_name || '—';
+                    if (o.status_name === 'cancelled') {
+                        statusShort = 'Скасовано';
+                    } else if (o.has_cancel_request) {
+                        statusShort = 'Скасування очікує';
+                    } else if (Number(o.admin_approved) === -1) {
+                        statusShort = 'Відхилено';
+                    } else if (Number(o.admin_approved) === 0) {
+                        statusShort = 'На модерації';
+                    } else if (o.status_name === 'ready_for_pickup' && o.delivery_method === 'pickup') {
+                        statusShort = 'Готовий до самовивозу';
+                    }
+                    %>
+                    <article
+                        class="cabinet-order-card <%= isArchived ? 'cabinet-order-card--archived' : '' %>"
+                        data-order-id="<%= o.id %>"
+                        data-archived="<%= isArchived ? '1' : '0' %>"
+                        <%= isArchived ? 'hidden' : '' %>
+                    >
+                        <button type="button" class="cabinet-order-toggle" aria-expanded="false">
+                            <span class="cabinet-order-toggle-main">
+                                <span class="cabinet-order-no">№<%= o.id %></span>
+                                <span class="cabinet-order-badge"><%= statusShort %></span>
+                            </span>
+                            <span class="cabinet-order-toggle-side">
+                                <span class="cabinet-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
+                                <span class="cabinet-order-chevron" aria-hidden="true">›</span>
+                            </span>
+                        </button>
+                        <div class="cabinet-order-body" hidden>
+                            <div class="cabinet-order-row">
+                                <span class="cabinet-order-label">Оплата</span>
+                                <div class="cabinet-order-value cabinet-orders-pay">
+                                    <% if (pay === 'paid') { %>
+                                        <span class="warehouse-badge pay-ok">Оплачено</span>
+                                    <% } else if (pay === 'refunded') { %>
+                                        <span class="warehouse-badge pay-ok">Повернено</span>
+                                    <% } else if (pay === 'cod') { %>
+                                        <span class="warehouse-badge pay-cod">При отриманні</span>
+                                    <% } else if (o.status_name === 'cancelled' || Number(o.admin_approved) === -1) { %>
+                                        <span class="warehouse-badge pay-no">Скасовано</span>
+                                    <% } else if (o.has_cancel_request) { %>
+                                        <span class="warehouse-badge pay-cod">Скасування очікує</span>
+                                    <% } else { %>
+                                        <div class="cabinet-pay-block" data-order-id="<%= o.id %>" data-deadline-at="<%= o.pay_deadline_iso || '' %>">
+                                            <span class="warehouse-badge pay-no cabinet-pay-badge">Очікує</span>
+                                            <% if (o.can_pay_online) { %>
+                                                <a href="/payment/<%= o.id %>?t=<%= encodeURIComponent(o.pay_token || '') %>&r=<%= Date.now() %>" class="cabinet-pay-btn" data-soft-nav="false">Оплатити</a>
+                                                <span class="cabinet-pay-timer">⏱ <span class="cabinet-pay-timer-value"><%= o.pay_time_left_label || '00:00:00' %></span></span>
+                                            <% } else if (o.pay_block_reason === 'rejected') { %>
+                                                <span class="cabinet-pay-expired">Відхилено адміном</span>
+                                            <% } else if (o.pay_block_reason === 'cancel_pending') { %>
+                                                <span class="cabinet-pay-expired">Очікує рішення щодо скасування</span>
+                                            <% } else { %>
+                                                <span class="cabinet-pay-expired">Час вичерпано</span>
+                                            <% } %>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <div class="cabinet-order-row">
+                                <span class="cabinet-order-label">Доставка</span>
+                                <span class="cabinet-order-value"><%= o.delivery_display || '—' %></span>
+                            </div>
+                            <% if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup') { %>
+                                <p class="cabinet-cancel-hint cabinet-status-hint">Букет зібрано. Кур'єр скоро забере замовлення.</p>
+                            <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method === 'pickup') { %>
+                                <p class="cabinet-cancel-hint cabinet-status-hint">Замовлення готове до самовивозу. Можна забрати за адресою магазину.</p>
+                            <% } else if (o.status_name === 'shipped') { %>
+                                <p class="cabinet-cancel-hint cabinet-status-hint">Кур'єр уже в дорозі до одержувача.</p>
+                            <% } else if (o.status_name === 'delivered') { %>
+                                <p class="cabinet-cancel-hint cabinet-status-hint">Замовлення доставлено. Якщо є питання — зв'яжіться з підтримкою.</p>
+                            <% } %>
+                            <% if (o.has_cancel_request && o.cancel_request_note) { %>
+                                <div class="cabinet-order-row cabinet-order-row--stack">
+                                    <span class="cabinet-order-label">Причина</span>
+                                    <span class="cabinet-order-value"><%= o.cancel_request_note %></span>
+                                </div>
+                            <% } %>
+                            <% if (o.refund_status === 'manual') { %>
+                                <p class="cabinet-cancel-hint">Повернення коштів оформлює адміністратор — зв’яжіться з нами, якщо питання.</p>
+                            <% } %>
+                            <% if (o.can_request_cancel) { %>
+                                <div class="cabinet-cancel-block">
+                                    <p class="cabinet-cancel-hint"><%= o.cancel_refund_hint %></p>
+                                    <label class="cabinet-mini-label">
+                                        Причина (необов'язково)
+                                        <input class="auth-input cabinet-mini-input cabinet-cancel-note" type="text" maxlength="500" placeholder="Напр. змінились плани" />
+                                    </label>
+                                    <button type="button" class="cabinet-mini-btn cabinet-order-cancel-btn" data-order-id="<%= o.id %>">Скасувати замовлення</button>
+                                </div>
+                            <% } else if (!o.has_cancel_request && o.status_name !== 'cancelled' && o.cancel_block_message) { %>
+                                <p class="cabinet-cancel-hint cabinet-cancel-hint--muted"><%= o.cancel_block_message %></p>
+                            <% } %>
+                            <% if (o.has_cancel_request) { %>
+                                <p class="cabinet-cancel-hint">Запит на скасування надіслано. Адмін підтвердить або відхилить його.</p>
+                            <% } %>
+                            <div class="cabinet-order-row cabinet-order-row--stack">
+                                <span class="cabinet-order-label">Адреса</span>
+                                <span class="cabinet-order-value cabinet-orders-contact"><%= o.delivery_info || '—' %></span>
+                            </div>
+                            <% if (!isArchived) { %>
+                                <button type="button" class="cabinet-archive-btn" data-order-id="<%= o.id %>">В архів</button>
+                            <% } %>
+                        </div>
+                    </article>
+                <% } %>
+            </div>
+        <% } %>
+    </section>
+
+    <section class="cabinet-panel" data-panel="reviews" hidden>
+        <% if (safeReviews.length === 0) { %>
+            <p class="cabinet-empty">Ще немає відгуків.</p>
+        <% } else { %>
+            <div class="cabinet-reviews-list" data-list-pager data-list-pager-item=".cabinet-review-card">
+                <% for (const rev of safeReviews) { %>
+                    <% const ratingNum = Number(rev.rating) || 0; %>
+                    <% const hasPending = rev.pending_request_id != null; %>
+                    <% const statusRev = Number(rev.is_visible) === 1 ? 'Опубліковано' : 'На модерації'; %>
+                    <article class="cabinet-review-card" data-review-id="<%= rev.id %>">
+                        <button type="button" class="cabinet-review-toggle" aria-expanded="false">
+                            <span class="cabinet-review-toggle-left">
+                                <span class="cabinet-review-product"><%= rev.product_name %></span>
+                                <span class="cabinet-review-stars-inline">
+                                    <% for (let s = 1; s <= 5; s++) { %>
+                                        <span class="cabinet-review-star <%= s <= ratingNum ? 'cabinet-review-star--on' : '' %>">★</span>
+                                    <% } %>
+                                </span>
+                            </span>
+                            <span class="cabinet-review-toggle-right">
+                                <span class="cabinet-review-meta"><%= statusRev %></span>
+                                <span class="cabinet-order-chevron" aria-hidden="true">›</span>
+                            </span>
+                        </button>
+                        <div class="cabinet-review-body" hidden>
+                            <p class="cabinet-review-comment"><%= rev.comment %></p>
+                            <p class="cabinet-review-date">
+                                <% if (rev.createdAt) { %>
+                                    <%= new Date(rev.createdAt).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' }) %>
+                                <% } else { %>—<% } %>
+                            </p>
+                            <% if (hasPending) { %>
+                                <p class="cabinet-review-pending">
+                                    <% if (rev.pending_request_type === 'delete') { %>
+                                        Запит на видалення — очікує адміна
+                                    <% } else { %>
+                                        Запит на зміну — очікує адміна
+                                    <% } %>
+                                </p>
+                            <% } else { %>
+                                <div class="cabinet-review-actions">
+                                    <button type="button" class="cabinet-review-edit-btn" data-review-id="<%= rev.id %>">Змінити</button>
+                                    <form method="post" action="/cabinet/reviews/<%= rev.id %>/delete-request" class="cabinet-review-delete-form">
+                                        <button type="submit" class="cabinet-review-delete-btn">Видалити</button>
+                                    </form>
+                                </div>
+                                <form method="post" action="/cabinet/reviews/<%= rev.id %>/edit-request" class="cabinet-review-edit-form" id="cabinetReviewEditForm-<%= rev.id %>" hidden>
+                                    <label class="cabinet-mini-label">
+                                        Оцінка
+                                        <select class="auth-input cabinet-mini-input" name="rating" required>
+                                            <% for (let r = 5; r >= 1; r--) { %>
+                                                <option value="<%= r %>" <%= r === ratingNum ? 'selected' : '' %>><%= r %></option>
+                                            <% } %>
+                                        </select>
+                                    </label>
+                                    <label class="cabinet-mini-label">
+                                        Текст
+                                        <textarea class="auth-input cabinet-review-textarea" name="comment" required minlength="2" maxlength="2000"><%= rev.comment %></textarea>
+                                    </label>
+                                    <div class="cabinet-review-form-actions">
+                                        <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Надіслати</button>
+                                        <button type="button" class="cabinet-mini-btn cabinet-review-cancel-btn" data-review-id="<%= rev.id %>">Скасувати</button>
+                                    </div>
+                                </form>
+                            <% } %>
+                        </div>
+                    </article>
+                <% } %>
+            </div>
+        <% } %>
+    </section>
+
+    <section class="cabinet-panel cabinet-panel--active" data-panel="profile">
+        <div class="cabinet-profile-compact" id="cabinetProfileView">
+            <div class="cabinet-profile-view-card">
+                <div class="cabinet-avatar-wrap cabinet-avatar-wrap--view" id="cabinetAvatarViewWrap">
+                    <% if (avatarUrl) { %>
+                        <img class="cabinet-avatar-img" id="cabinetAvatarViewImg" src="<%= avatarUrl %>" alt="Аватар" />
+                    <% } else { %>
+                        <div class="cabinet-avatar-placeholder" id="cabinetAvatarViewPlaceholder" aria-hidden="true">👤</div>
+                    <% } %>
+                </div>
+                <h2 class="cabinet-profile-view-name" id="cabinetProfileViewName"><%= profile.first_name %> <%= profile.last_name %></h2>
+                <dl class="cabinet-profile-view-list">
+                    <div class="cabinet-profile-view-row">
+                        <dt>Email</dt>
+                        <dd id="cabinetProfileViewEmail"><%= profile.email %></dd>
+                    </div>
+                    <div class="cabinet-profile-view-row">
+                        <dt>Телефон</dt>
+                        <dd id="cabinetProfileViewPhone"><%= profile.phone ? profile.phone : '—' %></dd>
+                    </div>
+                    <div class="cabinet-profile-view-row">
+                        <dt>Адреса</dt>
+                        <dd id="cabinetProfileViewAddress"><%= savedAddressText %></dd>
+                    </div>
+                </dl>
+                <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="cabinetShowEditProfileBtn">Редагувати профіль</button>
+            </div>
+        </div>
+
+        <div class="cabinet-profile-compact cabinet-profile-compact--edit" id="cabinetProfileEdit" hidden>
+            <div class="cabinet-profile-edit-toolbar">
+                <button type="button" class="cabinet-mini-btn" id="cabinetShowViewProfileBtn">Перегляд профілю</button>
+            </div>
+            <div class="cabinet-profile-top">
+                <div class="cabinet-avatar-wrap cabinet-avatar-wrap--sm">
+                    <% if (avatarUrl) { %>
+                        <img class="cabinet-avatar-img" id="cabinetAvatarEditImg" src="<%= avatarUrl %>" alt="Аватар" />
+                    <% } else { %>
+                        <div class="cabinet-avatar-placeholder" id="cabinetAvatarEditPlaceholder" aria-hidden="true">👤</div>
+                    <% } %>
+                </div>
+                <form method="post" action="/cabinet/avatar" enctype="multipart/form-data" class="cabinet-avatar-form" id="cabinetAvatarForm">
+                    <label class="cabinet-mini-label">
+                        Аватар
+                        <input class="auth-input cabinet-mini-input" type="file" name="avatar" accept=".jpg,.jpeg,.png,.gif,.webp,image/*" required />
+                    </label>
+                    <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Завантажити</button>
+                </form>
+            </div>
+
+            <form method="post" action="/cabinet/profile" class="cabinet-profile-form" id="cabinetProfileForm">
+                <div class="cabinet-profile-grid">
+                    <label class="cabinet-mini-label">
+                        Ім'я
+                        <input class="auth-input cabinet-mini-input" type="text" name="first_name" id="cabinetInputFirstName" value="<%= profile.first_name %>" required minlength="2" />
+                    </label>
+                    <label class="cabinet-mini-label">
+                        Прізвище
+                        <input class="auth-input cabinet-mini-input" type="text" name="last_name" id="cabinetInputLastName" value="<%= profile.last_name %>" required minlength="2" />
+                    </label>
+                    <label class="cabinet-mini-label">
+                        Email
+                        <input class="auth-input cabinet-mini-input" type="email" name="email" id="cabinetInputEmail" value="<%= profile.email %>" required />
+                    </label>
+                    <label class="cabinet-mini-label">
+                        Телефон
+                        <input class="auth-input cabinet-mini-input" type="tel" name="phone" id="cabinetInputPhone" value="<%= profile.phone ? profile.phone : '' %>" />
+                    </label>
+                </div>
+                <div class="cabinet-profile-address-block">
+                    <p class="cabinet-profile-address-hint">Моя адреса доставки (лише для вас і адміністратора)</p>
+                    <label class="cabinet-mini-label">
+                        Вулиця
+                        <input class="auth-input cabinet-mini-input" type="text" name="saved_delivery_street" id="cabinetInputDeliveryStreet" value="<%= savedStreet %>" placeholder="Місто, вулиця" />
+                    </label>
+                    <div class="cabinet-profile-address-row">
+                        <label class="cabinet-mini-label">
+                            Будинок
+                            <input class="auth-input cabinet-mini-input" type="text" name="saved_delivery_house" id="cabinetInputDeliveryHouse" value="<%= savedHouse %>" />
+                        </label>
+                        <label class="cabinet-mini-label">
+                            Квартира / Офіс
+                            <input class="auth-input cabinet-mini-input" type="text" name="saved_delivery_apartment" id="cabinetInputDeliveryApartment" value="<%= savedApartment %>" />
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Зберегти профіль</button>
+            </form>
+
+            <details class="cabinet-password-details">
+                <summary>Зміна пароля</summary>
+                <form method="post" action="/cabinet/password/simple" class="cabinet-password-form" id="cabinetPasswordSimpleForm">
+                    <label class="cabinet-mini-label">
+                        Новий пароль
+                        <input class="auth-input cabinet-mini-input" type="password" name="new_password" id="newPasswordInput" minlength="6" required />
+                    </label>
+                    <label class="cabinet-mini-label">
+                        Підтвердження
+                        <input class="auth-input cabinet-mini-input" type="password" name="new_password_confirm" id="newPasswordConfirmInput" minlength="6" required />
+                    </label>
+                    <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="savePasswordBtn">Змінити пароль</button>
+                </form>
+            </details>
+        </div>
+    </section>
+</div>
+
+<script>
+(function () {
+    var feedback = document.getElementById('cabinetGlobalFeedback');
+    var avatarForm = document.getElementById('cabinetAvatarForm');
+    var profileForm = document.getElementById('cabinetProfileForm');
+    var passwordForm = document.getElementById('cabinetPasswordSimpleForm');
+    var savePasswordBtn = document.getElementById('savePasswordBtn');
+    var newPasswordInput = document.getElementById('newPasswordInput');
+    var newPasswordConfirmInput = document.getElementById('newPasswordConfirmInput');
+
+    function renderMessage(type, text) {
+        if (typeof window.showToast === 'function') {
+            window.showToast(text, type === 'ok' ? 'ok' : 'error');
+            return;
+        }
+        if (!feedback) return;
+        var cls = type === 'ok' ? 'warehouse-feedback warehouse-feedback--ok' : 'warehouse-feedback warehouse-feedback--error';
+        feedback.innerHTML = '<div class="' + cls + '">' + String(text || '') + '</div>';
+    }
+
+    function showPageLoadToasts() {
+        if (typeof window.showToast !== 'function' || !feedback) {
+            return;
+        }
+        var okBox = feedback.querySelector('.warehouse-feedback--ok');
+        var errBox = feedback.querySelector('.warehouse-feedback--error');
+        if (okBox && okBox.textContent.trim()) {
+            window.showToast(okBox.textContent.trim(), 'ok');
+        }
+        if (errBox && errBox.textContent.trim()) {
+            window.showToast(errBox.textContent.trim(), 'error');
+        }
+        feedback.innerHTML = '';
+    }
+
+    async function submitForm(form, useFormData) {
+        var body;
+        var headers = { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' };
+        if (useFormData) {
+            body = new FormData(form);
+        } else {
+            body = new URLSearchParams(new FormData(form));
+            headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=UTF-8';
+        }
+
+        var response = await fetch(form.action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: headers,
+            body: body
+        });
+
+        var data = await response.json().catch(function () { return null; });
+        if (!response.ok || !data || !data.ok) {
+            throw new Error((data && data.message) ? data.message : 'Помилка запиту');
+        }
+        return data;
+    }
+
+    var tabs = document.querySelectorAll('.cabinet-tab');
+    var panels = document.querySelectorAll('.cabinet-panel');
+
+    function activateCabinetTab(name) {
+        tabs.forEach(function (t) {
+            var active = t.getAttribute('data-tab') === name;
+            t.classList.toggle('cabinet-tab--active', active);
+        });
+        panels.forEach(function (panel) {
+            var active = panel.getAttribute('data-panel') === name;
+            panel.classList.toggle('cabinet-panel--active', active);
+            panel.hidden = !active;
+        });
+    }
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            activateCabinetTab(tab.getAttribute('data-tab'));
+        });
+    });
+
+    document.querySelectorAll('.cabinet-order-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var card = btn.closest('.cabinet-order-card');
+            var body = card ? card.querySelector('.cabinet-order-body') : null;
+            if (!body) return;
+            var open = body.hidden;
+            body.hidden = !open;
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.classList.toggle('cabinet-order-toggle--open', open);
+        });
+    });
+
+    document.querySelectorAll('.cabinet-review-toggle').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var card = btn.closest('.cabinet-review-card');
+            var body = card ? card.querySelector('.cabinet-review-body') : null;
+            if (!body) return;
+            var open = body.hidden;
+            body.hidden = !open;
+            btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            btn.classList.toggle('cabinet-review-toggle--open', open);
+        });
+    });
+
+    var profileViewBlock = document.getElementById('cabinetProfileView');
+    var profileEditBlock = document.getElementById('cabinetProfileEdit');
+    var showEditBtn = document.getElementById('cabinetShowEditProfileBtn');
+    var showViewBtn = document.getElementById('cabinetShowViewProfileBtn');
+
+    function setProfileMode(mode) {
+        var isView = mode === 'view';
+        if (profileViewBlock) profileViewBlock.hidden = !isView;
+        if (profileEditBlock) profileEditBlock.hidden = isView;
+    }
+
+    function syncProfileViewFromForm() {
+        var first = document.getElementById('cabinetInputFirstName');
+        var last = document.getElementById('cabinetInputLastName');
+        var email = document.getElementById('cabinetInputEmail');
+        var phone = document.getElementById('cabinetInputPhone');
+        var street = document.getElementById('cabinetInputDeliveryStreet');
+        var house = document.getElementById('cabinetInputDeliveryHouse');
+        var apartment = document.getElementById('cabinetInputDeliveryApartment');
+        var nameEl = document.getElementById('cabinetProfileViewName');
+        var emailEl = document.getElementById('cabinetProfileViewEmail');
+        var phoneEl = document.getElementById('cabinetProfileViewPhone');
+        var addressEl = document.getElementById('cabinetProfileViewAddress');
+        var pageSub = document.querySelector('.cabinet-page-sub');
+
+        var firstVal = first ? first.value.trim() : '';
+        var lastVal = last ? last.value.trim() : '';
+        var emailVal = email ? email.value.trim() : '';
+        var phoneVal = phone ? phone.value.trim() : '';
+        var streetVal = street ? street.value.trim() : '';
+        var houseVal = house ? house.value.trim() : '';
+        var apartmentVal = apartment ? apartment.value.trim() : '';
+        var addressText = '—';
+        if (streetVal && houseVal) {
+            addressText = streetVal + ', буд. ' + houseVal;
+            if (apartmentVal) {
+                addressText += ', кв./офіс ' + apartmentVal;
+            }
+        }
+
+        if (nameEl) nameEl.textContent = (firstVal + ' ' + lastVal).trim();
+        if (emailEl) emailEl.textContent = emailVal || '—';
+        if (phoneEl) phoneEl.textContent = phoneVal || '—';
+        if (addressEl) addressEl.textContent = addressText;
+        if (pageSub) pageSub.textContent = (firstVal + ' ' + lastVal).trim();
+    }
+
+    function updateAvatarEverywhere(url) {
+        if (!url) return;
+        var src = url + '?v=' + Date.now();
+        var ids = ['cabinetAvatarViewImg', 'cabinetAvatarEditImg'];
+        ids.forEach(function (id) {
+            var img = document.getElementById(id);
+            if (img) img.src = src;
+        });
+    }
+
+    if (showEditBtn) {
+        showEditBtn.addEventListener('click', function () {
+            setProfileMode('edit');
+        });
+    }
+
+    if (showViewBtn) {
+        showViewBtn.addEventListener('click', function () {
+            syncProfileViewFromForm();
+            setProfileMode('view');
+        });
+    }
+
+    setProfileMode('view');
+
+    if (profileForm && typeof window.bindFormDraft === 'function') {
+        window.bindFormDraft(profileForm, {
+            key: 'flowersgo_cabinet_profile_draft:<%= profile.id %>',
+            notifyMessage: 'Чернетку профілю відновлено',
+            clearOnSubmit: false,
+            onRestore: function () {
+                activateCabinetTab('profile');
+                setProfileMode('edit');
+            }
+        });
+    }
+
+    document.querySelectorAll('.cabinet-review-edit-form').forEach(function (form) {
+        if (typeof window.bindFormDraft !== 'function') {
+            return;
+        }
+        var reviewId = form.id ? form.id.replace('cabinetReviewEditForm-', '') : '';
+        if (!reviewId) {
+            return;
+        }
+        window.bindFormDraft(form, {
+            key: 'flowersgo_cabinet_review_draft:' + reviewId,
+            notifyMessage: 'Чернетку редагування відгуку відновлено',
+            clearOnSubmit: false,
+            onRestore: function () {
+                activateCabinetTab('reviews');
+                form.hidden = false;
+                var editBtn = document.querySelector('.cabinet-review-edit-btn[data-review-id="' + reviewId + '"]');
+                if (editBtn) {
+                    editBtn.hidden = true;
+                }
+            }
+        });
+    });
+
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlErr = urlParams.get('err') || '';
+    var urlOk = urlParams.get('ok') || '';
+    var profileEditErrs = [
+        'bad_first_name', 'bad_last_name', 'bad_email', 'bad_phone', 'bad_address',
+        'email_exists', 'profile_not_updated', 'avatar_empty', 'avatar_not_saved'
+    ];
+
+    var startTab = urlParams.get('tab');
+    if (!startTab) {
+        if (urlOk === 'order_created' || urlOk === 'payment_paid' || urlOk === 'order_archived' || urlOk === 'cancel_request_sent') {
+            startTab = 'orders';
+        } else if (urlOk === 'review_edit_sent' || urlOk === 'review_delete_sent') {
+            startTab = 'reviews';
+        } else {
+            startTab = 'profile';
+        }
+    }
+    activateCabinetTab(startTab);
+    showPageLoadToasts();
+
+    if (profileEditErrs.indexOf(urlErr) !== -1) {
+        activateCabinetTab('profile');
+        setProfileMode('edit');
+    }
+
+    if (profileForm) {
+        profileForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            try {
+                var data = await submitForm(profileForm, false);
+                syncProfileViewFromForm();
+                setProfileMode('view');
+                if (profileForm._formDraftHandle && profileForm._formDraftHandle.clear) {
+                    profileForm._formDraftHandle.clear();
+                }
+                renderMessage('ok', data.message || 'Профіль оновлено');
+            } catch (err) {
+                renderMessage('error', err.message || 'Не вдалося оновити профіль');
+            }
+        });
+    }
+
+    if (avatarForm) {
+        avatarForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            try {
+                var data = await submitForm(avatarForm, true);
+                if (data.avatar_url) {
+                    updateAvatarEverywhere(data.avatar_url);
+                }
+                renderMessage('ok', data.message || 'Аватар оновлено');
+            } catch (err) {
+                renderMessage('error', err.message || 'Не вдалося оновити аватар');
+            }
+        });
+    }
+
+    function formatTimer(ms) {
+        if (ms <= 0) return '00:00:00';
+        var totalSec = Math.floor(ms / 1000);
+        var h = Math.floor(totalSec / 3600);
+        var m = Math.floor((totalSec % 3600) / 60);
+        var s = totalSec % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function initPaymentTimers() {
+        document.querySelectorAll('.cabinet-pay-block').forEach(function (block) {
+            var orderId = block.getAttribute('data-order-id');
+            var timerValue = block.querySelector('.cabinet-pay-timer-value');
+            var deadlineRaw = block.getAttribute('data-deadline-at');
+            var payBtn = block.querySelector('.cabinet-pay-btn');
+            var timerWrap = block.querySelector('.cabinet-pay-timer');
+
+            if (orderId) {
+                var syncBusy = false;
+                var syncPaymentStatus = function () {
+                    if (syncBusy) return;
+                    syncBusy = true;
+                    fetch('/payment/sync/' + encodeURIComponent(orderId), {
+                        credentials: 'same-origin',
+                        headers: { Accept: 'application/json' }
+                    })
+                        .then(function (res) {
+                            return res.json();
+                        })
+                        .then(function (data) {
+                            if (data && data.paid) {
+                                window.location.href = '/cabinet?ok=payment_paid';
+                            }
+                        })
+                        .catch(function () {})
+                        .finally(function () {
+                            syncBusy = false;
+                        });
+                };
+                syncPaymentStatus();
+                window.setInterval(syncPaymentStatus, 5000);
+            }
+
+            if (!timerValue || !deadlineRaw) return;
+            var deadline = new Date(deadlineRaw).getTime();
+            if (!Number.isFinite(deadline)) return;
+
+            function tick() {
+                var left = deadline - Date.now();
+                if (left <= 0) {
+                    timerValue.textContent = '00:00:00';
+                    if (timerWrap) timerWrap.hidden = true;
+                    if (payBtn) payBtn.remove();
+                    return;
+                }
+                timerValue.textContent = formatTimer(left);
+                window.setTimeout(tick, 1000);
+            }
+            tick();
+        });
+    }
+
+    initPaymentTimers();
+
+    var historyToggleBtn = document.getElementById('toggleOrderHistoryBtn');
+    var showFullHistory = false;
+
+    function applyOrderHistoryView() {
+        var cards = document.querySelectorAll('.cabinet-order-card');
+        var list = document.getElementById('cabinetOrdersList');
+        var hasVisible = false;
+        cards.forEach(function (card) {
+            var archived = card.getAttribute('data-archived') === '1';
+            if (archived) {
+                card.hidden = !showFullHistory;
+            } else {
+                card.hidden = false;
+            }
+            if (!card.hidden) hasVisible = true;
+        });
+        if (list) list.hidden = !hasVisible;
+        if (historyToggleBtn) {
+            historyToggleBtn.textContent = showFullHistory ? 'Сховати архів' : 'Архів';
+            historyToggleBtn.classList.toggle('cabinet-history-toggle--on', showFullHistory);
+            historyToggleBtn.setAttribute('aria-expanded', showFullHistory ? 'true' : 'false');
+        }
+        if (window.cabinetOrdersPager && typeof window.cabinetOrdersPager.refresh === 'function') {
+            window.cabinetOrdersPager.refresh();
+        }
+    }
+
+    function initCabinetOrdersPager() {
+        var ordersListEl = document.getElementById('cabinetOrdersList');
+        if (ordersListEl && window.ListPager) {
+            window.cabinetOrdersPager = window.ListPager.mount(ordersListEl, {
+                itemSelector: '.cabinet-order-card',
+                filter: function (el) {
+                    return !el.hidden;
+                }
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initCabinetOrdersPager);
+    } else {
+        initCabinetOrdersPager();
+    }
+
+    if (historyToggleBtn) {
+        historyToggleBtn.addEventListener('click', function () {
+            showFullHistory = !showFullHistory;
+            applyOrderHistoryView();
+        });
+    }
+
+    document.querySelectorAll('.cabinet-order-cancel-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            var orderId = btn.getAttribute('data-order-id');
+            var card = btn.closest('.cabinet-order-card');
+            var noteInput = card ? card.querySelector('.cabinet-cancel-note') : null;
+            var note = noteInput ? noteInput.value.trim() : '';
+            if (!window.confirm('Надіслати запит на скасування? Адмін має підтвердити.')) {
+                return;
+            }
+            try {
+                var response = await fetch('/cabinet/orders/' + orderId + '/cancel-request', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    },
+                    body: new URLSearchParams({ cancel_note: note })
+                });
+                var data = await response.json().catch(function () { return null; });
+                if (!response.ok || !data || !data.ok) {
+                    throw new Error((data && data.message) ? data.message : 'Помилка');
+                }
+                renderMessage('ok', data.message || 'Запит надіслано');
+                window.setTimeout(function () {
+                    window.location.href = '/cabinet?tab=orders&ok=cancel_request_sent';
+                }, 800);
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            }
+        });
+    });
+
+    document.querySelectorAll('.cabinet-archive-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            var orderId = btn.getAttribute('data-order-id');
+            if (!orderId) return;
+            try {
+                var response = await fetch('/cabinet/orders/' + orderId + '/archive', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+                });
+                var data = await response.json().catch(function () { return null; });
+                if (!response.ok || !data || !data.ok) {
+                    throw new Error((data && data.message) ? data.message : 'Не вдалося архівувати');
+                }
+                var card = btn.closest('.cabinet-order-card');
+                if (card) {
+                    card.setAttribute('data-archived', '1');
+                    card.classList.add('cabinet-order-card--archived');
+                    btn.remove();
+                    if (!showFullHistory) card.hidden = true;
+                }
+                if (!historyToggleBtn) {
+                    var toolbar = document.querySelector('.cabinet-panel-toolbar');
+                    if (toolbar) {
+                        var toggle = document.createElement('button');
+                        toggle.type = 'button';
+                        toggle.className = 'cabinet-history-toggle';
+                        toggle.id = 'toggleOrderHistoryBtn';
+                        toggle.textContent = 'Архів';
+                        toolbar.appendChild(toggle);
+                        historyToggleBtn = toggle;
+                        toggle.addEventListener('click', function () {
+                            showFullHistory = !showFullHistory;
+                            applyOrderHistoryView();
+                        });
+                    }
+                }
+                renderMessage('ok', data.message || 'В архів');
+                applyOrderHistoryView();
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка архіву');
+            }
+        });
+    });
+
+    applyOrderHistoryView();
+
+    document.querySelectorAll('.cabinet-review-edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-review-id');
+            var form = document.getElementById('cabinetReviewEditForm-' + id);
+            if (form) {
+                form.hidden = false;
+                btn.hidden = true;
+            }
+        });
+    });
+
+    document.querySelectorAll('.cabinet-review-cancel-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-review-id');
+            var form = document.getElementById('cabinetReviewEditForm-' + id);
+            var editBtn = document.querySelector('.cabinet-review-edit-btn[data-review-id="' + id + '"]');
+            if (form) form.hidden = true;
+            if (editBtn) editBtn.hidden = false;
+        });
+    });
+
+    document.querySelectorAll('.cabinet-review-edit-form, .cabinet-review-delete-form').forEach(function (form) {
+        form.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            if (form.classList.contains('cabinet-review-delete-form')) {
+                if (!window.confirm('Надіслати запит на видалення?')) return;
+            }
+            try {
+                var data = await submitForm(form, false);
+                if (form._formDraftHandle && form._formDraftHandle.clear) {
+                    form._formDraftHandle.clear();
+                }
+                renderMessage('ok', data.message || 'Надіслано');
+                window.setTimeout(function () { window.location.reload(); }, 600);
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            }
+        });
+    });
+
+    if (savePasswordBtn && passwordForm) {
+        savePasswordBtn.addEventListener('click', async function () {
+            var p1 = newPasswordInput ? String(newPasswordInput.value || '') : '';
+            var p2 = newPasswordConfirmInput ? String(newPasswordConfirmInput.value || '') : '';
+            if (p1.length < 6) {
+                renderMessage('error', 'Пароль від 6 символів');
+                return;
+            }
+            if (p1 !== p2) {
+                renderMessage('error', 'Паролі не збігаються');
+                return;
+            }
+            try {
+                var data = await submitForm(passwordForm, false);
+                renderMessage('ok', data.message || 'Пароль змінено');
+                passwordForm.reset();
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            }
+        });
+    }
+})();
+</script>

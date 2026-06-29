@@ -1,0 +1,62 @@
+<%
+const shiftOn = !!onShift;
+const count = typeof activeCount === 'number' ? activeCount : 0;
+const canEndShiftVal = typeof canEndShift !== 'undefined' ? !!canEndShift : (!shiftOn || count === 0);
+const okText = typeof successMessage !== 'undefined' && successMessage ? String(successMessage) : '';
+const errText = typeof errorMessage !== 'undefined' && errorMessage ? String(errorMessage) : '';
+const personalMail = typeof personalEmail === 'string' ? personalEmail : '';
+const workMail = typeof workEmail === 'string' ? workEmail : '';
+const notifyMail = typeof notifyEmail === 'string' ? notifyEmail : '';
+%>
+
+<div class="warehouse-page courier-page courier-shift-page">
+    <div class="courier-shift-head">
+        <div>
+            <h1>Моя зміна</h1>
+            <p class="warehouse-count">
+                Статус: <strong><%= shiftOn ? 'На зміні' : 'Не на зміні' %></strong>
+                · активних доставок: <strong><%= count %></strong>
+            </p>
+        </div>
+        <a class="warehouse-stock-link" href="/courier/orders">Мої доставки →</a>
+    </div>
+
+    <% if (okText) { %><p class="warehouse-feedback warehouse-feedback--ok"><%= okText %></p><% } %>
+    <% if (errText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errText %></p><% } %>
+
+    <% if (shiftOn && count > 0) { %>
+        <p class="warehouse-feedback warehouse-feedback--error courier-shift-blocked">
+            У тебе <strong><%= count %></strong> активних доставок. Заверши їх (статус «Прийнято»), потім завершуй зміну.
+        </p>
+    <% } %>
+
+    <div class="courier-shift-actions">
+        <% if (shiftOn && !canEndShiftVal) { %>
+            <a class="auth-button" href="/courier/orders">Перейти до доставок</a>
+            <button type="button" class="auth-button courier-shift-btn--disabled" disabled>Завершити зміну</button>
+        <% } else { %>
+            <form method="post" action="/courier/shift" class="courier-shift-form">
+                <button type="submit" class="auth-button">
+                    <%= shiftOn ? 'Завершити зміну' : 'Почати зміну' %>
+                </button>
+            </form>
+        <% } %>
+    </div>
+
+    <% if (!shiftOn) { %>
+        <p class="auth-hint courier-shift-hint">
+            Після «Почати зміну» система може автоматично призначити готові замовлення зі складу.
+        </p>
+    <% } else if (count === 0) { %>
+        <p class="auth-hint courier-shift-hint">
+            На зміні можна отримувати нові доставки та змінювати статуси замовлень.
+        </p>
+    <% } %>
+
+    <section class="courier-shift-emails">
+        <h2 class="courier-shift-emails__title">Контакти для сповіщень</h2>
+        <p><strong>Особистий email:</strong> <%= personalMail || '—' %></p>
+        <p><strong>Робочий email:</strong> <%= workMail || '—' %></p>
+        <p><strong>Листи про замовлення:</strong> <%= notifyMail || '—' %></p>
+    </section>
+</div>

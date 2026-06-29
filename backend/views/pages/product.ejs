@@ -1,124 +1,652 @@
 <%
+
 const basePrice = Number(product.base_price || 0);
+
 const salePrice = Number(product.sale_price || 0);
+
 const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice;
+
 const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0;
+
 const safeReviews = typeof reviews !== 'undefined' && Array.isArray(reviews) ? reviews : [];
+
+const REVIEW_PREVIEW_LIMIT = 6;
+
+const previewReviews = safeReviews.slice(0, REVIEW_PREVIEW_LIMIT);
+
+const hasMoreReviews = safeReviews.length > REVIEW_PREVIEW_LIMIT;
+
+const ratedValues = safeReviews
+
+    .map((rev) => Number(rev.rating))
+
+    .filter((value) => Number.isFinite(value) && value >= 1 && value <= 5);
+
+let avgRating = 0;
+
+if (ratedValues.length > 0) {
+
+    const sum = ratedValues.reduce((acc, value) => acc + value, 0);
+
+    avgRating = Math.round((sum / ratedValues.length) * 10) / 10;
+
+}
+
+const hasAvgRating = ratedValues.length > 0 && avgRating > 0;
+
+const ratedCount = ratedValues.length;
+
+const ratedCountLabel = ratedCount === 1
+
+    ? '1 оцінка'
+
+    : (ratedCount >= 2 && ratedCount <= 4 ? `${ratedCount} оцінки` : `${ratedCount} оцінок`);
+
+const reviewCount = safeReviews.length;
+
+const reviewCountLabel = reviewCount === 1
+
+    ? '1 відгук'
+
+    : (reviewCount >= 2 && reviewCount <= 4 ? `${reviewCount} відгуки` : `${reviewCount} відгуків`);
+
+const inStock = Number(product.stock_quantity) > 0;
+
+const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
+
+    const count = ratedValues.filter((value) => value === star).length;
+
+    const percent = ratedCount > 0 ? Math.round((count / ratedCount) * 100) : 0;
+
+    return { star, count, percent };
+
+});
+
 %>
 
+
+
 <section class="catalog-content product-detail-section">
+
     <nav class="breadcrumb-nav" aria-label="Навігація">
+
         <a href="/">Головна</a>
+
         <span class="breadcrumb-sep" aria-hidden="true">/</span>
+
         <a href="/?category_id=<%= product.category_id %>"><%= product.category_name %></a>
+
         <span class="breadcrumb-sep" aria-hidden="true">/</span>
+
         <span class="breadcrumb-current"><%= product.name %></span>
+
     </nav>
 
-    <div class="product-detail-grid">
-        <div class="product-detail-image-wrap">
-            <% if (discountPercent > 0) { %>
-                <span class="discount-badge discount-badge--large"><%= discountPercent %>%</span>
-            <% } %>
-            <% if (product.image_url) { %>
-                <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-detail-image" />
-            <% } else { %>
-                <div class="product-detail-image product-detail-image--placeholder">Немає фото</div>
-            <% } %>
-        </div>
 
-        <div class="product-detail-info">
-            <h1 class="product-detail-title"><%= product.name %></h1>
 
-            <p class="product-detail-price">
-                <% if (hasDiscount) { %>
-                    <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+    <div class="product-detail-hero">
+
+        <div class="product-detail-grid">
+
+            <div class="product-detail-image-wrap">
+
+                <% if (discountPercent > 0) { %>
+
+                    <span class="discount-badge discount-badge--large"><%= discountPercent %>%</span>
+
                 <% } %>
-                <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
-            </p>
 
-            <p class="product-detail-meta">
-                Категорія: <a href="/?category_id=<%= product.category_id %>"><%= product.category_name %></a>
-            </p>
+                <% if (product.image_url) { %>
 
-            <p class="product-detail-meta">
-                <% if (Number(product.stock_quantity) > 0) { %>
-                    В наявності: <%= product.stock_quantity %> <%= product.unit_type || 'шт' %>
+                    <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-detail-image" />
+
                 <% } else { %>
-                    Немає в наявності
-                <% } %>
-            </p>
 
-            <p class="product-detail-order">
-                <% if (Number(product.stock_quantity) > 0) { %>
-                    <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
-                <% } else { %>
-                    <button class="product-order-btn" type="button" disabled>Замовити</button>
-                <% } %>
-            </p>
+                    <div class="product-detail-image product-detail-image--placeholder">Немає фото</div>
 
-            <% if (product.description && String(product.description).trim() !== '') { %>
-                <div class="product-detail-desc">
-                    <%= product.description %>
+                <% } %>
+
+            </div>
+
+
+
+            <div class="product-detail-info">
+
+                <div class="product-detail-badges">
+
+                    <span class="product-detail-badge product-detail-badge--category"><%= product.category_name %></span>
+
+                    <% if (inStock) { %>
+
+                        <span class="product-detail-badge product-detail-badge--stock">В наявності</span>
+
+                    <% } else { %>
+
+                        <span class="product-detail-badge product-detail-badge--out">Немає в наявності</span>
+
+                    <% } %>
+
                 </div>
-            <% } %>
 
-            <p class="product-detail-back">
-                <a href="/">← До каталогу</a>
-            </p>
+
+
+                <h1 class="product-detail-title"><%= product.name %></h1>
+
+
+
+                <div class="product-rating-summary" aria-label="Середня оцінка товару">
+
+                    <% if (hasAvgRating) { %>
+
+                        <button
+
+                            type="button"
+
+                            class="product-rating-summary-btn"
+
+                            data-reviews-modal-open
+
+                            title="Переглянути всі відгуки"
+
+                        >
+
+                            <span class="star-rating" title="Середня оцінка <%= avgRating.toFixed(1) %> з 5">
+
+                                <% for (let star = 1; star <= 5; star += 1) { %>
+
+                                    <span class="star-icon <%= star <= Math.round(avgRating) ? 'star-icon--on' : 'star-icon--off' %>">★</span>
+
+                                <% } %>
+
+                            </span>
+
+                            <strong class="product-rating-value"><%= avgRating.toFixed(1) %></strong>
+
+                            <span class="product-rating-count">(<%= ratedCountLabel %>)</span>
+
+                        </button>
+
+                    <% } else { %>
+
+                        <span class="product-rating-none">Ще немає оцінок — стань першим!</span>
+
+                    <% } %>
+
+                </div>
+
+
+
+                <p class="product-detail-price">
+
+                    <% if (hasDiscount) { %>
+
+                        <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+
+                    <% } %>
+
+                    <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+
+                </p>
+
+
+
+                <p class="product-detail-meta">
+
+                    <% if (inStock) { %>
+
+                        На складі: <strong><%= product.stock_quantity %> <%= product.unit_type || 'шт' %></strong>
+
+                    <% } else { %>
+
+                        Очікуйте поповнення або оберіть інший товар
+
+                    <% } %>
+
+                </p>
+
+
+
+                <div class="product-detail-order">
+                    <% if (inStock) { %>
+                        <form method="post" action="/cart/add" class="cart-form cart-ajax product-detail-cart-form">
+                            <input type="hidden" name="product_id" value="<%= product.id %>" />
+                            <input type="hidden" name="quantity" value="1" />
+                            <button class="cart-icon-btn cart-icon-btn--large" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                        </form>
+                        <a class="product-order-btn product-order-btn--primary" href="/checkout?product_id=<%= product.id %>">Замовити зараз</a>
+                    <% } else { %>
+                        <button class="cart-icon-btn cart-icon-btn--large" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>
+                        <button class="product-order-btn product-order-btn--primary" type="button" disabled>Замовити</button>
+                    <% } %>
+                </div>
+
+
+
+                <% if (product.description && String(product.description).trim() !== '') { %>
+
+                    <div class="product-detail-desc">
+                        <h2 class="product-detail-desc-title">Про товар</h2>
+                        <p class="product-detail-desc-text"><%= product.description %></p>
+                    </div>
+
+                <% } %>
+
+
+
+                <p class="product-detail-back">
+
+                    <a href="/">← До каталогу</a>
+
+                </p>
+
+            </div>
+
         </div>
+
     </div>
+
+
 
     <div class="product-reviews-wrap">
-        <div class="product-reviews-layout">
-            <div class="product-reviews-col product-reviews-col--form">
-                <% if (currentUser) { %>
-                    <h2 class="product-review-form-title">Ваш відгук</h2>
-                    <form class="product-review-form" method="post" action="/product/<%= product.id %>/reviews">
-                        <textarea
-                            id="review-comment"
-                            class="product-review-textarea"
-                            name="comment"
-                            rows="4"
-                            maxlength="2000"
-                            required
-                            minlength="2"
-                            placeholder="Напиши враження про товар..."
-                        ></textarea>
-                        <button class="product-review-submit" type="submit">Надіслати відгук</button>
-                    </form>
-                <% } else { %>
-                    <p class="product-review-login-hint">
-                        <a href="/login">Увійди</a>, щоб залишити відгук.
-                    </p>
-                <% } %>
+
+        <div class="product-reviews-head">
+
+            <div>
+
+                <h2 class="product-reviews-title">Відгуки покупців</h2>
+
+                <p class="product-reviews-subtitle">
+
+                    <% if (reviewCount > 0) { %>
+
+                        <%= reviewCountLabel %><% if (hasAvgRating) { %> · середня оцінка <%= avgRating.toFixed(1) %><% } %>
+
+                    <% } else { %>
+
+                        Поділіться враженням після покупки
+
+                    <% } %>
+
+                </p>
+
             </div>
-            <div class="product-reviews-col product-reviews-col--list">
-                <h2 class="product-reviews-title">Відгуки</h2>
-                <% if (safeReviews.length === 0) { %>
-                    <p class="product-reviews-empty">Поки немає відгуків.</p>
-                <% } else { %>
-                    <ul class="product-reviews-list">
-                        <% for (const rev of safeReviews) { %>
-                            <% const revDate = rev.createdAt || rev.createdat; %>
-                            <li class="product-review-item">
-                                <p class="product-review-meta">
-                                    <strong><%= rev.first_name %> <%= rev.last_name %></strong>
-                                    <% if (rev.rating != null && rev.rating !== '') { %>
-                                        · оцінка <%= rev.rating %>/5
-                                    <% } %>
-                                    <% if (revDate) { %>
-                                        · <%= new Date(revDate).toLocaleString('uk-UA') %>
-                                    <% } %>
-                                </p>
-                                <% if (rev.comment && String(rev.comment).trim() !== '') { %>
-                                    <p class="product-review-body"><%= rev.comment %></p>
-                                <% } %>
-                            </li>
-                        <% } %>
-                    </ul>
-                <% } %>
-            </div>
+
+            <% if (reviewCount > 0) { %>
+
+                <button type="button" class="product-reviews-all-btn" data-reviews-modal-open>
+
+                    Дивитися всі відгуки
+
+                </button>
+
+            <% } %>
+
         </div>
+
+
+
+        <div class="product-reviews-layout">
+
+            <div class="product-reviews-col product-reviews-col--form">
+
+                <div class="product-review-form-card">
+
+                    <% if (currentUser) { %>
+
+                        <h3 class="product-review-form-title">Залишити відгук</h3>
+
+                        <p class="product-review-note">Оцінка та коментар з’являться після модерації.</p>
+
+                        <form class="product-review-form" method="post" action="/product/<%= product.id %>/reviews" data-form-draft="flowersgo_product_review_draft:<%= product.id %>" data-form-draft-message="Чернетку відгуку відновлено">
+
+                            <label class="product-review-label" for="review-rating">Ваша оцінка</label>
+
+                            <div class="star-input" id="review-star-input" data-star-input>
+
+                                <input type="hidden" name="rating" id="review-rating" value="" required />
+
+                                <% for (let star = 1; star <= 5; star += 1) { %>
+
+                                    <button
+
+                                        type="button"
+
+                                        class="star-input-btn"
+
+                                        data-value="<%= star %>"
+
+                                        aria-label="<%= star %> з 5"
+
+                                    >★</button>
+
+                                <% } %>
+
+                            </div>
+
+                            <label class="product-review-label" for="review-comment">Коментар</label>
+
+                            <textarea
+
+                                id="review-comment"
+
+                                class="product-review-textarea"
+
+                                name="comment"
+
+                                rows="4"
+
+                                maxlength="2000"
+
+                                required
+
+                                minlength="2"
+
+                                placeholder="Що сподобалось? Якість, упаковка, враження..."
+
+                            ></textarea>
+
+                            <button class="product-review-submit" type="submit">Надіслати відгук</button>
+
+                        </form>
+
+                    <% } else { %>
+
+                        <h3 class="product-review-form-title">Хочеш оцінити товар?</h3>
+
+                        <p class="product-review-login-hint">
+
+                            <a href="/login">Увійди в акаунт</a>, щоб залишити відгук і допомогти іншим покупцям.
+
+                        </p>
+
+                    <% } %>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="product-reviews-col product-reviews-col--list">
+
+                <% if (safeReviews.length === 0) { %>
+
+                    <div class="product-reviews-empty-card">
+
+                        <p class="product-reviews-empty-icon" aria-hidden="true">💬</p>
+
+                        <p class="product-reviews-empty">Поки немає відгуків. Будь першим!</p>
+
+                    </div>
+
+                <% } else { %>
+
+                    <ul class="product-reviews-list<%= hasMoreReviews ? ' product-reviews-list--preview' : '' %>">
+
+                        <% for (const rev of previewReviews) { %>
+
+                            <%- include('../partials/product-review-item', { rev }) %>
+
+                        <% } %>
+
+                    </ul>
+
+                    <% if (hasMoreReviews) { %>
+
+                        <p class="product-reviews-more">
+
+                            <button type="button" class="product-reviews-more-link" data-reviews-modal-open>
+
+                                Дивитися всі відгуки (<%= reviewCount %>)
+
+                            </button>
+
+                        </p>
+
+                    <% } %>
+
+                <% } %>
+
+            </div>
+
+        </div>
+
     </div>
+
 </section>
+
+
+
+<% if (reviewCount > 0) { %>
+
+<div class="reviews-modal" id="reviews-modal" hidden aria-hidden="true">
+
+    <div class="reviews-modal-backdrop" data-reviews-modal-close></div>
+
+    <div
+
+        class="reviews-modal-dialog"
+
+        role="dialog"
+
+        aria-modal="true"
+
+        aria-labelledby="reviews-modal-title"
+
+    >
+
+        <button type="button" class="reviews-modal-close" data-reviews-modal-close aria-label="Закрити">×</button>
+
+
+
+        <header class="reviews-modal-header">
+
+            <h2 id="reviews-modal-title">Всі відгуки</h2>
+
+            <p class="reviews-modal-product"><%= product.name %></p>
+
+            <% if (hasAvgRating) { %>
+
+                <div class="reviews-modal-summary">
+
+                    <div class="reviews-modal-score">
+
+                        <strong class="reviews-modal-score-value"><%= avgRating.toFixed(1) %></strong>
+
+                        <span class="star-rating" aria-hidden="true">
+
+                            <% for (let star = 1; star <= 5; star += 1) { %>
+
+                                <span class="star-icon <%= star <= Math.round(avgRating) ? 'star-icon--on' : 'star-icon--off' %>">★</span>
+
+                            <% } %>
+
+                        </span>
+
+                        <span class="reviews-modal-score-label"><%= ratedCountLabel %></span>
+
+                    </div>
+
+                    <ul class="reviews-modal-breakdown">
+
+                        <% for (const row of starBreakdown) { %>
+
+                            <li class="reviews-modal-breakdown-row">
+
+                                <span class="reviews-modal-breakdown-star"><%= row.star %> ★</span>
+
+                                <span class="reviews-modal-breakdown-bar">
+
+                                    <span class="reviews-modal-breakdown-fill" style="width: <%= row.percent %>%"></span>
+
+                                </span>
+
+                                <span class="reviews-modal-breakdown-count"><%= row.count %></span>
+
+                            </li>
+
+                        <% } %>
+
+                    </ul>
+
+                </div>
+
+            <% } %>
+
+        </header>
+
+
+
+        <div class="reviews-modal-body">
+
+            <ul class="product-reviews-list product-reviews-list--modal">
+
+                <% for (const rev of safeReviews) { %>
+
+                    <%- include('../partials/product-review-item', { rev }) %>
+
+                <% } %>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+
+<% } %>
+
+
+
+<script>
+
+(function () {
+
+    const wrap = document.getElementById('review-star-input');
+
+    if (wrap) {
+
+        const hidden = document.getElementById('review-rating');
+
+        const buttons = Array.from(wrap.querySelectorAll('.star-input-btn'));
+
+
+
+        const paint = (value) => {
+
+            buttons.forEach((btn) => {
+
+                const v = Number(btn.getAttribute('data-value'));
+
+                btn.classList.toggle('is-active', v <= value);
+
+            });
+
+        };
+
+
+
+        buttons.forEach((btn) => {
+
+            const value = Number(btn.getAttribute('data-value'));
+
+            btn.addEventListener('mouseenter', () => paint(value));
+
+            btn.addEventListener('focus', () => paint(value));
+
+            btn.addEventListener('click', () => {
+
+                hidden.value = String(value);
+
+                paint(value);
+
+            });
+
+        });
+
+
+
+        wrap.addEventListener('mouseleave', () => {
+
+            const current = Number(hidden.value);
+
+            paint(Number.isFinite(current) && current > 0 ? current : 0);
+
+        });
+
+    }
+
+
+
+    const modal = document.getElementById('reviews-modal');
+
+    if (!modal) return;
+
+
+
+    const openBtns = document.querySelectorAll('[data-reviews-modal-open]');
+
+    const closeBtns = modal.querySelectorAll('[data-reviews-modal-close]');
+
+    let lastFocus = null;
+
+
+
+    const openModal = () => {
+
+        lastFocus = document.activeElement;
+
+        modal.hidden = false;
+
+        modal.setAttribute('aria-hidden', 'false');
+
+        document.body.classList.add('reviews-modal-open');
+
+        const closeBtn = modal.querySelector('.reviews-modal-close');
+
+        if (closeBtn) closeBtn.focus();
+
+    };
+
+
+
+    const closeModal = () => {
+
+        modal.hidden = true;
+
+        modal.setAttribute('aria-hidden', 'true');
+
+        document.body.classList.remove('reviews-modal-open');
+
+        if (lastFocus && typeof lastFocus.focus === 'function') {
+
+            lastFocus.focus();
+
+        }
+
+    };
+
+
+
+    openBtns.forEach((btn) => btn.addEventListener('click', openModal));
+
+    closeBtns.forEach((btn) => btn.addEventListener('click', closeModal));
+
+
+
+    document.addEventListener('keydown', (event) => {
+
+        if (event.key === 'Escape' && !modal.hidden) {
+
+            closeModal();
+
+        }
+
+    });
+
+})();
+
+</script>
+
+

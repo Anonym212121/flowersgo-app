@@ -1,0 +1,122 @@
+<h1>Акаунт заблоковано</h1>
+
+<div class="auth-card blocked-account-card">
+    <p class="blocked-account-lead">
+        Щоб переглянути причину блокування, підтвердіть email і пароль від акаунта.
+    </p>
+
+    <form id="blockedVerifyForm" class="auth-form">
+        <label class="auth-label">
+            Email
+            <input class="auth-input" type="email" name="email" id="blockedEmail" autocomplete="email" required />
+        </label>
+
+        <label class="auth-label">
+            Пароль
+            <input class="auth-input" type="password" name="password" autocomplete="current-password" required />
+        </label>
+
+        <button class="auth-button" type="submit">Показати причину</button>
+    </form>
+
+    <div id="blockedVerifyError" class="auth-error" aria-live="polite"></div>
+
+    <div id="blockedReasonBox" class="blocked-reason-box" hidden>
+        <h2>Причина блокування</h2>
+        <p id="blockedReasonText" class="blocked-reason-text"></p>
+
+        <form id="blockedMessageForm" class="auth-form blocked-message-form" data-form-draft="flowersgo_blocked_message_draft" data-form-draft-storage="session" data-form-draft-message="Чернетку повідомлення відновлено">
+            <label class="auth-label">
+                Повідомлення адміністратору
+                <textarea class="auth-input blocked-message-input" name="message" rows="4" maxlength="2000" placeholder="Напишіть, що сталося або чому вважаєте блокування помилкою"></textarea>
+            </label>
+            <button class="auth-button" type="submit">Надіслати</button>
+        </form>
+        <div id="blockedMessageStatus" class="auth-error" aria-live="polite"></div>
+    </div>
+</div>
+
+<p class="auth-hint"><a href="/login">Повернутися до входу</a></p>
+
+<script>
+    const blockedVerifyForm = document.getElementById('blockedVerifyForm');
+    const blockedMessageForm = document.getElementById('blockedMessageForm');
+    const blockedVerifyError = document.getElementById('blockedVerifyError');
+    const blockedMessageStatus = document.getElementById('blockedMessageStatus');
+    const blockedReasonBox = document.getElementById('blockedReasonBox');
+    const blockedReasonText = document.getElementById('blockedReasonText');
+    const blockedEmailInput = document.getElementById('blockedEmail');
+
+    let savedEmail = '';
+    let savedPassword = '';
+
+    const storedEmail = sessionStorage.getItem('blocked_login_email');
+    if (storedEmail) {
+        blockedEmailInput.value = storedEmail;
+    }
+
+    blockedVerifyForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        blockedVerifyError.textContent = '';
+        blockedMessageStatus.textContent = '';
+
+        const formData = new FormData(blockedVerifyForm);
+        const payload = {
+            email: formData.get('email'),
+            password: formData.get('password')
+        };
+
+        const response = await fetch('/api/auth/blocked-info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            blockedVerifyError.textContent = (data && data.message) ? data.message : 'Помилка';
+            blockedReasonBox.hidden = true;
+            return;
+        }
+
+        savedEmail = payload.email;
+        savedPassword = payload.password;
+        blockedReasonText.textContent = data.reason || 'Причину не вказано';
+        blockedReasonBox.hidden = false;
+    });
+
+    blockedMessageForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        blockedMessageStatus.textContent = '';
+
+        if (!savedEmail || !savedPassword) {
+            blockedMessageStatus.textContent = 'Спочатку підтвердіть акаунт';
+            return;
+        }
+
+        const formData = new FormData(blockedMessageForm);
+        const message = formData.get('message');
+
+        const response = await fetch('/api/auth/blocked-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                email: savedEmail,
+                password: savedPassword,
+                message
+            })
+        });
+
+        const data = await response.json().catch(() => null);
+        if (!response.ok) {
+            blockedMessageStatus.textContent = (data && data.message) ? data.message : 'Помилка';
+            return;
+        }
+
+        blockedMessageStatus.style.color = '#86efac';
+        blockedMessageStatus.textContent = data.message || 'Надіслано';
+        blockedMessageForm.reset();
+    });
+</script>

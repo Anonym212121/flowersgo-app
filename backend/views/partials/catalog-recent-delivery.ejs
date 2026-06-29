@@ -1,0 +1,13 @@
+<a href="/product/<%= item.product_id %>" class="catalog-recent-delivery__card">
+    <div class="catalog-recent-delivery__media">
+        <% if (item.image_url) { %>
+            <img src="<%= item.image_url %>" alt="<%= item.product_name %>" class="catalog-recent-delivery__image" />
+        <% } else { %>
+            <div class="catalog-recent-delivery__image catalog-recent-delivery__image--placeholder">Немає фото</div>
+        <% } %>
+    </div>
+    <p class="catalog-recent-delivery__name"><%= item.product_name %></p>
+    <% if (item.place) { %>
+        <p class="catalog-recent-delivery__place"><%= item.place %></p>
+    <% } %>
+</a>

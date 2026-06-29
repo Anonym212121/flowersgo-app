@@ -1,24 +1,108 @@
-<section class="admin-panel-shell">
-    <aside class="admin-panel-menu">
-        <h2 class="admin-panel-menu__title">Меню</h2>
+<section class="admin-panel-shell admin-panel-shell--booting">
+    <aside class="admin-panel-menu" id="adminPanelMenu">
+        <div class="admin-panel-menu__brand">
+            <p class="admin-panel-menu__eyebrow">FlowersGo</p>
+            <h2 class="admin-panel-menu__title">Адмін-панель</h2>
+            <a class="admin-panel-menu__site-link" href="/" target="_blank" rel="noopener">Відкрити сайт ↗</a>
+        </div>
 
-        <button type="button" id="admin-show-list" class="admin-menu-btn">
-            Редагування товару
-        </button>
-        <button type="button" id="admin-show-create" class="admin-menu-btn">
-            Додати новий товар
-        </button>
-        <button type="button" id="admin-show-reviews" class="admin-menu-btn">
-            Відгуки
-        </button>
+        <nav class="admin-nav" aria-label="Меню адміністратора">
+            <button type="button" id="admin-show-dashboard" class="admin-menu-btn admin-nav-top" data-nav-mode="dashboard">
+                <span class="admin-nav-label">Огляд</span>
+            </button>
+            <button type="button" id="admin-show-statistics" class="admin-menu-btn admin-nav-top" data-nav-mode="statistics">
+                <span class="admin-nav-label">Статистика</span>
+            </button>
+
+            <div class="admin-nav-group is-open" data-nav-group="catalog">
+                <button type="button" class="admin-nav-group__toggle" aria-expanded="true">
+                    <span>Каталог</span>
+                    <span class="admin-nav-group__chevron" aria-hidden="true"></span>
+                </button>
+                <div class="admin-nav-group__items">
+                    <button type="button" id="admin-show-list" class="admin-nav-sub" data-nav-mode="list">
+                        <span>Товари</span>
+                        <span class="admin-nav-badge admin-nav-badge--warn" id="admin-badge-catalog-low" hidden></span>
+                    </button>
+                    <button type="button" id="admin-show-create" class="admin-nav-sub admin-nav-sub--accent" data-nav-mode="create">+ Новий товар</button>
+                    <button type="button" id="admin-show-categories" class="admin-nav-sub" data-nav-mode="categories">Категорії</button>
+                    <button type="button" id="admin-show-constructor" class="admin-nav-sub" data-nav-mode="constructor">Конструктор</button>
+                </div>
+            </div>
+
+            <div class="admin-nav-group is-open" data-nav-group="orders">
+                <button type="button" class="admin-nav-group__toggle" aria-expanded="true">
+                    <span>Замовлення</span>
+                    <span class="admin-nav-group__chevron" aria-hidden="true"></span>
+                </button>
+                <div class="admin-nav-group__items">
+                    <button type="button" id="admin-show-orders-pending" class="admin-nav-sub" data-nav-mode="orders">
+                        <span class="admin-nav-label">Модерація</span>
+                        <span class="admin-nav-sub__badges">
+                            <span class="admin-nav-badge" id="admin-badge-orders-pending" hidden></span>
+                            <span class="admin-nav-badge admin-nav-badge--warn" id="admin-badge-orders-cancel" hidden title="Запити на скасування"></span>
+                        </span>
+                    </button>
+                    <button type="button" id="admin-show-orders-awaiting-payment" class="admin-nav-sub" data-nav-mode="orders-awaiting">
+                        <span>Очікують оплату</span>
+                        <span class="admin-nav-badge" id="admin-badge-orders-awaiting" hidden></span>
+                    </button>
+                    <button type="button" id="admin-show-orders-all" class="admin-nav-sub" data-nav-mode="ordersAll">Усі замовлення</button>
+                </div>
+            </div>
+
+            <div class="admin-nav-group" data-nav-group="clients">
+                <button type="button" class="admin-nav-group__toggle" aria-expanded="false">
+                    <span>Клієнти</span>
+                    <span class="admin-nav-group__chevron" aria-hidden="true"></span>
+                </button>
+                <div class="admin-nav-group__items">
+                    <button type="button" id="admin-show-reviews" class="admin-nav-sub" data-nav-mode="reviews">
+                        <span>Відгуки</span>
+                        <span class="admin-nav-badge" id="admin-badge-reviews" hidden></span>
+                    </button>
+                    <button type="button" id="admin-show-users" class="admin-nav-sub" data-nav-mode="users">Користувачі</button>
+                    <button type="button" id="admin-show-support" class="admin-nav-sub" data-nav-mode="support">
+                        <span>Підтримка</span>
+                        <span class="admin-nav-badge admin-nav-badge--warn" id="admin-badge-support" hidden></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="admin-nav-group" data-nav-group="settings">
+                <button type="button" class="admin-nav-group__toggle" aria-expanded="false">
+                    <span>Налаштування</span>
+                    <span class="admin-nav-group__chevron" aria-hidden="true"></span>
+                </button>
+                <div class="admin-nav-group__items">
+                    <button type="button" id="admin-show-delivery" class="admin-nav-sub" data-nav-mode="delivery">Доставка та тарифи</button>
+                    <button type="button" id="admin-show-couriers" class="admin-nav-sub" data-nav-mode="couriers">
+                        <span class="admin-nav-label">Кур'єри</span>
+                        <span class="admin-nav-badge admin-nav-badge--warn" id="admin-badge-couriers-unassigned" hidden></span>
+                    </button>
+                    <button type="button" id="admin-show-legal" class="admin-nav-sub" data-nav-mode="legal">Юридичні сторінки</button>
+                </div>
+            </div>
+        </nav>
     </aside>
 
     <section class="admin-panel-workspace">
-        <h1 class="admin-panel-workspace__title">Панель адміністратора</h1>
+        <header class="admin-panel-workspace__head">
+            <nav class="admin-panel-workspace__crumb" id="adminWorkspaceCrumb" hidden aria-label="Контекст"></nav>
+            <h1 class="admin-panel-workspace__title" id="adminWorkspaceTitle">Огляд</h1>
+            <p class="admin-panel-workspace__subtitle" id="adminWorkspaceSubtitle">Статистика та швидкі дії</p>
+        </header>
 
         <div id="admin-panel-message" class="admin-panel-message" aria-live="polite"></div>
         <div id="admin-panel-content" class="admin-panel-content"></div>
     </section>
 </section>
 
+<script src="/js/admin-panel-boot.js"></script>
+<script src="/js/admin-panel-nav.js"></script>
 <script src="/js/admin-panel.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+<script src="/js/admin-panel-stats.js" defer></script>
+<script src="/js/admin-panel-support.js" defer></script>
+<script src="/js/admin-panel-extra.js" defer></script>
+<script src="/js/admin-panel-bouquet-templates.js" defer></script>

@@ -1,156 +1,455 @@
 <%
-const checkoutUnitPrice = Number(product.sale_price || 0);
-const checkoutMaxQty = Number(product.stock_quantity || 0);
-const checkoutProductId = Number(product.id);
-const initialItemsJson = JSON.stringify([
-    { product_id: checkoutProductId, quantity: 1, unit_price: checkoutUnitPrice }
-]);
+const isCartMode = typeof cartMode !== 'undefined' && !!cartMode;
+const lines = isCartMode && Array.isArray(checkoutLines) ? checkoutLines : [];
+const checkoutUnitPrice = isCartMode ? Number(lines[0] && lines[0].unit_price || 0) : Number(product.sale_price || 0);
+const checkoutMaxQty = isCartMode ? Number(lines[0] && lines[0].quantity || 1) : Number(product.stock_quantity || 0);
+const checkoutProductId = isCartMode ? Number(lines[0] && lines[0].product_id || 0) : Number(product.id);
+const initialItemsJson = isCartMode
+    ? JSON.stringify(lines.map((row) => {
+        const item = {
+            product_id: Number(row.product_id),
+            quantity: Number(row.quantity || 1),
+            unit_price: Number(row.unit_price || 0)
+        };
+        if (row.color_variant_id) {
+            item.color_variant_id = Number(row.color_variant_id);
+        }
+        return item;
+    }))
+    : JSON.stringify([{ product_id: checkoutProductId, quantity: 1, unit_price: checkoutUnitPrice }]);
 const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+const initialTotal = isCartMode ? Number(checkoutTotal || 0) : checkoutUnitPrice;
+const productImg = product && product.image_url && String(product.image_url).trim() !== '' ? String(product.image_url).trim() : '';
+const upsellRows = typeof upsells !== 'undefined' && Array.isArray(upsells) ? upsells : [];
+const gmapsKey = typeof googleMapsApiKey !== 'undefined' ? String(googleMapsApiKey || '') : '';
+const profile = typeof checkoutProfile !== 'undefined' && checkoutProfile ? checkoutProfile : null;
+const profileEmail = profile && profile.email ? String(profile.email) : '';
+const profileFirstName = profile && profile.first_name ? String(profile.first_name) : '';
+const profileLastName = profile && profile.last_name ? String(profile.last_name) : '';
+const profilePhone = profile && profile.phone ? String(profile.phone) : '';
+const profileDeliveryStreet = profile && profile.saved_delivery_street ? String(profile.saved_delivery_street) : '';
+const profileDeliveryHouse = profile && profile.saved_delivery_house ? String(profile.saved_delivery_house) : '';
+const profileDeliveryApartment = profile && profile.saved_delivery_apartment ? String(profile.saved_delivery_apartment) : '';
+const bouquetNote = typeof constructorNote === 'string' ? constructorNote.trim() : '';
+const bouquetPreview = typeof constructorPreview === 'string' ? constructorPreview.trim() : '';
 %>
 
-<section class="catalog-content">
-    <h1>Оформлення замовлення</h1>
+<section class="catalog-content checkout-page">
+    <h1 class="checkout-page-title">Оформлення замовлення</h1>
+
+    <% if (bouquetNote) { %>
+        <div class="constructor-cart-note constructor-cart-note--checkout">
+            <strong>Ваш букет:</strong>
+            <span><%= bouquetNote %></span>
+            <% if (bouquetPreview) { %>
+                <div class="constructor-cart-preview">
+                    <img src="<%= bouquetPreview %>" alt="Превʼю букета" class="constructor-cart-preview__img" />
+                </div>
+            <% } %>
+        </div>
+    <% } %>
+
+    <% if (!currentUser) { %>
+        <p class="checkout-guest-note">
+            Можна без реєстрації. <a href="/login?next=/checkout">Увійти</a> · <a href="/register?next=/checkout">Реєстрація</a>
+        </p>
+    <% } %>
 
     <form
         method="post"
         action="/orders"
         id="checkoutOrderForm"
-        class="checkout-step1-form"
+        class="checkout-layout"
+        novalidate
+        data-cart-mode="<%= isCartMode ? '1' : '0' %>"
         data-product-id="<%= checkoutProductId %>"
         data-unit-price="<%= checkoutUnitPrice %>"
         data-max-qty="<%= checkoutMaxQty %>"
     >
-        <input type="hidden" name="total_price" id="checkoutTotalPrice" value="<%= checkoutUnitPrice %>" />
+        <input type="hidden" name="total_price" id="checkoutTotalPrice" value="<%= initialTotal %>" />
         <input type="hidden" name="items" id="checkoutItemsJson" value="<%= initialItemsAttr %>" />
+        <% if (isCartMode) { %>
+            <input type="hidden" name="checkout_source" value="cart" />
+        <% } %>
 
-        <p class="checkout-product-name"><%= product.name %></p>
-        <p class="checkout-unit-price">
-            <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн за <%= product.unit_type || 'шт' %>
-        </p>
-        <label class="auth-label checkout-qty-label">
-            Кількість
-            <input
-                class="auth-input"
-                type="number"
-                id="checkoutQty"
-                name="line_quantity"
-                min="1"
-                max="<%= checkoutMaxQty %>"
-                value="1"
-            />
-        </label>
-        <p class="checkout-line-total">
-            Разом: <strong id="checkoutLineTotal"><%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн</strong>
-        </p>
-
-        <h2 class="checkout-step-heading">1. Ваші дані</h2>
-        <label class="auth-label">
-            Email (необов'язково)
-            <input class="auth-input" type="email" name="customer_email" autocomplete="email" />
-        </label>
-        <label class="auth-label">
-            Ім'я
-            <input class="auth-input" type="text" name="customer_first_name" autocomplete="given-name" required minlength="2" />
-        </label>
-        <label class="auth-label">
-            Прізвище
-            <input class="auth-input" type="text" name="customer_last_name" autocomplete="family-name" required minlength="2" />
-        </label>
-        <label class="auth-label">
-            Номер телефону
-            <input class="auth-input" type="tel" name="customer_phone" autocomplete="tel" required />
-        </label>
-
-        <div class="checkout-future-step checkout-future-step--active">
-            <h2 class="checkout-step-heading">2. Кому доставити</h2>
-            <fieldset class="checkout-recipient-mode">
-                <legend class="sr-only">Одержувач</legend>
-                <label class="checkout-radio-label">
-                    <input type="radio" name="recipient_mode" value="self" checked />
-                    Я одержувач
-                </label>
-                <label class="checkout-radio-label">
-                    <input type="radio" name="recipient_mode" value="other" id="recipientModeOther" />
-                    Доставити іншій особі
-                </label>
-            </fieldset>
-            <div id="recipientOtherFields" class="checkout-recipient-other" hidden>
+        <div class="checkout-main">
+            <div class="checkout-step-card" id="checkoutStepCustomer">
+                <h2 class="checkout-step-heading">1. Ваші дані</h2>
                 <label class="auth-label">
-                    Ім'я одержувача
-                    <input class="auth-input" type="text" name="recipient_first_name" autocomplete="section-recipient given-name" />
+                    Email (необов'язково)
+                    <input class="auth-input" type="email" name="customer_email" id="customerEmail" autocomplete="email" value="<%= profileEmail %>" />
+                    <small id="customerEmailMsg" class="checkout-express-note"></small>
                 </label>
                 <label class="auth-label">
-                    Прізвище одержувача
-                    <input class="auth-input" type="text" name="recipient_last_name" autocomplete="section-recipient family-name" />
+                    Ім'я
+                    <input class="auth-input" type="text" name="customer_first_name" autocomplete="given-name" required minlength="2" value="<%= profileFirstName %>" />
                 </label>
                 <label class="auth-label">
-                    Телефон одержувача
-                    <input class="auth-input" type="tel" name="recipient_phone" autocomplete="section-recipient tel" />
+                    Прізвище
+                    <input class="auth-input" type="text" name="customer_last_name" autocomplete="family-name" required minlength="2" value="<%= profileLastName %>" />
                 </label>
                 <label class="auth-label">
-                    Коментар до доставки (необов'язково)
-                    <textarea class="auth-input" name="recipient_note" rows="2"></textarea>
+                    Номер телефону
+                    <input class="auth-input" type="tel" name="customer_phone" autocomplete="tel" required value="<%= profilePhone %>" />
                 </label>
             </div>
+
+            <div class="checkout-step-card checkout-future-step checkout-future-step--active" id="checkoutStepRecipient">
+                <h2 class="checkout-step-heading">2. Кому доставити</h2>
+                <fieldset class="checkout-recipient-mode">
+                    <legend class="sr-only">Одержувач</legend>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="recipient_mode" value="self" checked />
+                        Я одержувач
+                    </label>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="recipient_mode" value="other" id="recipientModeOther" />
+                        Доставити іншій особі
+                    </label>
+                </fieldset>
+                <div id="recipientOtherFields" class="checkout-recipient-other" hidden>
+                    <label class="auth-label">
+                        Ім'я одержувача
+                        <input class="auth-input" type="text" name="recipient_first_name" autocomplete="section-recipient given-name" />
+                    </label>
+                    <label class="auth-label">
+                        Прізвище одержувача
+                        <input class="auth-input" type="text" name="recipient_last_name" autocomplete="section-recipient family-name" />
+                    </label>
+                    <label class="auth-label">
+                        Телефон одержувача
+                        <input class="auth-input" type="tel" name="recipient_phone" autocomplete="section-recipient tel" />
+                    </label>
+                    <label class="auth-label">
+                        Коментар до доставки (необов'язково)
+                        <textarea class="auth-input" name="recipient_note" rows="2"></textarea>
+                    </label>
+                </div>
+            </div>
+
+            <div class="checkout-step-card checkout-future-step checkout-future-step--active" id="deliveryCard">
+                <h2 class="checkout-step-heading">3. Доставка</h2>
+
+                <fieldset class="checkout-recipient-mode" id="deliveryMethods">
+                    <legend class="sr-only">Спосіб доставки</legend>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="delivery_method" value="standard" checked />
+                        Стандартна — 2-годинне вікно · безкоштовно
+                    </label>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="delivery_method" value="exact" />
+                        В точний час · +99 грн
+                    </label>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="delivery_method" value="express" />
+                        Експрес — якнайшвидше · +99 грн
+                    </label>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="delivery_method" value="pickup" />
+                        Самовивіз (9:00–19:00) · безкоштовно
+                    </label>
+                </fieldset>
+
+                <div id="deliveryAddressBlock">
+                    <% if (gmapsKey) { %>
+                        <label class="auth-label">
+                            Пошук адреси
+                            <div id="addressAutocompleteBox" class="checkout-address-search"></div>
+                        </label>
+                    <% } %>
+                    <label class="auth-label">
+                        Вулиця
+                        <input class="auth-input" type="text" name="delivery_street" id="deliveryStreet" placeholder="Місто, вулиця" value="<%= profileDeliveryStreet %>" />
+                    </label>
+                    <div class="checkout-address-row">
+                        <label class="auth-label">
+                            Будинок
+                            <input class="auth-input" type="text" name="delivery_house" id="deliveryHouse" value="<%= profileDeliveryHouse %>" />
+                        </label>
+                        <label class="auth-label">
+                            Квартира / Офіс
+                            <input class="auth-input" type="text" name="delivery_apartment" id="deliveryApartment" value="<%= profileDeliveryApartment %>" />
+                        </label>
+                    </div>
+                </div>
+
+                <div id="deliveryDateBlock">
+                    <label class="auth-label">
+                        Дата доставки
+                        <input class="auth-input" type="date" name="delivery_date" id="deliveryDate" />
+                    </label>
+
+                    <label class="auth-label" id="deliverySlotWrap">
+                        Період доставки
+                        <select class="auth-input" id="deliverySlot"></select>
+                    </label>
+
+                    <label class="auth-label" id="deliveryTimeWrap" hidden>
+                        Точний час
+                        <input class="auth-input" type="time" id="deliveryExactInput" step="900" />
+                        <small id="deliveryExactMsg" class="checkout-express-note"></small>
+                    </label>
+
+                    <p id="deliveryExpressNote" class="checkout-express-note" hidden>
+                        Зберемо й доставимо якнайшвидше — протягом приблизно години.
+                    </p>
+                </div>
+
+                <input type="hidden" name="delivery_slot" id="deliveryTimeHidden" />
+            </div>
+
+            <div class="checkout-step-card" id="checkoutStepPayment">
+                <h2 class="checkout-step-heading">4. Оплата</h2>
+                <fieldset class="checkout-recipient-mode">
+                    <legend class="sr-only">Спосіб оплати</legend>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="payment_method" value="card" checked />
+                        Оплата карткою (LiqPay)
+                    </label>
+                    <label class="checkout-radio-label">
+                        <input type="radio" name="payment_method" value="cod" />
+                        Оплата при отриманні
+                    </label>
+                </fieldset>
+                <p class="checkout-payment-hint" id="checkoutPaymentHintCard">
+                    Оплата карткою: після оформлення у вас буде <strong>10 хвилин</strong> на оплату в LiqPay. Якщо не встигнете — замовлення скасується автоматично.
+                </p>
+                <p class="checkout-payment-hint checkout-payment-hint--cod" id="checkoutPaymentHintCod" hidden>
+                    Оплата при отриманні: замовлення потрапить на перевірку адміну після підтвердження способу оплати. Готівку або термінал — кур'єру або на касі при самовивозі.
+                </p>
+            </div>
+
+            <div id="checkoutFormError" class="checkout-form-error" hidden></div>
+            <button type="submit" class="auth-button checkout-submit-btn" id="checkoutSubmitOrder">Оформити замовлення</button>
         </div>
 
-        <div class="checkout-future-step checkout-future-step--active">
-            <h2 class="checkout-step-heading">3. Куди доставити</h2>
-            <label class="auth-label">
-                Адреса доставки
-                <textarea
-                    class="auth-input"
-                    name="delivery_place"
-                    rows="3"
-                    required
-                    minlength="8"
-                    placeholder="Місто, вулиця, будинок…"
-                ></textarea>
-            </label>
-            <label class="auth-label">
-                Дата й час доставки
-                <input class="auth-input" type="datetime-local" name="delivery_datetime" />
-            </label>
-        </div>
+        <aside class="checkout-aside">
+            <div class="checkout-summary-card">
+                <div class="checkout-summary-head">
+                    <span class="checkout-summary-title">Ваші товари</span>
+                    <strong class="checkout-summary-total" id="checkoutLineTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                </div>
 
-        <button type="submit" class="auth-button" id="checkoutSubmitOrder">Оформити замовлення</button>
+                <% if (isCartMode) { %>
+                    <% for (const row of lines) { %>
+                        <div class="checkout-summary-line checkout-cart-line" data-product-id="<%= row.product_id %>" data-color-variant-id="<%= row.color_variant_id || '' %>" data-unit-price="<%= Number(row.unit_price || 0) %>">
+                            <% const rowImg = row.product && row.product.image_url ? String(row.product.image_url) : ''; %>
+                            <% if (rowImg) { %>
+                                <img src="<%= rowImg %>" alt="" class="checkout-summary-img" />
+                            <% } else { %>
+                                <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
+                            <% } %>
+                            <div class="checkout-summary-body">
+                                <p class="checkout-summary-name"><%= row.product.name %></p>
+                                <p class="checkout-summary-unit">
+                                    <%= Number(row.unit_price || 0).toLocaleString('uk-UA') %> грн / <%= row.product.unit_type || 'шт' %>
+                                </p>
+                                <input class="auth-input checkout-qty-input" type="number" min="1" max="<%= Number(row.product.stock_quantity || row.quantity || 1) %>" value="<%= Number(row.quantity || 1) %>" />
+                            </div>
+                        </div>
+                    <% } %>
+                <% } else { %>
+                    <div class="checkout-summary-line">
+                        <% if (productImg) { %>
+                            <img src="<%= productImg %>" alt="" class="checkout-summary-img" />
+                        <% } else { %>
+                            <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
+                        <% } %>
+                        <div class="checkout-summary-body">
+                            <p class="checkout-summary-name"><%= product.name %></p>
+                            <p class="checkout-summary-unit">
+                                <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн / <%= product.unit_type || 'шт' %>
+                            </p>
+                            <div class="checkout-qty-stepper">
+                                <button type="button" class="checkout-qty-btn" id="checkoutQtyMinus" aria-label="Зменшити кількість">−</button>
+                                <input
+                                    class="auth-input checkout-qty-input"
+                                    type="number"
+                                    id="checkoutQty"
+                                    name="line_quantity"
+                                    min="1"
+                                    max="<%= checkoutMaxQty %>"
+                                    value="1"
+                                />
+                                <button type="button" class="checkout-qty-btn" id="checkoutQtyPlus" aria-label="Збільшити кількість">+</button>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+
+                <div class="checkout-summary-extra">
+                    <h3 class="checkout-summary-extra-title">Додатково</h3>
+                    <div class="checkout-summary-row">
+                        <span>Доставка</span>
+                        <span class="checkout-summary-row-value" id="checkoutDeliveryFee">Безкоштовно</span>
+                    </div>
+                    <div class="checkout-summary-row checkout-summary-row--total">
+                        <span>Разом до сплати</span>
+                        <strong id="checkoutGrandTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                    </div>
+                </div>
+
+                <% if (upsellRows.length > 0) { %>
+                    <div class="checkout-upsell">
+                        <h3 class="checkout-upsell-title">Бажаю додати</h3>
+                        <ul class="checkout-upsell-list">
+                            <% for (const u of upsellRows) { %>
+                                <% const up = Number(u.sale_price || 0); %>
+                                <% const st = Number(u.stock_quantity || 0); %>
+                                <li class="checkout-upsell-item">
+                                    <span class="checkout-upsell-name"><%= u.name %></span>
+                                    <span class="checkout-upsell-meta">
+                                        <%= up.toLocaleString('uk-UA') %> грн
+                                        <% if (st <= 0) { %>
+                                            · немає в наявності
+                                        <% } %>
+                                    </span>
+                                    <% if (st > 0) { %>
+                                        <a class="checkout-upsell-link" href="/product/<%= u.id %>">Переглянути</a>
+                                    <% } else { %>
+                                        <span class="checkout-upsell-na">—</span>
+                                    <% } %>
+                                </li>
+                            <% } %>
+                        </ul>
+                    </div>
+                <% } %>
+            </div>
+        </aside>
     </form>
-
 </section>
 
+<script type="application/json" id="checkoutPageConfig"><%- JSON.stringify({
+    deliveryConfig: typeof deliveryConfig !== 'undefined' ? deliveryConfig : null,
+    profileAddress: {
+        street: profileDeliveryStreet,
+        house: profileDeliveryHouse,
+        apartment: profileDeliveryApartment
+    },
+    googleMapsApiKey: gmapsKey
+}) %></script>
+
 <script>
+var checkoutPageConfig = JSON.parse(document.getElementById('checkoutPageConfig').textContent);
+var DELIVERY_CONFIG = checkoutPageConfig.deliveryConfig;
+var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
 (function () {
     var form = document.getElementById('checkoutOrderForm');
     var q = document.getElementById('checkoutQty');
     var out = document.getElementById('checkoutLineTotal');
     var hidTotal = document.getElementById('checkoutTotalPrice');
     var hidItems = document.getElementById('checkoutItemsJson');
-    if (!form || !q || !out || !hidTotal || !hidItems) {
+    var minus = document.getElementById('checkoutQtyMinus');
+    var plus = document.getElementById('checkoutQtyPlus');
+    if (!form || !out || !hidTotal || !hidItems) {
         return;
     }
+    var isCartMode = String(form.dataset.cartMode || '0') === '1';
     var pid = Number(form.dataset.productId);
     var unit = Number(form.dataset.unitPrice);
     var maxQ = Number(form.dataset.maxQty);
-    function upd() {
+
+    function updSingle() {
+        if (!q) return;
         var n = parseInt(q.value, 10);
-        if (!isFinite(n) || n < 1) {
-            n = 1;
-        }
-        if (n > maxQ) {
-            n = maxQ;
-        }
+        if (!isFinite(n) || n < 1) n = 1;
+        if (n > maxQ) n = maxQ;
         q.value = String(n);
         var lineTotal = n * unit;
         out.textContent = lineTotal.toLocaleString('uk-UA') + ' грн';
         hidTotal.value = String(lineTotal);
-        hidItems.value = JSON.stringify([
-            { product_id: pid, quantity: n, unit_price: unit }
-        ]);
+        hidItems.value = JSON.stringify([{ product_id: pid, quantity: n, unit_price: unit }]);
     }
-    q.addEventListener('input', upd);
-    q.addEventListener('change', upd);
+
+    function updCart() {
+        var lines = form.querySelectorAll('.checkout-cart-line');
+        var items = [];
+        var total = 0;
+        lines.forEach(function (line) {
+            var linePid = Number(line.dataset.productId);
+            var lineUnit = Number(line.dataset.unitPrice);
+            var lineVariantRaw = line.dataset.colorVariantId;
+            var input = line.querySelector('.checkout-qty-input');
+            var max = Number(input && input.max ? input.max : 999);
+            var qty = parseInt(input && input.value ? input.value : '1', 10);
+            if (!isFinite(qty) || qty < 1) qty = 1;
+            if (isFinite(max) && max > 0 && qty > max) qty = max;
+            if (input) input.value = String(qty);
+            var item = { product_id: linePid, quantity: qty, unit_price: lineUnit };
+            if (lineVariantRaw) {
+                var vid = Number(lineVariantRaw);
+                if (isFinite(vid) && vid > 0) {
+                    item.color_variant_id = vid;
+                }
+            }
+            items.push(item);
+            total += qty * lineUnit;
+        });
+        out.textContent = total.toLocaleString('uk-UA') + ' грн';
+        hidTotal.value = String(total);
+        hidItems.value = JSON.stringify(items);
+    }
+
+    function upd() {
+        if (isCartMode) {
+            updCart();
+        } else {
+            updSingle();
+        }
+        document.dispatchEvent(new Event('checkout:itemschanged'));
+    }
+    if (q) {
+        q.addEventListener('input', upd);
+        q.addEventListener('change', upd);
+    }
+    if (minus && q) {
+        minus.addEventListener('click', function () {
+            var n = parseInt(q.value, 10) || 1;
+            q.value = String(Math.max(1, n - 1));
+            upd();
+        });
+    }
+    if (plus && q) {
+        plus.addEventListener('click', function () {
+            var n = parseInt(q.value, 10) || 1;
+            q.value = String(Math.min(maxQ, n + 1));
+            upd();
+        });
+    }
+    var cartQtyInputs = form.querySelectorAll('.checkout-cart-line .checkout-qty-input');
+    cartQtyInputs.forEach(function (input) {
+        input.addEventListener('input', upd);
+        input.addEventListener('change', upd);
+    });
     upd();
 })();
+
+function applyProfileAddressIfNeeded() {
+    var form = document.getElementById('checkoutOrderForm');
+    if (!form || !window.SAVED_PROFILE_ADDRESS) {
+        return;
+    }
+    var addr = window.SAVED_PROFILE_ADDRESS;
+    if (!addr || !addr.street || !addr.house) {
+        return;
+    }
+    var selfRadio = form.querySelector('input[name="recipient_mode"][value="self"]');
+    if (!selfRadio || !selfRadio.checked) {
+        return;
+    }
+    var street = form.querySelector('[name="delivery_street"]');
+    var house = form.querySelector('[name="delivery_house"]');
+    var apt = form.querySelector('[name="delivery_apartment"]');
+    if (street && !street.value.trim()) {
+        street.value = addr.street;
+    }
+    if (house && !house.value.trim()) {
+        house.value = addr.house;
+    }
+    if (apt && !apt.value.trim() && addr.apartment) {
+        apt.value = addr.apartment;
+    }
+}
 
 (function () {
     var panel = document.getElementById('recipientOtherFields');
@@ -169,10 +468,919 @@ const initialItemsAttr = initialItemsJson.replace(/&/g, '&amp;').replace(/"/g, '
                 el.required = show;
             }
         }
+        if (!show) {
+            applyProfileAddressIfNeeded();
+        }
     }
     for (var j = 0; j < radios.length; j++) {
         radios[j].addEventListener('change', sync);
     }
     sync();
 })();
+
+(function () {
+    var cfg = DELIVERY_CONFIG;
+    if (!cfg) {
+        return;
+    }
+
+    var methodRadios = document.querySelectorAll('input[name="delivery_method"]');
+    var addressBlock = document.getElementById('deliveryAddressBlock');
+    var dateInput = document.getElementById('deliveryDate');
+    var slotWrap = document.getElementById('deliverySlotWrap');
+    var slotSelect = document.getElementById('deliverySlot');
+    var timeWrap = document.getElementById('deliveryTimeWrap');
+    var exactInput = document.getElementById('deliveryExactInput');
+    var exactMsg = document.getElementById('deliveryExactMsg');
+    var orderForm = document.getElementById('checkoutOrderForm');
+    var expressNote = document.getElementById('deliveryExpressNote');
+    var hiddenTime = document.getElementById('deliveryTimeHidden');
+    var feeOut = document.getElementById('checkoutDeliveryFee');
+    var grandOut = document.getElementById('checkoutGrandTotal');
+    var streetInput = document.getElementById('deliveryStreet');
+    var houseInput = document.getElementById('deliveryHouse');
+    var itemsField = document.getElementById('checkoutItemsJson');
+
+    function pad(n) {
+        return (n < 10 ? '0' : '') + n;
+    }
+
+    function fmtDate(d) {
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+
+    function selectedMethod() {
+        for (var i = 0; i < methodRadios.length; i++) {
+            if (methodRadios[i].checked) {
+                return methodRadios[i].value;
+            }
+        }
+        return 'standard';
+    }
+
+    var today = new Date();
+    if (dateInput) {
+        dateInput.value = fmtDate(today);
+        dateInput.min = fmtDate(today);
+    }
+
+    function addEmptyOption(sel) {
+        var none = document.createElement('option');
+        none.value = '';
+        none.textContent = 'На сьогодні вільного часу немає — оберіть іншу дату';
+        sel.appendChild(none);
+    }
+
+    function buildWindows(m) {
+        if (!slotSelect) {
+            return;
+        }
+        slotSelect.innerHTML = '';
+        var startH = m === 'pickup' ? cfg.pickupStartHour : cfg.workStartHour;
+        var endH = m === 'pickup' ? cfg.pickupEndHour : cfg.workEndHour;
+        var bufferMin = m === 'pickup' ? cfg.pickupBufferMin : cfg.standardBufferMin;
+        var now = new Date();
+        var isToday = dateInput && dateInput.value === fmtDate(now);
+        var earliest = new Date(now.getTime() + bufferMin * 60000);
+        for (var h = startH; h + cfg.slotHours <= endH; h += cfg.slotHours) {
+            if (isToday) {
+                var slotStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, 0, 0, 0);
+                if (slotStart.getTime() < earliest.getTime()) {
+                    continue;
+                }
+            }
+            var opt = document.createElement('option');
+            opt.value = pad(h) + ':00';
+            opt.textContent = pad(h) + ':00 – ' + pad(h + cfg.slotHours) + ':00';
+            slotSelect.appendChild(opt);
+        }
+        if (slotSelect.options.length === 0) {
+            addEmptyOption(slotSelect);
+        }
+    }
+
+    function setExactMsg(text, kind) {
+        if (!exactMsg) {
+            return;
+        }
+        exactMsg.textContent = text;
+        exactMsg.classList.remove('checkout-valid-ok', 'checkout-valid-err');
+        if (kind === 'ok') {
+            exactMsg.classList.add('checkout-valid-ok');
+        } else if (kind === 'err') {
+            exactMsg.classList.add('checkout-valid-err');
+        }
+    }
+
+    function validateExact() {
+        if (!exactInput) {
+            return false;
+        }
+        var val = exactInput.value;
+        var dateVal = dateInput ? dateInput.value : '';
+        if (!val || !dateVal) {
+            setExactMsg('Введіть точний час доставки', '');
+            hiddenTime.value = '';
+            return false;
+        }
+
+        var timeParts = val.split(':');
+        var hh = parseInt(timeParts[0], 10);
+        var mm = parseInt(timeParts[1], 10);
+        if (hh < cfg.workStartHour || hh >= cfg.workEndHour) {
+            setExactMsg('Доставка працює з ' + cfg.workStartHour + ':00 до ' + cfg.workEndHour + ':00', 'err');
+            hiddenTime.value = '';
+            return false;
+        }
+
+        var dateParts = dateVal.split('-');
+        var chosen = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]), hh, mm, 0, 0);
+        var earliest = new Date(Date.now() + cfg.standardBufferMin * 60000);
+        if (chosen.getTime() < earliest.getTime()) {
+            var human = pad(earliest.getDate()) + '.' + pad(earliest.getMonth() + 1) + ' о ' + pad(earliest.getHours()) + ':' + pad(earliest.getMinutes());
+            setExactMsg('Зарано — потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
+            hiddenTime.value = '';
+            return false;
+        }
+
+        setExactMsg('Час доступний — можна замовити', 'ok');
+        hiddenTime.value = val;
+        return true;
+    }
+
+    function getItemsTotal() {
+        if (!itemsField) {
+            return 0;
+        }
+        try {
+            var arr = JSON.parse(itemsField.value || '[]');
+            var sum = 0;
+            for (var i = 0; i < arr.length; i++) {
+                sum += (Number(arr[i].quantity) || 0) * (Number(arr[i].unit_price) || 0);
+            }
+            return sum;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    function currentFee() {
+        var fee = cfg.fees[selectedMethod()];
+        return Number(fee) || 0;
+    }
+
+    function syncTotals() {
+        var fee = currentFee();
+        if (feeOut) {
+            feeOut.textContent = fee > 0 ? fee.toLocaleString('uk-UA') + ' грн' : 'Безкоштовно';
+        }
+        if (grandOut) {
+            var grand = getItemsTotal() + fee;
+            grandOut.textContent = grand.toLocaleString('uk-UA') + ' грн';
+        }
+    }
+
+    function syncHiddenTime() {
+        var m = selectedMethod();
+        if (m === 'express') {
+            hiddenTime.value = '';
+            hiddenTime.name = 'delivery_time';
+        } else if (m === 'exact') {
+            validateExact();
+            hiddenTime.name = 'delivery_time_exact';
+        } else {
+            hiddenTime.value = slotSelect ? slotSelect.value : '';
+            hiddenTime.name = 'delivery_slot';
+        }
+    }
+
+    function setRequired(el, on) {
+        if (el) {
+            el.required = on;
+        }
+    }
+
+    function syncByMethod() {
+        var m = selectedMethod();
+        var needAddress = m !== 'pickup';
+        if (addressBlock) {
+            addressBlock.hidden = !needAddress;
+        }
+        setRequired(streetInput, needAddress);
+        setRequired(houseInput, needAddress);
+
+        var showSlot = m === 'standard' || m === 'pickup';
+        var showExact = m === 'exact';
+        var showExpress = m === 'express';
+        if (slotWrap) {
+            slotWrap.hidden = !showSlot;
+        }
+        if (timeWrap) {
+            timeWrap.hidden = !showExact;
+        }
+        if (expressNote) {
+            expressNote.hidden = !showExpress;
+        }
+        if (dateInput && dateInput.closest('.auth-label')) {
+            dateInput.closest('.auth-label').hidden = showExpress;
+        }
+
+        if (showSlot) {
+            buildWindows(m);
+        }
+        if (showExact && exactInput) {
+            exactInput.min = pad(cfg.workStartHour) + ':00';
+            exactInput.max = pad(cfg.workEndHour) + ':00';
+        }
+
+        syncHiddenTime();
+        syncTotals();
+    }
+
+    for (var i = 0; i < methodRadios.length; i++) {
+        methodRadios[i].addEventListener('change', syncByMethod);
+    }
+    if (dateInput) {
+        dateInput.addEventListener('change', function () {
+            var m = selectedMethod();
+            if (m === 'standard' || m === 'pickup') {
+                buildWindows(m);
+            }
+            if (m === 'exact') {
+                validateExact();
+            }
+            syncHiddenTime();
+        });
+    }
+    if (slotSelect) {
+        slotSelect.addEventListener('change', syncHiddenTime);
+    }
+    if (exactInput) {
+        exactInput.addEventListener('input', validateExact);
+        exactInput.addEventListener('change', validateExact);
+    }
+    document.addEventListener('checkout:beforesubmit', function () {
+        syncByMethod();
+        syncHiddenTime();
+    });
+    document.addEventListener('checkout:itemschanged', syncTotals);
+
+    syncByMethod();
+})();
+
+(function () {
+    var form = document.getElementById('checkoutOrderForm');
+    if (!form) {
+        return;
+    }
+    var phones = form.querySelectorAll('input[type="tel"]');
+
+    function format(value) {
+        var digits = value.replace(/\D/g, '');
+        if (digits.indexOf('380') === 0) {
+            digits = digits.slice(3);
+        } else if (digits.indexOf('0') === 0) {
+            digits = digits.slice(1);
+        }
+        digits = digits.slice(0, 9);
+        return '+380' + digits;
+    }
+
+    for (var i = 0; i < phones.length; i++) {
+        var input = phones[i];
+        input.placeholder = '+380XXXXXXXXX';
+        input.maxLength = 13;
+        input.addEventListener('focus', function (e) {
+            if (!e.target.value) {
+                e.target.value = '+380';
+            }
+        });
+        input.addEventListener('input', function (e) {
+            e.target.value = format(e.target.value);
+        });
+        input.addEventListener('blur', function (e) {
+            if (e.target.value === '+380' && e.target.name === 'recipient_phone') {
+                e.target.value = '';
+            }
+        });
+    }
+})();
+
+(function () {
+    var form = document.getElementById('checkoutOrderForm');
+    var input = document.getElementById('customerEmail');
+    var msg = document.getElementById('customerEmailMsg');
+    if (!form || !input) {
+        return;
+    }
+    var pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function setMsg(text, kind) {
+        if (!msg) {
+            return;
+        }
+        msg.textContent = text;
+        msg.classList.remove('checkout-valid-ok', 'checkout-valid-err');
+        if (kind === 'ok') {
+            msg.classList.add('checkout-valid-ok');
+        } else if (kind === 'err') {
+            msg.classList.add('checkout-valid-err');
+        }
+    }
+
+    function check() {
+        var value = input.value.trim();
+        if (value === '') {
+            setMsg('', '');
+            return true;
+        }
+        if (!pattern.test(value)) {
+            setMsg('Невірний формат — приклад: name@example.com', 'err');
+            return false;
+        }
+        setMsg('Email коректний', 'ok');
+        return true;
+    }
+
+    input.addEventListener('input', check);
+})();
+
+(function () {
+    var KEY = 'checkoutDraft';
+    var form = document.getElementById('checkoutOrderForm');
+    if (!form || !window.localStorage) {
+        return;
+    }
+    var restoring = false;
+    var lastFocusedStep = 1;
+
+    var stepCards = [
+        { step: 1, el: document.getElementById('checkoutStepCustomer') },
+        { step: 2, el: document.getElementById('checkoutStepRecipient') },
+        { step: 3, el: document.getElementById('deliveryCard') },
+        { step: 4, el: document.getElementById('checkoutStepPayment') }
+    ];
+
+    var stepNames = ['ваші дані', 'одержувача', 'доставки', 'оплати'];
+
+    var textNames = [
+        'customer_first_name', 'customer_last_name', 'customer_phone', 'customer_email',
+        'recipient_first_name', 'recipient_last_name', 'recipient_phone', 'recipient_note',
+        'delivery_street', 'delivery_house', 'delivery_apartment'
+    ];
+
+    function getRadio(name) {
+        var el = form.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+    }
+
+    function setRadio(name, value) {
+        if (!value) {
+            return;
+        }
+        var el = form.querySelector('input[name="' + name + '"][value="' + value + '"]');
+        if (el) {
+            el.checked = true;
+            el.dispatchEvent(new Event('change'));
+        }
+    }
+
+    function phoneOk(val) {
+        return /^\+380\d{9}$/.test(String(val || '').trim());
+    }
+
+    function detectCheckoutStep(data) {
+        if (!data) {
+            return 1;
+        }
+
+        var fn = String(data.customer_first_name || '').trim();
+        var ln = String(data.customer_last_name || '').trim();
+        var phone = String(data.customer_phone || '').trim();
+        if (!fn || fn.length < 2 || !ln || ln.length < 2 || !phoneOk(phone)) {
+            return 1;
+        }
+
+        if (data.recipient_mode === 'other') {
+            var rf = String(data.recipient_first_name || '').trim();
+            var rl = String(data.recipient_last_name || '').trim();
+            var rp = String(data.recipient_phone || '').trim();
+            if (!rf || !rl || !phoneOk(rp)) {
+                return 2;
+            }
+        }
+
+        var dm = data.delivery_method || 'standard';
+        if (dm !== 'pickup') {
+            if (!String(data.delivery_street || '').trim() || !String(data.delivery_house || '').trim()) {
+                return 3;
+            }
+        }
+        if (dm !== 'express') {
+            if (!String(data.delivery_date || '').trim()) {
+                return 3;
+            }
+        }
+        if (dm === 'standard' || dm === 'pickup') {
+            if (!String(data.delivery_slot || '').trim()) {
+                return 3;
+            }
+        }
+        if (dm === 'exact') {
+            if (!String(data.delivery_time_exact || '').trim()) {
+                return 3;
+            }
+        }
+
+        if (data.last_step && data.last_step >= 1 && data.last_step <= 4) {
+            return Number(data.last_step);
+        }
+        return 4;
+    }
+
+    function getStepCard(stepNum) {
+        for (var i = 0; i < stepCards.length; i += 1) {
+            if (stepCards[i].step === stepNum) {
+                return stepCards[i].el;
+            }
+        }
+        return null;
+    }
+
+    function buildCheckoutFieldSteps(step, data) {
+        if (step === 1) {
+            return [
+                {
+                    name: 'customer_first_name',
+                    title: "Ім'я",
+                    check: function (val) {
+                        return String(val || '').trim().length >= 2;
+                    }
+                },
+                {
+                    name: 'customer_last_name',
+                    title: 'Прізвище',
+                    check: function (val) {
+                        return String(val || '').trim().length >= 2;
+                    }
+                },
+                {
+                    name: 'customer_phone',
+                    title: 'Телефон',
+                    check: function (val) {
+                        return phoneOk(val);
+                    }
+                }
+            ];
+        }
+
+        if (step === 2) {
+            if (data.recipient_mode !== 'other') {
+                return [];
+            }
+            return [
+                {
+                    name: 'recipient_first_name',
+                    title: "Ім'я одержувача",
+                    check: function (val) {
+                        return String(val || '').trim().length >= 2;
+                    }
+                },
+                {
+                    name: 'recipient_last_name',
+                    title: 'Прізвище одержувача',
+                    check: function (val) {
+                        return String(val || '').trim().length >= 2;
+                    }
+                },
+                {
+                    name: 'recipient_phone',
+                    title: 'Телефон одержувача',
+                    check: function (val) {
+                        return phoneOk(val);
+                    }
+                }
+            ];
+        }
+
+        if (step === 3) {
+            var dm = data.delivery_method || 'standard';
+            var list = [];
+            if (dm !== 'pickup') {
+                list.push(
+                    {
+                        name: 'delivery_street',
+                        title: 'Вулиця',
+                        check: function (val) {
+                            return String(val || '').trim() !== '';
+                        }
+                    },
+                    {
+                        name: 'delivery_house',
+                        title: 'Будинок',
+                        check: function (val) {
+                            return String(val || '').trim() !== '';
+                        }
+                    }
+                );
+            }
+            if (dm !== 'express') {
+                list.push({
+                    name: 'delivery_date',
+                    title: 'Дата доставки',
+                    check: function (val) {
+                        return String(val || '').trim() !== '';
+                    }
+                });
+            }
+            if (dm === 'standard' || dm === 'pickup') {
+                list.push({
+                    name: 'delivery_slot',
+                    title: 'Час доставки',
+                    check: function (val) {
+                        return String(val || '').trim() !== '';
+                    }
+                });
+            }
+            if (dm === 'exact') {
+                list.push({
+                    name: 'delivery_time_exact',
+                    title: 'Точний час',
+                    check: function (val) {
+                        return String(val || '').trim() !== '';
+                    }
+                });
+            }
+            return list;
+        }
+
+        return [];
+    }
+
+    function resolveCheckoutField(name) {
+        if (name === 'delivery_slot') {
+            return document.getElementById('deliverySlot');
+        }
+        if (name === 'delivery_time_exact') {
+            return document.getElementById('deliveryExactInput');
+        }
+        return form.querySelector('[name="' + name + '"]');
+    }
+
+    function save() {
+        if (restoring) {
+            return;
+        }
+        var data = {};
+        for (var i = 0; i < textNames.length; i++) {
+            var el = form.querySelector('[name="' + textNames[i] + '"]');
+            if (el) {
+                data[textNames[i]] = el.value;
+            }
+        }
+        data.delivery_method = getRadio('delivery_method');
+        data.recipient_mode = getRadio('recipient_mode');
+        data.payment_method = getRadio('payment_method');
+        data.last_step = lastFocusedStep;
+        var dateEl = document.getElementById('deliveryDate');
+        if (dateEl) {
+            data.delivery_date = dateEl.value;
+        }
+        var slot = document.getElementById('deliverySlot');
+        if (slot) {
+            data.delivery_slot = slot.value;
+        }
+        var exact = document.getElementById('deliveryExactInput');
+        if (exact) {
+            data.delivery_time_exact = exact.value;
+        }
+        try {
+            localStorage.setItem(KEY, JSON.stringify(data));
+        } catch (e) {
+            return;
+        }
+    }
+
+    function restore() {
+        var raw = localStorage.getItem(KEY);
+        if (!raw) {
+            return;
+        }
+        var data;
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            return;
+        }
+
+        restoring = true;
+        setRadio('delivery_method', data.delivery_method);
+        setRadio('recipient_mode', data.recipient_mode);
+        setRadio('payment_method', data.payment_method);
+
+        for (var i = 0; i < textNames.length; i++) {
+            var el = form.querySelector('[name="' + textNames[i] + '"]');
+            if (el && typeof data[textNames[i]] === 'string') {
+                el.value = data[textNames[i]];
+            }
+        }
+
+        var dateEl = document.getElementById('deliveryDate');
+        if (dateEl && data.delivery_date) {
+            dateEl.value = data.delivery_date;
+            dateEl.dispatchEvent(new Event('change'));
+        }
+
+        if (data.delivery_method === 'exact') {
+            var exact = document.getElementById('deliveryExactInput');
+            if (exact && data.delivery_time_exact) {
+                exact.value = data.delivery_time_exact;
+                exact.dispatchEvent(new Event('input'));
+            }
+        } else {
+            var slot = document.getElementById('deliverySlot');
+            if (slot && data.delivery_slot) {
+                slot.value = data.delivery_slot;
+                slot.dispatchEvent(new Event('change'));
+            }
+        }
+
+        var phoneNames = ['customer_phone', 'recipient_phone', 'customer_email'];
+        for (var j = 0; j < phoneNames.length; j++) {
+            var field = form.querySelector('[name="' + phoneNames[j] + '"]');
+            if (field && field.value) {
+                field.dispatchEvent(new Event('input'));
+            }
+        }
+
+        restoring = false;
+        applyProfileAddressIfNeeded();
+
+        var step = Number(data.last_step) || detectCheckoutStep(data);
+        if (step < 1 || step > 4) {
+            step = detectCheckoutStep(data);
+        }
+        var card = getStepCard(step);
+        if (card) {
+            card.classList.add('form-step-current');
+            window.setTimeout(function () {
+                card.classList.remove('form-step-current');
+            }, 2800);
+            window.setTimeout(function () {
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 120);
+        }
+
+        var stepMessage = 'Продовжуємо оформлення — крок ' + step + ': ' + stepNames[step - 1];
+        var fieldSteps = buildCheckoutFieldSteps(step, data);
+
+        if (fieldSteps.length && typeof window.resumeFormFields === 'function') {
+            var pseudoForm = {
+                elements: {}
+            };
+            for (var s = 0; s < fieldSteps.length; s += 1) {
+                pseudoForm.elements[fieldSteps[s].name] = resolveCheckoutField(fieldSteps[s].name);
+            }
+            window.resumeFormFields({
+                form: pseudoForm,
+                steps: fieldSteps,
+                message: stepMessage
+            });
+        } else if (typeof window.showToast === 'function') {
+            window.showToast(stepMessage, 'info');
+        }
+    }
+
+    form.addEventListener('focusin', function (e) {
+        for (var i = 0; i < stepCards.length; i += 1) {
+            if (stepCards[i].el && stepCards[i].el.contains(e.target)) {
+                lastFocusedStep = stepCards[i].step;
+                save();
+                break;
+            }
+        }
+    });
+
+    form.addEventListener('input', save);
+    form.addEventListener('change', save);
+
+    restore();
+    applyProfileAddressIfNeeded();
+})();
+
+(function () {
+    var form = document.getElementById('checkoutOrderForm');
+    var errBox = document.getElementById('checkoutFormError');
+    if (!form) {
+        return;
+    }
+
+    function showErr(msg) {
+        if (typeof window.showToast === 'function') {
+            window.showToast(msg, 'error');
+        }
+        if (!errBox) {
+            return;
+        }
+        errBox.hidden = false;
+        errBox.textContent = msg;
+        errBox.scrollIntoView({ block: 'nearest' });
+    }
+
+    function hideErr() {
+        if (!errBox) {
+            return;
+        }
+        errBox.hidden = true;
+        errBox.textContent = '';
+    }
+
+    function getRadio(name) {
+        var el = form.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+    }
+
+    function phoneOk(val) {
+        return /^\+380\d{9}$/.test(String(val || '').trim());
+    }
+
+    form.addEventListener('submit', function (e) {
+        hideErr();
+        document.dispatchEvent(new Event('checkout:beforesubmit'));
+
+        var first = form.querySelector('[name="customer_first_name"]');
+        var last = form.querySelector('[name="customer_last_name"]');
+        var phone = form.querySelector('[name="customer_phone"]');
+        var email = form.querySelector('[name="customer_email"]');
+        var deliveryMethod = getRadio('delivery_method');
+        var hiddenTime = document.getElementById('deliveryTimeHidden');
+        var dateInput = document.getElementById('deliveryDate');
+        var street = document.getElementById('deliveryStreet');
+        var house = document.getElementById('deliveryHouse');
+
+        if (!first || !first.value.trim() || first.value.trim().length < 2) {
+            e.preventDefault();
+            showErr("Вкажіть ім'я (мінімум 2 символи)");
+            if (first) first.focus();
+            return;
+        }
+        if (!last || !last.value.trim() || last.value.trim().length < 2) {
+            e.preventDefault();
+            showErr('Вкажіть прізвище (мінімум 2 символи)');
+            if (last) last.focus();
+            return;
+        }
+        if (!phone || !phoneOk(phone.value)) {
+            e.preventDefault();
+            showErr('Вкажіть номер у форматі +380 і ще 9 цифр');
+            if (phone) phone.focus();
+            return;
+        }
+
+        if (email && email.value.trim() !== '') {
+            var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailPattern.test(email.value.trim())) {
+                e.preventDefault();
+                showErr('Невірний формат email — приклад: name@example.com');
+                email.focus();
+                return;
+            }
+        }
+
+        if (getRadio('recipient_mode') === 'other') {
+            var recFirst = form.querySelector('[name="recipient_first_name"]');
+            var recLast = form.querySelector('[name="recipient_last_name"]');
+            var recPhone = form.querySelector('[name="recipient_phone"]');
+            if (!recFirst || !recFirst.value.trim() || !recLast || !recLast.value.trim()) {
+                e.preventDefault();
+                showErr("Заповніть ім'я та прізвище одержувача");
+                return;
+            }
+            if (!recPhone || !phoneOk(recPhone.value)) {
+                e.preventDefault();
+                showErr('Вкажіть телефон одержувача у форматі +380 і ще 9 цифр');
+                if (recPhone) recPhone.focus();
+                return;
+            }
+        }
+
+        if (deliveryMethod !== 'pickup') {
+            if (!street || !street.value.trim() || !house || !house.value.trim()) {
+                e.preventDefault();
+                showErr('Вкажіть вулицю та будинок');
+                if (street && !street.value.trim()) {
+                    street.focus();
+                } else if (house) {
+                    house.focus();
+                }
+                return;
+            }
+        }
+
+        if (deliveryMethod !== 'express') {
+            if (!dateInput || !dateInput.value) {
+                e.preventDefault();
+                showErr('Оберіть дату доставки');
+                if (dateInput) dateInput.focus();
+                return;
+            }
+        }
+
+        if (deliveryMethod === 'standard' || deliveryMethod === 'pickup') {
+            if (!hiddenTime || !hiddenTime.value) {
+                e.preventDefault();
+                showErr('Оберіть період доставки або іншу дату');
+                return;
+            }
+        }
+
+        if (deliveryMethod === 'exact') {
+            var exactInput = document.getElementById('deliveryExactInput');
+            if (!exactInput || !exactInput.value) {
+                e.preventDefault();
+                showErr('Вкажіть точний час доставки');
+                if (exactInput) exactInput.focus();
+                return;
+            }
+            if (!hiddenTime || !hiddenTime.value) {
+                e.preventDefault();
+                showErr('Обраний час недоступний — оберіть пізніший');
+                if (exactInput) exactInput.focus();
+                return;
+            }
+        }
+
+        try {
+            localStorage.removeItem('checkoutDraft');
+        } catch (err) {
+            return;
+        }
+    });
+})();
+
+(function () {
+    var hintCard = document.getElementById('checkoutPaymentHintCard');
+    var hintCod = document.getElementById('checkoutPaymentHintCod');
+    var radios = document.querySelectorAll('input[name="payment_method"]');
+    if (!hintCard || !hintCod || !radios.length) {
+        return;
+    }
+
+    function syncPaymentHints() {
+        var cod = false;
+        for (var i = 0; i < radios.length; i++) {
+            if (radios[i].checked && radios[i].value === 'cod') {
+                cod = true;
+                break;
+            }
+        }
+        hintCard.hidden = cod;
+        hintCod.hidden = !cod;
+    }
+
+    for (var j = 0; j < radios.length; j++) {
+        radios[j].addEventListener('change', syncPaymentHints);
+    }
+    syncPaymentHints();
+})();
 </script>
+
+<% if (gmapsKey) { %>
+<script>
+async function initAddressAutocomplete() {
+    var box = document.getElementById('addressAutocompleteBox');
+    var target = document.getElementById('deliveryStreet');
+    if (!box || !target || !window.google || !google.maps || !google.maps.importLibrary) {
+        return;
+    }
+
+    var places = await google.maps.importLibrary('places');
+    var autocomplete = new places.PlaceAutocompleteElement({
+        includedRegionCodes: ['ua']
+    });
+    box.appendChild(autocomplete);
+
+    autocomplete.addEventListener('gmp-select', async function (event) {
+        var place = event.placePrediction.toPlace();
+        await place.fetchFields({ fields: ['formattedAddress', 'location'] });
+        var data = place.toJSON();
+        if (data && data.formattedAddress) {
+            target.value = data.formattedAddress;
+        }
+    });
+}
+</script>
+<script>
+(function () {
+    var cfg = JSON.parse(document.getElementById('checkoutPageConfig').textContent);
+    var key = cfg.googleMapsApiKey || '';
+    if (!key) {
+        return;
+    }
+    var s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '&libraries=places&loading=async&callback=initAddressAutocomplete';
+    document.body.appendChild(s);
+})();
+</script>
+<% } %>

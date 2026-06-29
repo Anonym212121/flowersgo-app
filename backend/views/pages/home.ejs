@@ -3,9 +3,31 @@ const safeSelectedCategoryId = typeof selectedCategoryId !== 'undefined' ? selec
 const safeSearchQuery = typeof searchQuery !== 'undefined' && typeof searchQuery === 'string' ? searchQuery : '';
 const safeCategories = typeof categories !== 'undefined' && Array.isArray(categories) ? categories : [];
 const safeProducts = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+const safeHitProducts = typeof hitProducts !== 'undefined' && Array.isArray(hitProducts) ? hitProducts : [];
+const safeHomeSections = typeof homeSections !== 'undefined' && Array.isArray(homeSections) ? homeSections : [];
+const hasFeaturedBlocks = safeHitProducts.length > 0 || safeHomeSections.length > 0;
+const safeRecentDelivery = typeof recentDelivery !== 'undefined' && recentDelivery ? recentDelivery : null;
+const isCatalogHome = !safeSelectedCategoryId && !safeSearchQuery;
+const sortCats = (a, b) => {
+    const oa = Number(a.sort_order || 0);
+    const ob = Number(b.sort_order || 0);
+    if (oa !== ob) {
+        return oa - ob;
+    }
+    return Number(a.id) - Number(b.id);
+};
+const parentCategories = safeCategories.filter((item) => !item.parent_id).sort(sortCats);
+const subCategories = safeCategories.filter((item) => item.parent_id);
+let selectedCategoryLabel = 'Усі товари';
+if (safeSelectedCategoryId) {
+    const selectedCat = safeCategories.find((item) => Number(item.id) === Number(safeSelectedCategoryId));
+    if (selectedCat && selectedCat.name) {
+        selectedCategoryLabel = selectedCat.name;
+    }
+}
 %>
 
-<div class="catalog-layout">
+<div class="catalog-layout <%= isCatalogHome ? 'catalog-layout--home' : 'catalog-layout--filtered' %>">
     <aside class="catalog-sidebar">
         <h3>Категорії</h3>
 
@@ -14,11 +36,8 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                 <a href="/" class="catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>" data-category-id="">Усі товари</a>
             </li>
 
-            <% const parentCategories = safeCategories.filter(item => !item.parent_id); %>
-            <% const subCategories = safeCategories.filter(item => item.parent_id); %>
-
             <% for (const parent of parentCategories) { %>
-                <% const nested = subCategories.filter(item => Number(item.parent_id) === Number(parent.id)); %>
+                <% const nested = subCategories.filter(item => Number(item.parent_id) === Number(parent.id)).sort(sortCats); %>
                 <% if (nested.length > 0) { %>
                     <li class="category-parent category-parent--flyout">
                         <a
@@ -37,7 +56,11 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                                         class="category-flyout-item catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
                                         data-category-id="<%= sub.id %>"
                                     >
-                                        <span class="category-flyout-thumb" aria-hidden="true"></span>
+                                        <span class="category-flyout-thumb">
+                                            <% if (sub.image_url) { %>
+                                                <img src="<%= sub.image_url %>" alt="<%= sub.name %>">
+                                            <% } %>
+                                        </span>
                                         <span class="category-flyout-text"><%= sub.name %></span>
                                     </a>
                                 <% } %>
@@ -57,9 +80,124 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                 <% } %>
             <% } %>
         </ul>
+
+        <% if (safeRecentDelivery) { %>
+            <div class="catalog-recent-delivery">
+                <h3 class="catalog-recent-delivery__title"><%= safeRecentDelivery.title %></h3>
+                <%- include('../partials/catalog-recent-delivery', { item: safeRecentDelivery }) %>
+            </div>
+        <% } %>
+
+        <% if (isCatalogHome) { %>
+            <div class="catalog-sidebar-constructor">
+                <a href="/constructor" class="catalog-sidebar-constructor__link" aria-label="Перейти до конструктора букетів">
+                    <img
+                        class="catalog-sidebar-constructor__image"
+                        src="/images/constructor-sidebar-banner.png"
+                        alt="Конструктор букетів"
+                        loading="lazy"
+                        decoding="async"
+                    />
+                </a>
+            </div>
+        <% } %>
     </aside>
 
     <section class="catalog-content">
+        <div class="catalog-categories-phone">
+            <button
+                type="button"
+                class="catalog-categories-phone-btn"
+                id="catalog-categories-phone-btn"
+                aria-expanded="false"
+                aria-controls="catalog-categories-phone-panel"
+            >
+                <span class="catalog-categories-phone-btn-icon" aria-hidden="true">☰</span>
+                <span class="catalog-categories-phone-btn-text">
+                    <span class="catalog-categories-phone-btn-label">Категорія</span>
+                    <span class="catalog-categories-phone-btn-value" id="catalog-categories-phone-current"><%= selectedCategoryLabel %></span>
+                </span>
+                <span class="catalog-categories-phone-btn-chevron" aria-hidden="true">▼</span>
+            </button>
+
+            <div class="catalog-categories-phone-panel" id="catalog-categories-phone-panel" hidden>
+                <button type="button" class="catalog-categories-phone-backdrop" data-phone-categories-close aria-label="Закрити категорії"></button>
+                <div class="catalog-categories-phone-sheet" role="dialog" aria-label="Категорії товарів">
+                    <div class="catalog-categories-phone-sheet-head">
+                        <h3>Категорії</h3>
+                        <button type="button" class="catalog-categories-phone-close" data-phone-categories-close aria-label="Закрити">×</button>
+                    </div>
+                    <div class="catalog-categories-phone-sheet-body">
+                        <a
+                            href="/"
+                            class="catalog-categories-phone-link catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>"
+                            data-category-id=""
+                            data-category-label="Усі товари"
+                        >Усі товари</a>
+
+                        <% for (const parent of parentCategories) { %>
+                            <% const nested = subCategories.filter((item) => Number(item.parent_id) === Number(parent.id)).sort(sortCats); %>
+                            <% if (nested.length > 0) { %>
+                                <div class="catalog-categories-phone-group">
+                                    <a
+                                        href="/?category_id=<%= parent.id %>"
+                                        class="catalog-categories-phone-link catalog-categories-phone-link--parent catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                                        data-category-id="<%= parent.id %>"
+                                        data-category-label="<%= parent.name %>"
+                                    ><%= parent.name %></a>
+                                    <% for (const sub of nested) { %>
+                                        <a
+                                            href="/?category_id=<%= sub.id %>"
+                                            class="catalog-categories-phone-link catalog-categories-phone-link--sub catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
+                                            data-category-id="<%= sub.id %>"
+                                            data-category-label="<%= sub.name %>"
+                                        ><%= sub.name %></a>
+                                    <% } %>
+                                </div>
+                            <% } else { %>
+                                <a
+                                    href="/?category_id=<%= parent.id %>"
+                                    class="catalog-categories-phone-link catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                                    data-category-id="<%= parent.id %>"
+                                    data-category-label="<%= parent.name %>"
+                                ><%= parent.name %></a>
+                            <% } %>
+                        <% } %>
+
+                        <% if (isCatalogHome) { %>
+                            <a href="/constructor" class="catalog-sidebar-constructor__link catalog-categories-phone-constructor" aria-label="Перейти до конструктора букетів">
+                                <img
+                                    class="catalog-sidebar-constructor__image"
+                                    src="/images/constructor-sidebar-banner.png"
+                                    alt="Конструктор букетів"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <header class="catalog-hero">
+            <div class="catalog-hero__content">
+                <p class="catalog-hero__eyebrow">✿ Доставка квітів по місту</p>
+                <% if (selectedCategoryLabel === 'Усі товари') { %>
+                    <h1 class="catalog-hero__title">Обери свіжий букет</h1>
+                    <p class="catalog-hero__lead">Свіжі квіти та букети — доставимо у зручний для тебе час</p>
+                <% } else { %>
+                    <h1 class="catalog-hero__title"><%= selectedCategoryLabel %></h1>
+                    <p class="catalog-hero__lead">Замов онлайн — зберемо букет перед відправкою</p>
+                <% } %>
+            </div>
+            <ul class="catalog-hero__perks">
+                <li>Доставка від 2 год</li>
+                <li>Свіжий зріз</li>
+                <li>LiqPay / готівка</li>
+            </ul>
+        </header>
+
         <div class="catalog-toolbar">
             <form class="catalog-search" method="get" action="/" role="search">
                 <% if (safeSelectedCategoryId) { %>
@@ -73,7 +211,7 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                         type="search"
                         name="q"
                         value="<%= safeSearchQuery %>"
-                        placeholder="Введи назву товару..."
+                        placeholder="Я шукаю..."
                         autocomplete="off"
                     />
                     <button class="catalog-search-btn" type="submit">Шукати</button>
@@ -81,63 +219,71 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
             </form>
         </div>
 
-
-        <div id="catalog-products-root">
-        <% if (safeProducts.length === 0) { %>
-            <p>Товари не знайдено.</p>
-        <% } else { %>
-            <div class="products-grid">
-                <% for (const product of safeProducts) { %>
-                    <article class="product-card">
-                        <a href="/product/<%= product.id %>" class="product-card-link">
-                        <div class="product-image-wrap">
-                            <% const basePrice = Number(product.base_price || 0); %>
-                            <% const salePrice = Number(product.sale_price || 0); %>
-                            <% const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice; %>
-                            <% const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0; %>
-                            <% if (discountPercent > 0) { %>
-                                <span class="discount-badge"><%= discountPercent %>%</span>
-                            <% } %>
-                            <% if (product.image_url) { %>
-                                <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
-                            <% } else { %>
-                                <div class="product-image product-image--placeholder">Немає фото</div>
-                            <% } %>
-                        </div>
-
-                        <h4 class="product-title"><%= product.name %></h4>
-
-                        <p class="product-price">
-                            <% if (hasDiscount) { %>
-                                <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
-                            <% } %>
-                            <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
-                        </p>
-
-                        <p class="product-stock">
-                            <% if (Number(product.stock_quantity) > 0) { %>
-                                В наявності: <%= product.stock_quantity %> <%= product.unit_type || 'шт' %>
-                            <% } else { %>
-                                Немає в наявності
-                            <% } %>
-                        </p>
-                        </a>
-
-                        <div class="product-card-actions">
-                            <form method="post" action="/wishlist/add" class="wishlist-form wishlist-ajax">
-                                <input type="hidden" name="product_id" value="<%= product.id %>" />
-                                <button class="wishlist-star-btn" type="submit" title="Додати в обране" aria-label="Додати в обране">☆</button>
-                            </form>
-                            <% if (Number(product.stock_quantity) > 0) { %>
-                                <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
-                            <% } else { %>
-                                <button class="product-order-btn" type="button" disabled>Замовити</button>
-                            <% } %>
-                        </div>
-                    </article>
-                <% } %>
-            </div>
-        <% } %>
+        <div id="catalog-hit-root">
+            <% if (isCatalogHome && safeHitProducts.length > 0) { %>
+                <section class="catalog-hit-section">
+                    <h2 class="catalog-section-title">Хіт продажів</h2>
+                    <div class="products-grid">
+                        <% for (const product of safeHitProducts) { %>
+                            <%- include('../partials/catalog-product-card', {
+                                product,
+                                showHitBadge: true,
+                                wishlistProductIds: typeof wishlistProductIds !== 'undefined' ? wishlistProductIds : []
+                            }) %>
+                        <% } %>
+                    </div>
+                </section>
+            <% } %>
         </div>
+
+        <div id="catalog-category-root" class="catalog-category-panel">
+            <% if (!isCatalogHome) { %>
+                <% if (safeProducts.length === 0) { %>
+                    <p class="catalog-empty">Товари не знайдено.</p>
+                <% } else { %>
+                    <div class="products-grid">
+                        <% for (const product of safeProducts) { %>
+                            <%- include('../partials/catalog-product-card', {
+                                product,
+                                showHitBadge: false,
+                                wishlistProductIds: typeof wishlistProductIds !== 'undefined' ? wishlistProductIds : []
+                            }) %>
+                        <% } %>
+                    </div>
+                <% } %>
+            <% } %>
+        </div>
+    </section>
+
+    <div id="catalog-sections-root" class="catalog-sections-stack<% if (!isCatalogHome || safeHomeSections.length === 0) { %> catalog-sections-stack--empty<% } %>">
+        <% if (isCatalogHome) { %>
+            <% for (const section of safeHomeSections) { %>
+                <%- include('../partials/catalog-home-section', {
+                    section,
+                    wishlistProductIds: typeof wishlistProductIds !== 'undefined' ? wishlistProductIds : []
+                }) %>
+            <% } %>
+        <% } %>
+    </div>
+
+    <section id="catalog-all-root" class="catalog-all-panel<% if (!isCatalogHome || safeProducts.length === 0) { %> catalog-all-panel--empty<% } %>">
+        <% if (isCatalogHome) { %>
+            <% if (!hasFeaturedBlocks && safeProducts.length === 0) { %>
+                <p class="catalog-empty">Товари не знайдено.</p>
+            <% } else if (safeProducts.length > 0) { %>
+                <% if (hasFeaturedBlocks) { %>
+                    <h2 class="catalog-section-title">Усі товари</h2>
+                <% } %>
+                <div class="products-grid products-grid--wide">
+                    <% for (const product of safeProducts) { %>
+                        <%- include('../partials/catalog-product-card', {
+                            product,
+                            showHitBadge: false,
+                            wishlistProductIds: typeof wishlistProductIds !== 'undefined' ? wishlistProductIds : []
+                        }) %>
+                    <% } %>
+                </div>
+            <% } %>
+        <% } %>
     </section>
 </div>

@@ -1,0 +1,169 @@
+<%
+const lines = typeof cartLines !== 'undefined' && Array.isArray(cartLines) ? cartLines : [];
+const total = Number(typeof cartTotal !== 'undefined' ? cartTotal : 0);
+const bouquetNote = typeof constructorNote === 'string' ? constructorNote.trim() : '';
+const bouquetPreview = typeof constructorPreview === 'string' ? constructorPreview.trim() : '';
+%>
+
+<section class="catalog-content">
+    <h1 class="catalog-title">Кошик</h1>
+
+    <% if (lines.length === 0) { %>
+        <div class="catalog-empty">
+            <p class="catalog-empty__title">Кошик порожній</p>
+            <p class="catalog-empty__text">Додай букет з каталогу або зібери свій у конструкторі.</p>
+            <div class="catalog-empty__actions">
+                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary">До каталогу</a>
+                <a href="/constructor" class="catalog-empty__btn catalog-empty__btn--constructor">Конструктор</a>
+            </div>
+        </div>
+    <% } else { %>
+        <% if (bouquetNote) { %>
+            <div class="constructor-cart-note">
+                <strong>Ваш букет:</strong>
+                <span><%= bouquetNote %></span>
+                <% if (bouquetPreview) { %>
+                    <div class="constructor-cart-preview">
+                        <img src="<%= bouquetPreview %>" alt="Превʼю букета" />
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
+        <div class="admin-table-wrap cart-table-wrap">
+        <table class="cabinet-orders-table cart-table" id="cartTable">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Ціна</th>
+                    <th>Кількість</th>
+                    <th>Сума</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <% for (const row of lines) { %>
+                    <tr data-product-id="<%= row.product_id %>" data-color-variant-id="<%= row.color_variant_id || '' %>" data-unit-price="<%= Number(row.unit_price || 0) %>">
+                        <td>
+                            <a href="/product/<%= row.product_id %>"><%= row.product.name %><% if (row.flower_color) { %> (<%= row.flower_color %>)<% } %></a>
+                        </td>
+                        <td><%= Number(row.unit_price || 0).toLocaleString('uk-UA') %> грн</td>
+                        <td>
+                            <input
+                                class="auth-input cart-qty-input"
+                                type="number"
+                                min="1"
+                                max="<%= Number(row.max_quantity || row.product.stock_quantity || 1) %>"
+                                value="<%= Number(row.quantity || 1) %>"
+                                aria-label="Кількість: <%= row.product.name %>"
+                            />
+                        </td>
+                        <td class="cart-line-total"><%= Number(row.line_total || 0).toLocaleString('uk-UA') %> грн</td>
+                        <td>
+                            <button class="admin-secondary-btn cart-remove-btn" type="button">Видалити</button>
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+        </div>
+
+        <div class="checkout-summary-card cart-summary">
+            <p class="checkout-summary-row">
+                <span>Разом:</span>
+                <strong class="checkout-summary-total" id="cartGrandTotal"><%= total.toLocaleString('uk-UA') %> грн</strong>
+            </p>
+            <div class="cart-actions">
+                <form method="post" action="/cart/clear">
+                    <button type="submit" class="admin-secondary-btn">Очистити кошик</button>
+                </form>
+                <a href="/checkout?cart=1" class="auth-button">Оформити замовлення</a>
+            </div>
+        </div>
+
+        <script>
+        (function () {
+            var table = document.getElementById('cartTable');
+            var totalOut = document.getElementById('cartGrandTotal');
+            if (!table || !totalOut) return;
+
+            function msg(text, ok) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast(text, ok ? 'ok' : 'error');
+                }
+            }
+
+            async function post(action, body) {
+                const res = await fetch(action, {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                    },
+                    body: new URLSearchParams(body)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) throw new Error(data.message || 'Помилка');
+                return data;
+            }
+
+            table.addEventListener('click', async function (e) {
+                var btn = e.target.closest('.cart-remove-btn');
+                if (!btn) return;
+                var row = btn.closest('tr[data-product-id]');
+                if (!row) return;
+                var pid = Number(row.dataset.productId);
+                var variantRaw = row.dataset.colorVariantId || '';
+                var body = { product_id: pid };
+                if (variantRaw) {
+                    body.color_variant_id = variantRaw;
+                }
+                try {
+                    const data = await post('/cart/remove', body);
+                    row.remove();
+                    totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+                    if (typeof window.updateNavCartCount === 'function' && data.count != null) {
+                        window.updateNavCartCount(data.count);
+                    }
+                    msg('Товар видалено з кошика', true);
+                    if (!table.querySelector('tbody tr')) {
+                        window.location.reload();
+                    }
+                } catch (err) {
+                    msg(err.message || 'Не вдалося видалити товар', false);
+                }
+            });
+
+            table.addEventListener('change', async function (e) {
+                var input = e.target.closest('.cart-qty-input');
+                if (!input) return;
+                var row = input.closest('tr[data-product-id]');
+                if (!row) return;
+                var pid = Number(row.dataset.productId);
+                var variantRaw = row.dataset.colorVariantId || '';
+                var qty = Number(input.value || 1);
+                if (!Number.isFinite(qty) || qty < 1) qty = 1;
+                input.value = String(qty);
+                var updateBody = { product_id: pid, quantity: qty };
+                if (variantRaw) {
+                    updateBody.color_variant_id = variantRaw;
+                }
+                try {
+                    const data = await post('/cart/update', updateBody);
+                    var unit = Number(row.dataset.unitPrice || 0);
+                    var lineOut = row.querySelector('.cart-line-total');
+                    if (lineOut) {
+                        lineOut.textContent = (qty * unit).toLocaleString('uk-UA') + ' грн';
+                    }
+                    totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+                    if (typeof window.updateNavCartCount === 'function' && data.count != null) {
+                        window.updateNavCartCount(data.count);
+                    }
+                } catch (err) {
+                    msg(err.message || 'Не вдалося оновити кількість', false);
+                }
+            });
+        })();
+        </script>
+    <% } %>
+</section>

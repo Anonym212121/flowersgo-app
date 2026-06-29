@@ -1,0 +1,41 @@
+<section class="catalog-content checkout-page">
+    <h1 class="checkout-page-title">Оплата замовлення #<%= order.id %></h1>
+
+    <div class="checkout-step-card">
+        <p>До сплати: <strong><%= Number(order.total_amount || 0).toLocaleString('uk-UA') %> грн</strong></p>
+
+        <% if (isSandbox) { %>
+            <p class="payment-sandbox-note">Тестовий режим (sandbox): справжні гроші не списуються.</p>
+        <% } %>
+
+        <% if (typeof redirectError === 'string' && redirectError) { %>
+            <p class="checkout-form-error"><%= redirectError %></p>
+        <% } %>
+
+        <form id="liqpayCheckoutForm" method="post" action="https://www.liqpay.ua/api/3/checkout" accept-charset="utf-8">
+            <input type="hidden" name="data" id="liqpayDataField" value="" />
+            <input type="hidden" name="signature" id="liqpaySignatureField" value="" />
+            <button type="submit" class="auth-button checkout-submit-btn">Сплатити через LiqPay</button>
+        </form>
+    </div>
+</section>
+
+<script>
+(function () {
+    var dataField = document.getElementById('liqpayDataField');
+    var sigField = document.getElementById('liqpaySignatureField');
+    var form = document.getElementById('liqpayCheckoutForm');
+    if (!dataField || !sigField || !form) {
+        return;
+    }
+
+    dataField.value = <%- JSON.stringify(liqpayData) %>;
+    sigField.value = <%- JSON.stringify(liqpaySignature) %>;
+
+    <% if (autoSubmit) { %>
+    setTimeout(function () {
+        form.submit();
+    }, 300);
+    <% } %>
+})();
+</script>

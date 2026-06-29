@@ -1,28 +1,133 @@
-<header class="header">
+<%
+const currentNavPath = typeof navPath === 'string' ? navPath : '/';
+const navCartCountNum = Number(typeof navCartCount !== 'undefined' ? navCartCount : 0);
+const navWishlistCountNum = Number(typeof navWishlistCount !== 'undefined' ? navWishlistCount : 0);
+const navCountLabel = (value) => {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) {
+        return '';
+    }
+    return n > 99 ? '99+' : String(n);
+};
+const navCartBadgeLabel = navCountLabel(navCartCountNum);
+const navWishlistBadgeLabel = navCountLabel(navWishlistCountNum);
+
+const isNavActive = (href) => {
+    if (!href || href === '#') {
+        return false;
+    }
+    if (href === '/') {
+        return currentNavPath === '/' || currentNavPath.startsWith('/product');
+    }
+    return currentNavPath === href || currentNavPath.startsWith(href + '/');
+};
+
+const navLinkClass = (href) => {
+    return 'nav__link' + (isNavActive(href) ? ' nav__link--highlight' : '');
+};
+
+const navBtnClass = (href, baseClass) => {
+    return baseClass + (isNavActive(href) ? ' nav__btn--active' : '');
+};
+%>
+<header class="header" id="site-header">
+    <div class="header__glow" aria-hidden="true"></div>
     <div class="header__inner">
-        <a class="logo" href="/">Доставка квітів</a>
-        <nav class="nav">
-            <% if (headerType === 'guest') { %>
-                <a href="/wishlist">Обране</a>
-                <a href="/login">Увійти</a>
-                <a href="/register">Реєстрація</a>
-            <% } else if (headerType === 'admin') { %>
-                <a href="/">На сайт</a>
-                <a href="/admin">Панель адміністратора</a>
-                <a href="/logout">Вийти</a>
-            <% } else if (headerType === 'warehouse_worker') { %>
-                <a href="/">На сайт</a>
-                <a href="/warehouse/orders">Замовлення складу</a>
-                <a href="#">Статуси доставки</a>
-                <a href="/logout">Вийти</a>
-            <% } else { %>
-                <a href="/">Каталог</a>
-                <a href="#">Кошик</a>
-                <a href="#">Мої замовлення</a>
-                <a href="/wishlist">Обране</a>
-                <a href="/cabinet">Кабінет</a>
-                <a href="/logout">Вийти</a>
-            <% } %>
+        <a class="logo" href="/">
+            <span class="logo__mark" aria-hidden="true">
+                <img class="logo__mark-img" src="/images/logo-rose.png" alt="" width="32" height="32" decoding="async" />
+            </span>
+            <span class="logo__text">Flowers<span class="logo__accent">Go</span></span>
+        </a>
+
+        <button
+            type="button"
+            class="header__burger"
+            id="headerBurger"
+            aria-label="Відкрити меню"
+            aria-expanded="false"
+            aria-controls="headerNav"
+        >
+            <span class="header__burger-line"></span>
+            <span class="header__burger-line"></span>
+            <span class="header__burger-line"></span>
+        </button>
+
+        <nav class="nav" id="headerNav">
+            <div class="nav__links">
+                <% if (headerType === 'guest') { %>
+                    <a class="<%= navLinkClass('/constructor') %>" href="/constructor">Конструктор</a>
+                    <a class="<%= navLinkClass('/cart') %> nav__link--with-badge" href="/cart">
+                        Кошик
+                        <span class="nav__count-badge" id="navCartBadge" <%= navCartBadgeLabel ? '' : 'hidden' %>><%= navCartBadgeLabel %></span>
+                    </a>
+                    <a class="<%= navLinkClass('/wishlist') %> nav__link--with-badge" href="/wishlist">
+                        Обране
+                        <span class="nav__count-badge" id="navWishlistBadge" <%= navWishlistBadgeLabel ? '' : 'hidden' %>><%= navWishlistBadgeLabel %></span>
+                    </a>
+                <% } else if (headerType === 'admin') { %>
+                    <a class="<%= navLinkClass('/') %>" href="/">На сайт</a>
+                    <a class="<%= navLinkClass('/admin') %>" href="/admin">Панель адміністратора</a>
+                <% } else if (headerType === 'warehouse_worker') { %>
+                    <a class="<%= navLinkClass('/') %>" href="/">На сайт</a>
+                    <a class="<%= navLinkClass('/warehouse/orders') %>" href="/warehouse/orders">Замовлення складу</a>
+                    <a class="<%= navLinkClass('/warehouse/stock') %>" href="/warehouse/stock">Залишки</a>
+                <% } else if (headerType === 'courier') { %>
+                    <a class="<%= navLinkClass('/') %>" href="/">На сайт</a>
+                    <a class="<%= navLinkClass('/courier/orders') %>" href="/courier/orders">Мої доставки</a>
+                    <a class="<%= navLinkClass('/courier/shift') %>" href="/courier/shift">Зміна</a>
+                <% } else { %>
+                    <a class="<%= navLinkClass('/') %>" href="/">Каталог</a>
+                    <a class="<%= navLinkClass('/constructor') %>" href="/constructor">Конструктор</a>
+                    <a class="<%= navLinkClass('/cart') %> nav__link--with-badge" href="/cart">
+                        Кошик
+                        <span class="nav__count-badge" id="navCartBadge" <%= navCartBadgeLabel ? '' : 'hidden' %>><%= navCartBadgeLabel %></span>
+                    </a>
+                    <a class="<%= navLinkClass('/wishlist') %> nav__link--with-badge" href="/wishlist">
+                        Обране
+                        <span class="nav__count-badge" id="navWishlistBadge" <%= navWishlistBadgeLabel ? '' : 'hidden' %>><%= navWishlistBadgeLabel %></span>
+                    </a>
+                    <a class="<%= navLinkClass('/cabinet') %>" href="/cabinet?tab=profile">Кабінет</a>
+                <% } %>
+            </div>
+
+            <div class="nav__actions">
+                <label class="theme-switch" title="Світла / темна тема">
+                    <input type="checkbox" id="themeToggle" aria-label="Увімкнути світлу тему">
+                    <span class="theme-switch__ui" aria-hidden="true"></span>
+                    <span class="theme-switch__text">Тема</span>
+                </label>
+                <% if (headerType === 'admin' || headerType === 'warehouse_worker' || headerType === 'courier' || headerType === 'user') { %>
+                    <div class="nav-notify" id="navNotify">
+                        <button type="button" class="nav-notify__btn" id="navNotifyBtn" aria-label="Сповіщення" aria-expanded="false">
+                            <span class="nav-notify__icon" aria-hidden="true">🔔</span>
+                            <span class="nav-notify__badge" id="navNotifyBadge" hidden>0</span>
+                        </button>
+                        <div class="nav-notify__panel" id="navNotifyPanel" hidden>
+                            <div class="nav-notify__head">
+                                <strong>Сповіщення</strong>
+                                <button type="button" class="nav-notify__read-all" id="navNotifyReadAll">Прочитати всі</button>
+                            </div>
+                            <div class="nav-notify__settings" id="navNotifySettings"></div>
+                            <ul class="nav-notify__list" id="navNotifyList"></ul>
+                            <p class="nav-notify__empty" id="navNotifyEmpty" hidden>Немає сповіщень</p>
+                            <div class="nav-notify__pager list-pager-controls" id="navNotifyPager" hidden>
+                                <span class="list-pager-info" id="navNotifyPagerInfo"></span>
+                                <div class="list-pager-actions">
+                                    <button type="button" class="list-pager-more auth-button" id="navNotifyMore">Показати ще</button>
+                                    <button type="button" class="list-pager-all admin-secondary-btn" id="navNotifyAll">Показати всі</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+                <% if (headerType === 'guest') { %>
+                    <a class="<%= navBtnClass('/login', 'nav__btn nav__btn--ghost') %>" href="/login">Увійти</a>
+                    <a class="<%= navBtnClass('/register', 'nav__btn nav__btn--primary') %>" href="/register">Реєстрація</a>
+                <% } else { %>
+                    <a class="nav__btn nav__btn--ghost" href="/logout" data-soft-nav="false">Вийти</a>
+                <% } %>
+            </div>
         </nav>
     </div>
 </header>

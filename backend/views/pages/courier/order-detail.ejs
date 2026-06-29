@@ -1,0 +1,111 @@
+<%
+const o = typeof order !== 'undefined' && order ? order : {};
+const safeItems = typeof items !== 'undefined' && Array.isArray(items) ? items : [];
+const safeStatuses = typeof statuses !== 'undefined' && Array.isArray(statuses) ? statuses : [];
+const safeTransitions = typeof statusTransitions !== 'undefined' && statusTransitions ? statusTransitions : {};
+const phoneLinks = o.phone_links && o.phone_links.ok ? o.phone_links : null;
+const mapsHref = typeof mapsUrl === 'string' ? mapsUrl : '';
+const shiftOn = !!onShift;
+%>
+
+<div class="warehouse-page courier-page">
+    <p class="warehouse-back-link"><a href="/courier/orders">← До списку</a></p>
+
+    <div class="warehouse-order-top">
+        <div class="warehouse-order-top-main">
+            <span class="warehouse-order-no">№<%= o.id %></span>
+            <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+        </div>
+        <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
+    </div>
+
+    <div class="warehouse-order-badges">
+        <span class="warehouse-badge warehouse-badge--status"><%= o.status_label || o.status_name %></span>
+        <% if (o.payment_status === 'cod') { %><span class="warehouse-badge pay-cod">При отриманні</span><% } %>
+        <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
+        <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
+    </div>
+
+    <ul class="warehouse-items-list">
+        <% for (const it of safeItems) { %>
+            <li><%= it.product_name %> × <%= it.quantity %></li>
+        <% } %>
+    </ul>
+
+    <div class="warehouse-order-details">
+        <div class="warehouse-order-detail warehouse-order-detail--full">
+            <span class="warehouse-order-detail-label">Кому</span>
+            <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+        </div>
+        <div class="warehouse-order-detail warehouse-order-detail--full">
+            <span class="warehouse-order-detail-label">Адреса</span>
+            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+        </div>
+        <% if (o.recipient_note) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Примітка</span>
+                <span class="warehouse-order-detail-value"><%= o.recipient_note %></span>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="warehouse-detail-actions">
+        <% if (phoneLinks) { %>
+            <%- include('../../partials/warehouse-phone-actions', { phoneLinks: phoneLinks }) %>
+        <% } %>
+        <% if (mapsHref) { %>
+            <a class="warehouse-phone-btn warehouse-phone-btn--tg" href="<%= mapsHref %>" target="_blank" rel="noopener noreferrer" data-soft-nav="false">Маршрут</a>
+        <% } %>
+    </div>
+
+    <% const successText = typeof successMessage === 'string' ? successMessage : ''; %>
+    <% const errorText = typeof errorMessage === 'string' ? errorMessage : ''; %>
+    <% if (successText) { %><p class="warehouse-feedback warehouse-feedback--ok"><%= successText %></p><% } %>
+    <% if (errorText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p><% } %>
+
+    <% if (!shiftOn) { %>
+        <p class="warehouse-order-cancel-msg">Зміна вимкнена — <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
+    <% } else if (o.status_name === 'accepted') { %>
+        <p class="warehouse-feedback warehouse-feedback--ok">Замовлення завершено і закрито.</p>
+    <% } else if (o.status_name === 'delivered') { %>
+        <div class="courier-finish-block">
+            <p class="courier-finish-hint">Крок 1 виконано — статус «Доставлено». Далі підтверди оплату та закрий замовлення.</p>
+            <% if (o.payment_status === 'cod') { %>
+                <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
+                    <input type="hidden" name="return_to" value="detail" />
+                    <button type="submit" class="auth-button courier-finish-btn">Крок 2: оплату отримано</button>
+                </form>
+            <% } else if (o.payment_status === 'paid') { %>
+                <p class="warehouse-feedback warehouse-feedback--ok">Оплату вже зафіксовано (картка).</p>
+            <% } %>
+            <% if (o.payment_status === 'paid') { %>
+                <form method="post" action="/courier/orders/<%= o.id %>/close" class="courier-finish-form">
+                    <input type="hidden" name="return_to" value="detail" />
+                    <button type="submit" class="auth-button courier-finish-btn courier-finish-btn--close">Крок 3: завершити замовлення</button>
+                </form>
+            <% } %>
+        </div>
+    <% } else if (o.status_name === 'processing') { %>
+        <p class="warehouse-order-cancel-msg">Замовлення ще збирають на складі. Після статусу «Готово до видачі» зможеш забрати букет і відмітити «В дорозі».</p>
+    <% } else { %>
+        <form method="post" action="/courier/orders/<%= o.id %>/status" class="warehouse-status-form">
+            <input type="hidden" name="return_to" value="detail" />
+            <label class="warehouse-status-label">
+                Статус
+                <select name="status_id" class="auth-input warehouse-status-select">
+                    <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
+                    <% const currentId = Number(o.status_id); %>
+                    <% for (const s of safeStatuses) { %>
+                        <% const sid = Number(s.id); %>
+                        <% const isCurrent = sid === currentId; %>
+                        <% const canChoose = isCurrent || nextIds.includes(sid); %>
+                        <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
+                            <%= s.label_uk || s.status_name %>
+                        </option>
+                    <% } %>
+                </select>
+            </label>
+            <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
+        </form>
+    <% } %>
+</div>

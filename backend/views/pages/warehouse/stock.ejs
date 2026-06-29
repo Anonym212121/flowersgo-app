@@ -1,0 +1,229 @@
+<%
+const safeProducts = typeof products !== 'undefined' && Array.isArray(products) ? products : [];
+const stockSummary = (typeof summary !== 'undefined' && summary) ? summary : {};
+const recentAdjustmentsList = typeof recentAdjustments !== 'undefined' && Array.isArray(recentAdjustments) ? recentAdjustments : [];
+const lowLimit = typeof lowStockLimit === 'number' ? lowStockLimit : 5;
+const stockFilter = typeof filterStock === 'string' ? filterStock : 'all';
+const stockType = typeof typeFilter === 'string' ? typeFilter : 'all';
+const stockSearch = typeof searchStock === 'string' ? searchStock : '';
+const flashOkText = typeof flashOk !== 'undefined' && flashOk ? String(flashOk) : '';
+const flashErrText = typeof flashErr !== 'undefined' && flashErr ? String(flashErr) : '';
+
+const buildReturnTo = () => {
+    const parts = [];
+    if (stockSearch) {
+        parts.push('q=' + encodeURIComponent(stockSearch));
+    }
+    if (stockFilter !== 'all') {
+        parts.push('filter=' + encodeURIComponent(stockFilter));
+    }
+    if (stockType !== 'all') {
+        parts.push('type=' + encodeURIComponent(stockType));
+    }
+    return parts.length > 0 ? '/warehouse/stock?' + parts.join('&') : '/warehouse/stock';
+};
+
+const returnTo = buildReturnTo();
+
+const formatAdjTime = (value) => {
+    if (!value) {
+        return '—';
+    }
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) {
+        return String(value);
+    }
+    return d.toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+};
+%>
+
+<div class="warehouse-page warehouse-stock-page" id="warehouseStockPage">
+    <div class="warehouse-stock-head">
+        <div>
+            <h1>Залишки на складі</h1>
+            <p class="warehouse-count">
+                Списання — після підтвердження адміном · коригування фіксується в журналі
+            </p>
+        </div>
+        <a class="warehouse-stock-link" href="/warehouse/orders">← Замовлення складу</a>
+    </div>
+
+    <% if (flashOkText) { %>
+        <p class="warehouse-flash warehouse-flash--ok"><%= flashOkText %></p>
+    <% } %>
+    <% if (flashErrText) { %>
+        <p class="warehouse-flash warehouse-flash--err"><%= flashErrText %></p>
+    <% } %>
+
+    <div class="warehouse-stock-stats" id="warehouseStockStats">
+        <article class="warehouse-stat-card">
+            <span class="warehouse-stat-card__label">Позицій</span>
+            <strong class="warehouse-stat-card__value" data-stat="total"><%= Number(stockSummary.total || 0) %></strong>
+        </article>
+        <article class="warehouse-stat-card">
+            <span class="warehouse-stat-card__label">Мало (≤ <%= lowLimit %>)</span>
+            <strong class="warehouse-stat-card__value warehouse-stat-card__value--warn" data-stat="low"><%= Number(stockSummary.low || 0) %></strong>
+        </article>
+        <article class="warehouse-stat-card">
+            <span class="warehouse-stat-card__label">Немає (0)</span>
+            <strong class="warehouse-stat-card__value warehouse-stat-card__value--bad" data-stat="zero"><%= Number(stockSummary.zero || 0) %></strong>
+        </article>
+        <article class="warehouse-stat-card">
+            <span class="warehouse-stat-card__label">Дефіцит</span>
+            <strong class="warehouse-stat-card__value warehouse-stat-card__value--bad" data-stat="shortage"><%= Number(stockSummary.shortage || 0) %></strong>
+        </article>
+        <article class="warehouse-stat-card">
+            <span class="warehouse-stat-card__label">У резерві</span>
+            <strong class="warehouse-stat-card__value" data-stat="reserved"><%= Number(stockSummary.reserved || 0) %></strong>
+        </article>
+    </div>
+
+    <form method="get" action="/warehouse/stock" class="warehouse-filters warehouse-stock-filters">
+        <label class="warehouse-filter-label">
+            Пошук
+            <input type="search" name="q" class="auth-input warehouse-filter-input" value="<%= stockSearch %>" placeholder="Назва або колір" />
+        </label>
+        <label class="warehouse-filter-label">
+            Тип
+            <select name="type" class="auth-input warehouse-filter-select">
+                <option value="all" <%= stockType === 'all' ? 'selected' : '' %>>Усі</option>
+                <option value="catalog" <%= stockType === 'catalog' ? 'selected' : '' %>>Каталог</option>
+                <option value="constructor" <%= stockType === 'constructor' ? 'selected' : '' %>>Конструктор</option>
+            </select>
+        </label>
+        <label class="warehouse-filter-label">
+            Стан
+            <select name="filter" class="auth-input warehouse-filter-select">
+                <option value="all" <%= stockFilter === 'all' ? 'selected' : '' %>>Усі</option>
+                <option value="low" <%= stockFilter === 'low' ? 'selected' : '' %>>Мало</option>
+                <option value="zero" <%= stockFilter === 'zero' ? 'selected' : '' %>>Немає</option>
+                <option value="shortage" <%= stockFilter === 'shortage' ? 'selected' : '' %>>Дефіцит</option>
+            </select>
+        </label>
+        <button type="submit" class="auth-button warehouse-filter-btn">Застосувати</button>
+        <% if (stockSearch || stockFilter !== 'all' || stockType !== 'all') { %>
+            <a class="warehouse-filter-reset" href="/warehouse/stock">Скинути</a>
+        <% } %>
+    </form>
+
+    <% if (safeProducts.length === 0) { %>
+        <p class="warehouse-empty">За цим фільтром позицій немає.</p>
+    <% } else { %>
+        <div class="admin-table-wrap" data-list-pager data-list-pager-item="tbody tr">
+            <table class="warehouse-stock-table">
+                <thead>
+                    <tr>
+                        <th>Товар</th>
+                        <th>Тип</th>
+                        <th>Категорія</th>
+                        <th>На складі</th>
+                        <th>Резерв</th>
+                        <th>Вільно</th>
+                        <th>Коригування</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% for (const p of safeProducts) { %>
+                        <% const qty = Number(p.stock_quantity || 0); %>
+                        <% const pending = Number(p.pending_qty || 0); %>
+                        <% const free = Number(p.free_qty != null ? p.free_qty : qty - pending); %>
+                        <% const isLow = qty > 0 && qty <= lowLimit; %>
+                        <% const isZero = qty <= 0; %>
+                        <% const notEnough = free < 0; %>
+                        <tr class="<%= isZero ? 'warehouse-stock-row--zero' : (isLow ? 'warehouse-stock-row--low' : '') %> <%= notEnough ? 'warehouse-stock-row--shortage' : '' %>">
+                            <td><%= p.name %></td>
+                            <td>
+                                <% if (p.row_type === 'constructor') { %>
+                                    <span class="warehouse-badge pay-cod">Колір</span>
+                                <% } else { %>
+                                    <span class="warehouse-badge pay-ok">Каталог</span>
+                                <% } %>
+                            </td>
+                            <td><%= p.category_name || '—' %></td>
+                            <td>
+                                <strong><%= qty %></strong> <%= p.unit_type || 'шт' %>
+                                <% if (isZero) { %>
+                                    <span class="warehouse-badge pay-no">Немає</span>
+                                <% } else if (isLow) { %>
+                                    <span class="warehouse-badge pay-no">Мало</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <% if (pending > 0) { %>
+                                    <span class="warehouse-badge pay-cod"><%= pending %></span>
+                                <% } else { %>
+                                    —
+                                <% } %>
+                            </td>
+                            <td>
+                                <strong class="<%= notEnough ? 'warehouse-stock-free--bad' : '' %>"><%= free %></strong>
+                                <% if (notEnough) { %>
+                                    <span class="warehouse-badge pay-no">Не вистачить</span>
+                                <% } %>
+                            </td>
+                            <td>
+                                <div class="warehouse-stock-adjust-row">
+                                    <form method="post" action="/warehouse/stock/adjust" class="warehouse-stock-adjust-form">
+                                        <input type="hidden" name="product_id" value="<%= p.product_id %>" />
+                                        <% if (p.variant_id) { %>
+                                            <input type="hidden" name="variant_id" value="<%= p.variant_id %>" />
+                                        <% } %>
+                                        <input type="hidden" name="return_to" value="<%= returnTo %>" />
+                                        <input type="hidden" name="delta" value="-1" />
+                                        <button type="submit" class="warehouse-stock-adjust-btn" title="Зняти 1">−1</button>
+                                    </form>
+                                    <form method="post" action="/warehouse/stock/adjust" class="warehouse-stock-adjust-form warehouse-stock-adjust-form--wide">
+                                        <input type="hidden" name="product_id" value="<%= p.product_id %>" />
+                                        <% if (p.variant_id) { %>
+                                            <input type="hidden" name="variant_id" value="<%= p.variant_id %>" />
+                                        <% } %>
+                                        <input type="hidden" name="return_to" value="<%= returnTo %>" />
+                                        <input type="number" name="delta" class="warehouse-stock-adjust-input" placeholder="±" step="1" required />
+                                        <button type="submit" class="warehouse-stock-adjust-save auth-button">OK</button>
+                                    </form>
+                                    <form method="post" action="/warehouse/stock/adjust" class="warehouse-stock-adjust-form">
+                                        <input type="hidden" name="product_id" value="<%= p.product_id %>" />
+                                        <% if (p.variant_id) { %>
+                                            <input type="hidden" name="variant_id" value="<%= p.variant_id %>" />
+                                        <% } %>
+                                        <input type="hidden" name="return_to" value="<%= returnTo %>" />
+                                        <input type="hidden" name="delta" value="1" />
+                                        <button type="submit" class="warehouse-stock-adjust-btn" title="Додати 1">+1</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    <% } %>
+
+    <% if (recentAdjustmentsList.length > 0) { %>
+        <section class="warehouse-stock-journal">
+            <h2 class="warehouse-stock-journal__title">Останні рухи по складу</h2>
+            <ul class="warehouse-stock-journal__list" data-list-pager data-list-pager-item="li">
+                <% for (const row of recentAdjustmentsList) { %>
+                    <% const worker = ((row.first_name || '') + ' ' + (row.last_name || '')).trim(); %>
+                    <% const itemName = row.flower_color ? row.product_name + ' — ' + row.flower_color : row.product_name; %>
+                    <li>
+                        <span class="warehouse-stock-journal__time"><%= formatAdjTime(row.createdAt) %></span>
+                        <strong><%= itemName %></strong>
+                        <span class="<%= Number(row.delta_qty) >= 0 ? 'warehouse-stock-delta--plus' : 'warehouse-stock-delta--minus' %>">
+                            <%= Number(row.delta_qty) >= 0 ? '+' : '' %><%= row.delta_qty %>
+                        </span>
+                        <span>(<%= row.stock_before %> → <%= row.stock_after %>)</span>
+                        <% if (worker) { %>
+                            <span class="warehouse-stock-journal__who">· <%= worker %></span>
+                        <% } %>
+                        <% if (row.note) { %>
+                            <span class="warehouse-stock-journal__note">· <%= row.note %></span>
+                        <% } %>
+                    </li>
+                <% } %>
+            </ul>
+        </section>
+    <% } %>
+</div>
+
+<script src="/js/warehouse-stock.js" defer></script>

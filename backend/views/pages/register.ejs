@@ -4,67 +4,336 @@
     <form id="registerForm" class="auth-form">
         <label class="auth-label">
             Ім'я
-            <input class="auth-input" type="text" name="first_name" autocomplete="given-name" required minlength="2" />
+            <input class="auth-input" type="text" name="first_name" autocomplete="given-name" required minlength="2" maxlength="60" />
         </label>
 
         <label class="auth-label">
             Прізвище
-            <input class="auth-input" type="text" name="last_name" autocomplete="family-name" required minlength="2" />
+            <input class="auth-input" type="text" name="last_name" autocomplete="family-name" required minlength="2" maxlength="60" />
         </label>
 
         <label class="auth-label">
             Email
-            <input class="auth-input" type="email" name="email" autocomplete="email" required />
-        </label>
-
-        <label class="auth-label">
-            Пароль
-            <input class="auth-input" type="password" name="password" autocomplete="new-password" required minlength="6" />
+            <input class="auth-input" type="email" name="email" autocomplete="email" required maxlength="120" />
         </label>
 
         <label class="auth-label">
             Телефон
-            <input class="auth-input" type="tel" name="phone" autocomplete="tel" />
+            <input class="auth-input" type="tel" name="phone" autocomplete="tel" placeholder="+380501112233" required />
         </label>
 
-        <button class="auth-button" type="submit">Зареєструватися</button>
+        <label class="auth-label">
+            Пароль
+            <div class="auth-password-wrap">
+                <input class="auth-input" type="password" name="password" id="registerPassword" autocomplete="new-password" required minlength="8" maxlength="72" />
+                <button type="button" class="auth-password-toggle" id="registerPasswordToggle" aria-label="Показати пароль">Показати</button>
+            </div>
+            <span class="auth-hint">Мінімум 8 символів</span>
+        </label>
+
+        <label class="auth-label">
+            Підтвердження пароля
+            <input class="auth-input" type="password" name="password_confirm" id="registerPasswordConfirm" autocomplete="new-password" required minlength="8" maxlength="72" />
+            <span class="auth-field-status" id="registerPasswordMatchStatus" aria-live="polite"></span>
+        </label>
+
+        <label class="auth-label auth-label--checkbox">
+            <input type="checkbox" name="accept_terms" value="1" required />
+            <span>Погоджуюсь з <a href="/privacy" target="_blank" rel="noopener">політикою конфіденційності</a></span>
+        </label>
+
+        <button class="auth-button" type="submit" id="registerSubmitBtn">Зареєструватися</button>
     </form>
+
+    <% if (typeof googleClientId !== 'undefined' && googleClientId) { %>
+        <div class="auth-or"><span>або</span></div>
+        <div id="googleSignInBtn" class="auth-google-btn"></div>
+        <p class="auth-hint auth-google-hint">Швидка реєстрація через Google — без пароля на сайті.</p>
+    <% } %>
 
     <div id="authError" class="auth-error" aria-live="polite"></div>
 </div>
 
-<p class="auth-hint">Вже є акаунт? <a href="/login">Увійти</a></p>
+<p class="auth-hint">Вже є акаунт? <a href="/login<% if (typeof authNext !== 'undefined' && authNext) { %>?next=<%= encodeURIComponent(authNext) %><% } %>">Увійти</a></p>
+
+<script type="application/json" id="registerPageConfig"><%- JSON.stringify({
+    authNext: typeof authNext !== 'undefined' ? authNext : '',
+    googleClientId: typeof googleClientId !== 'undefined' && googleClientId ? googleClientId : ''
+}) %></script>
+
+<% if (typeof googleClientId !== 'undefined' && googleClientId) { %>
+<script src="/js/google-auth.js" defer></script>
+<script defer>
+    document.addEventListener('DOMContentLoaded', function () {
+        var pageConfig = JSON.parse(document.getElementById('registerPageConfig').textContent);
+        if (pageConfig.googleClientId && typeof window.initGoogleAuthButton === 'function') {
+            window.initGoogleAuthButton({
+                clientId: pageConfig.googleClientId,
+                authNext: pageConfig.authNext
+            });
+        }
+    });
+</script>
+<% } %>
 
 <script>
+    const pageConfig = JSON.parse(document.getElementById('registerPageConfig').textContent);
     const registerForm = document.getElementById('registerForm');
     const authError = document.getElementById('authError');
+    const submitBtn = document.getElementById('registerSubmitBtn');
+    const passwordInput = document.getElementById('registerPassword');
+    const passwordConfirmInput = document.getElementById('registerPasswordConfirm');
+    const passwordMatchStatus = document.getElementById('registerPasswordMatchStatus');
+    const passwordToggle = document.getElementById('registerPasswordToggle');
+    const authNext = pageConfig.authNext || '';
+    const draftKey = 'register_draft';
 
-       registerForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-     authError.textContent = '';
+    const registerSteps = [
+        {
+            name: 'first_name',
+            title: "Ім'я",
+            check: function (val) {
+                return String(val || '').trim().length >= 2;
+            }
+        },
+        {
+            name: 'last_name',
+            title: 'Прізвище',
+            check: function (val) {
+                return String(val || '').trim().length >= 2;
+            }
+        },
+        {
+            name: 'email',
+            title: 'Email',
+            check: function (val) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
+            }
+        },
+        {
+            name: 'phone',
+            title: 'Телефон',
+            check: function (val) {
+                return String(val || '').trim().length >= 10;
+            }
+        },
+        {
+            name: 'password',
+            title: 'Пароль',
+            check: function () {
+                return false;
+            }
+        },
+        {
+            name: 'password_confirm',
+            title: 'Підтвердження пароля',
+            check: function () {
+                return false;
+            }
+        },
+        {
+            name: 'accept_terms',
+            title: 'Згоду з політикою',
+            check: function (val) {
+                return !!val;
+            }
+        }
+    ];
 
-        const  formData = new  FormData(registerForm);
-         const payload = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
-            email: formData.get('email'),
-            password: formData.get('password'),
-            phone: formData.get('phone')
+    const saveDraft = () => {
+        const fd = new FormData(registerForm);
+        const data = {
+            first_name: fd.get('first_name') || '',
+            last_name: fd.get('last_name') || '',
+            email: fd.get('email') || '',
+            phone: fd.get('phone') || '',
+            accept_terms: fd.get('accept_terms') ? '1' : ''
         };
+        sessionStorage.setItem(draftKey, JSON.stringify(data));
+    };
 
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify(payload)
-        });
+    const loadDraft = () => {
+        const raw = sessionStorage.getItem(draftKey);
+        if (!raw) {
+            return false;
+        }
 
-        const data = await response.json().catch(() => null);
-        if (!response.ok) {
-            authError.textContent = (data && data.message) ? data.message : 'Помилка реєстрації';
+        let data = null;
+        try {
+            data = JSON.parse(raw);
+        } catch (e) {
+            return false;
+        }
+
+        if (!data) {
+            return false;
+        }
+
+        let restored = false;
+
+        if (registerForm.first_name) {
+            registerForm.first_name.value = data.first_name || '';
+            if (data.first_name) restored = true;
+        }
+        if (registerForm.last_name) {
+            registerForm.last_name.value = data.last_name || '';
+            if (data.last_name) restored = true;
+        }
+        if (registerForm.email) {
+            registerForm.email.value = data.email || '';
+            if (data.email) restored = true;
+        }
+        if (registerForm.phone) {
+            registerForm.phone.value = data.phone || '';
+            if (data.phone) restored = true;
+        }
+        if (registerForm.accept_terms) {
+            registerForm.accept_terms.checked = data.accept_terms === '1';
+            if (data.accept_terms === '1') restored = true;
+        }
+
+        return restored;
+    };
+
+    const checkPasswords = () => {
+        if (!passwordInput || !passwordConfirmInput || !passwordMatchStatus) {
             return;
         }
 
-        window.location.href = '/login';
+        const pass = passwordInput.value;
+        const confirm = passwordConfirmInput.value;
+
+        passwordConfirmInput.classList.remove('auth-input--match', 'auth-input--mismatch');
+        passwordMatchStatus.textContent = '';
+        passwordMatchStatus.classList.remove('auth-field-status--ok', 'auth-field-status--error');
+
+        if (!confirm) {
+            return;
+        }
+
+        if (pass === confirm) {
+            passwordConfirmInput.classList.add('auth-input--match');
+            passwordMatchStatus.textContent = 'Паролі співпадають';
+            passwordMatchStatus.classList.add('auth-field-status--ok');
+        } else {
+            passwordConfirmInput.classList.add('auth-input--mismatch');
+            passwordMatchStatus.textContent = 'Паролі не співпадають';
+            passwordMatchStatus.classList.add('auth-field-status--error');
+        }
+    };
+
+    if (passwordToggle && passwordInput) {
+        passwordToggle.addEventListener('click', () => {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                passwordToggle.textContent = 'Приховати';
+            } else {
+                passwordInput.type = 'password';
+                passwordToggle.textContent = 'Показати';
+            }
+        });
+    }
+
+    if (passwordInput) {
+        passwordInput.addEventListener('input', checkPasswords);
+    }
+    if (passwordConfirmInput) {
+        passwordConfirmInput.addEventListener('input', checkPasswords);
+    }
+
+    registerForm.addEventListener('input', (event) => {
+        const name = event.target && event.target.name ? event.target.name : '';
+        if (name === 'password' || name === 'password_confirm') {
+            return;
+        }
+        saveDraft();
+    });
+    registerForm.addEventListener('change', saveDraft);
+
+    registerForm.addEventListener('focusin', function (event) {
+        var name = event.target && event.target.name ? event.target.name : '';
+        if (!name || name === 'password' || name === 'password_confirm') {
+            return;
+        }
+        saveDraft();
+    });
+
+    if (loadDraft() && typeof window.restoreFormProgress === 'function') {
+        window.restoreFormProgress({
+            restored: true,
+            form: registerForm,
+            steps: registerSteps,
+            messagePrefix: 'Продовжуємо реєстрацію — '
+        });
+    }
+
+    const getRedirectUrl = () => {
+        if (authNext && authNext.startsWith('/')) {
+            return authNext;
+        }
+        return '/';
+    };
+
+    registerForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        authError.textContent = '';
+
+        const formData = new FormData(registerForm);
+        const password = String(formData.get('password') || '');
+        const passwordConfirm = String(formData.get('password_confirm') || '');
+
+        if (password !== passwordConfirm) {
+            authError.textContent = 'Паролі не співпадають';
+            checkPasswords();
+            if (typeof window.showToast === 'function') {
+                window.showToast('Паролі не співпадають', 'error');
+            }
+            return;
+        }
+
+        const payload = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+            password: password,
+            password_confirm: passwordConfirm,
+            accept_terms: formData.get('accept_terms') ? '1' : ''
+        };
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Зачекайте…';
+
+        try {
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json().catch(() => null);
+            if (!response.ok) {
+                const msg = (data && data.message) ? data.message : 'Помилка реєстрації';
+                authError.textContent = msg;
+                if (typeof window.showToast === 'function') {
+                    window.showToast(msg, 'error');
+                }
+                return;
+            }
+
+            sessionStorage.removeItem(draftKey);
+
+            if (typeof window.showToast === 'function') {
+                window.showToast('Реєстрацію завершено', 'ok');
+            }
+
+            window.location.href = getRedirectUrl();
+        } catch (err) {
+            authError.textContent = 'Не вдалося з’єднатися з сервером';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Зареєструватися';
+        }
     });
 </script>

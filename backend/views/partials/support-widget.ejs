@@ -1,0 +1,20 @@
+<link rel="stylesheet" href="/css/support-widget.css" />
+<div
+    id="support-widget"
+    class="support-widget"
+    data-logged-in="<%= currentUser && currentUser.user_id ? '1' : '0' %>"
+>
+    <div id="support-panel" class="support-panel" hidden>
+        <header class="support-panel__head">
+            <button type="button" id="support-back" class="support-panel__back" hidden aria-label="Назад">←</button>
+            <h2 class="support-panel__title" id="support-panel-title">Підтримка</h2>
+            <button type="button" id="support-minimize" class="support-panel__minimize" aria-label="Згорнути">—</button>
+            <button type="button" id="support-close" class="support-panel__close" aria-label="Закрити">×</button>
+        </header>
+        <div id="support-panel-body" class="support-panel__body"></div>
+    </div>
+    <button type="button" id="support-fab" class="support-fab" aria-label="Підтримка" title="Підтримка">
+        <span class="support-fab__icon" aria-hidden="true">💬</span>
+        <span class="support-fab__badge" id="support-fab-badge" hidden>0</span>
+    </button>
+</div>

@@ -1,0 +1,318 @@
+<%
+
+const safeGroups = typeof flowerGroups !== 'undefined' && Array.isArray(flowerGroups) ? flowerGroups : [];
+
+const safePackaging = typeof packagingOptions !== 'undefined' && Array.isArray(packagingOptions) ? packagingOptions : [];
+
+const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
+
+%>
+
+
+
+<section class="catalog-content constructor-page">
+
+    <header class="catalog-hero constructor-hero">
+
+        <div class="catalog-hero__content">
+
+            <p class="catalog-hero__eyebrow">✿ Збери свій букет</p>
+
+            <h1 class="catalog-hero__title">Конструктор букета</h1>
+
+            <p class="catalog-hero__lead">Обери квіти, колір та кількість — ми зберемо букет перед відправкою. Мінімум <%= minStemsVal %> квіток.</p>
+
+        </div>
+
+    </header>
+
+
+
+    <% if (safeGroups.length === 0) { %>
+
+        <p class="catalog-empty">Немає квітів для конструктора. <a href="/">Каталог</a></p>
+
+    <% } else { %>
+
+        <section class="constructor-library" id="constructorLibrary" aria-label="Готові букети">
+            <div class="constructor-library__head">
+                <h2 class="checkout-step-heading">Готові ідеї</h2>
+                <p class="constructor-library__lead">Обери шаблон — редагуй у конструкторі або купуй одразу.</p>
+            </div>
+            <div class="constructor-library__grid" id="constructorLibraryGrid">
+                <p class="constructor-library__loading">Завантаження шаблонів…</p>
+            </div>
+        </section>
+
+        <div class="constructor-layout">
+
+            <div class="constructor-flowers">
+
+                <h2 class="checkout-step-heading">Квіти</h2>
+
+                <div class="constructor-grid" id="constructorGrid">
+
+                    <% for (const group of safeGroups) {
+
+                        const active = group.activeVariant;
+
+                        const multiColor = group.variants.length > 1;
+
+                        const showColors = multiColor || !!(active && active.flower_color);
+
+                    %>
+
+                        <article
+
+                            class="constructor-card product-card"
+
+                            data-product-id="<%= group.product_id %>"
+
+                            data-variant-id="<%= active.id != null ? active.id : '' %>"
+
+                            data-price="<%= Number(active.sale_price || 0) %>"
+
+                            data-stock="<%= Number(active.stock_quantity || 0) %>"
+
+                            data-name="<%= group.title %>"
+
+                            <% if (multiColor) { %>data-multi-color="1"<% } %>
+
+                        >
+
+                            <div class="product-image-wrap">
+
+                                <% if (active.image_url) { %>
+
+                                    <img class="product-image constructor-card__image" src="<%= active.image_url %>" alt="<%= group.title %>">
+
+                                <% } else { %>
+
+                                    <div class="product-image product-image--placeholder constructor-card__image" aria-hidden="true"></div>
+
+                                <% } %>
+
+                            </div>
+
+                            <h3 class="product-title"><%= group.title %></h3>
+
+                            <% if (showColors) { %>
+
+                                <div class="constructor-colors" role="group" aria-label="Колір">
+
+                                    <% for (const variant of group.variants) {
+
+                                        const inStock = Number(variant.stock_quantity || 0) > 0;
+
+                                        const isActive = Number(variant.id) === Number(active.id) || (variant.id == null && active.id == null && variant.flower_color === active.flower_color);
+
+                                        const swatch = variant.color_hex || '#94a3b8';
+
+                                        const colorTitle = variant.flower_color || 'Без кольору';
+
+                                    %>
+
+                                        <button
+
+                                            type="button"
+
+                                            class="constructor-color-swatch<%= isActive ? ' is-active' : '' %><%= inStock ? '' : ' is-out' %>"
+
+                                            data-variant-id="<%= variant.id != null ? variant.id : '' %>"
+
+                                            data-price="<%= Number(variant.sale_price || active.sale_price || 0) %>"
+
+                                            data-stock="<%= Number(variant.stock_quantity || 0) %>"
+
+                                            data-image="<%= variant.image_url || '' %>"
+
+                                            data-color="<%= variant.flower_color || '' %>"
+
+                                            style="--swatch-color: <%= swatch %>"
+
+                                            title="<%= colorTitle %><%= inStock ? '' : ' — немає на складі' %>"
+
+                                            aria-label="<%= colorTitle %>"
+
+                                            <%= inStock ? '' : 'disabled' %>
+
+                                        ></button>
+
+                                    <% } %>
+
+                                </div>
+
+                                <p class="constructor-card__color-label"><%= active.flower_color || 'Обери колір' %></p>
+
+                            <% } %>
+
+                            <p class="product-price constructor-card__price">
+
+                                <strong><%= Number(active.sale_price || 0).toLocaleString('uk-UA') %> грн / шт</strong>
+
+                            </p>
+
+                            <p class="constructor-card__stock">В наявності: <span class="constructor-card__stock-value"><%= Number(active.stock_quantity || 0) %></span> шт</p>
+
+                            <div class="constructor-qty">
+
+                                <button type="button" class="constructor-qty-btn" data-qty-minus aria-label="Менше">−</button>
+
+                                <input
+
+                                    type="number"
+
+                                    class="constructor-qty-input auth-input"
+
+                                    min="0"
+
+                                    max="<%= Number(active.stock_quantity || 0) %>"
+
+                                    value="0"
+
+                                    data-qty-input
+
+                                />
+
+                                <button type="button" class="constructor-qty-btn" data-qty-plus aria-label="Більше">+</button>
+
+                            </div>
+
+                        </article>
+
+                    <% } %>
+
+                </div>
+
+            </div>
+
+
+
+            <aside class="constructor-aside">
+
+                <div class="constructor-summary checkout-summary-card cart-summary">
+
+                    <h2 class="checkout-step-heading">Твій букет</h2>
+
+                    <ul class="constructor-summary-list" id="constructorSummaryList">
+
+                        <li class="constructor-summary-empty">Поки нічого не обрано</li>
+
+                    </ul>
+
+                    <button type="button" class="constructor-clear-btn" id="constructorClearBtn" hidden disabled>
+                        Очистити букет
+                    </button>
+
+                    <label class="auth-label constructor-pack-label">
+
+                        Упаковка
+
+                        <% if (safePackaging.length === 0) { %>
+
+                            <span class="constructor-hint">Немає упаковки</span>
+
+                        <% } else { %>
+
+                        <select class="auth-input" id="constructorPackaging">
+
+                            <% for (const pack of safePackaging) { %>
+
+                                <option value="<%= pack.id %>" data-price="<%= Number(pack.price || 0) %>">
+
+                                    <%= pack.label %><% if (Number(pack.price) > 0) { %> (+<%= Number(pack.price).toLocaleString('uk-UA') %> грн)<% } %>
+
+                                </option>
+
+                            <% } %>
+
+                        </select>
+
+                        <% } %>
+
+                    </label>
+
+
+
+                    <p class="checkout-summary-row constructor-total-row">
+
+                        <span>Квітів:</span>
+
+                        <strong class="checkout-summary-row-value" id="constructorStemCount">0</strong>
+
+                    </p>
+
+                    <p class="checkout-summary-row checkout-summary-row--total constructor-total-row--big">
+
+                        <span>Разом:</span>
+
+                        <strong class="checkout-summary-total" id="constructorTotal">0 грн</strong>
+
+                    </p>
+
+                    <p class="constructor-hint" id="constructorHint">Мінімум <%= minStemsVal %> квіток у букеті</p>
+
+                    <div class="constructor-preview" id="constructorPreview">
+                        <p class="constructor-preview__title">Превʼю букета</p>
+                        <div class="constructor-preview__frame" id="constructorPreviewFrame" hidden>
+                            <button type="button" class="constructor-preview-close" id="constructorPreviewClose" aria-label="Закрити фото" title="Закрити">×</button>
+                            <img id="constructorPreviewImg" src="" alt="Превʼю зібраного букета" />
+                        </div>
+                        <p class="constructor-preview__status" id="constructorPreviewStatus"></p>
+                        <button type="button" class="auth-button constructor-preview-btn" id="constructorPreviewBtn" disabled>
+                            Показати превʼю
+                        </button>
+                    </div>
+
+                    <button type="button" class="auth-button constructor-add-btn" id="constructorAddBtn" disabled>
+
+                        Додати в кошик
+
+                    </button>
+
+                    <a href="/" class="constructor-back-link">← До каталогу</a>
+
+                </div>
+
+            </aside>
+
+        </div>
+
+        <div class="constructor-mobile-bar" id="constructorMobileBar" hidden>
+            <div class="constructor-mobile-bar__info">
+                <strong class="constructor-mobile-bar__total" id="constructorMobileTotal">0 грн</strong>
+                <span class="constructor-mobile-bar__stems" id="constructorMobileStems">0 квіток</span>
+            </div>
+            <button type="button" class="auth-button constructor-add-btn constructor-mobile-bar__btn" id="constructorMobileAddBtn" disabled>
+                Додати в кошик
+            </button>
+        </div>
+
+    <% } %>
+
+</section>
+
+
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+window.constructorConfig = {
+    minStems: <%= minStemsVal %>,
+    calcUrl: '/constructor/calc',
+    previewUrl: '/constructor/preview',
+    previewSaveUrl: '/constructor/preview-save',
+    previewClearUrl: '/constructor/preview-clear',
+    puterModel: 'gpt-image-1-mini',
+    puterQuality: 'medium',
+    addUrl: '/constructor/add',
+    templatesUrl: '/api/constructor/templates',
+    templateSlug: <%- JSON.stringify(typeof templateSlug !== 'undefined' ? templateSlug : '') %>,
+    draftStorageKey: 'flowersgo_constructor_draft',
+    previewStorageKey: 'flowersgo_constructor_preview'
+};
+</script>
+
+<script src="/js/constructor-library.js" defer></script>
+<script src="/js/constructor.js" defer></script>
+
+

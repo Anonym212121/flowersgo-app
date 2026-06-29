@@ -1,0 +1,68 @@
+<%
+const o = order || null;
+const orderId = o ? o.id : 0;
+const total = o ? Number(o.total_amount || 0) : 0;
+const payStatus = o ? String(o.payment_status || '') : '';
+%>
+
+<section class="catalog-content order-success-page">
+    <div class="order-success-card">
+        <h1>Дякуємо за замовлення!</h1>
+
+        <% if (okFlag === 'order_created') { %>
+            <p class="order-success-lead">Замовлення прийнято. Запиши номер — він може знадобитись.</p>
+        <% } else if (okFlag === 'cancel_request_sent') { %>
+            <p class="order-success-lead">Запит на скасування надіслано адміну.</p>
+        <% } else if (okFlag === 'payment_paid') { %>
+            <p class="order-success-lead">Оплату отримано.</p>
+        <% } else { %>
+            <p class="order-success-lead">Замовлення оформлено.</p>
+        <% } %>
+
+        <div class="order-success-meta">
+            <p><strong>Номер:</strong> № <%= orderId %></p>
+            <p><strong>Сума:</strong> <%= total.toLocaleString('uk-UA') %> грн</p>
+            <p><strong>Оплата:</strong>
+                <% if (payStatus === 'paid') { %>
+                    <span class="order-success-status order-success-status--paid">Оплачено</span>
+                <% } else if (payStatus === 'cod') { %>
+                    <span class="order-success-status order-success-status--cod">При отриманні</span>
+                <% } else if (payStatus === 'unpaid') { %>
+                    <span class="order-success-status order-success-status--unpaid">Очікує оплати</span>
+                <% } else { %>
+                    <span class="order-success-status order-success-status--pending">В обробці</span>
+                <% } %>
+            </p>
+            <% if (o && o.receiver_name) { %>
+                <p><strong>Одержувач:</strong> <%= o.receiver_name %></p>
+            <% } %>
+        </div>
+
+        <% if (isGuestOrder) { %>
+            <p class="order-success-guest-hint">
+                Ти оформив без реєстрації. Збережи номер <strong>№ <%= orderId %></strong> або цю сторінку в закладках.
+                <a href="/register">Зареєструйся</a>, якщо хочеш бачити замовлення в кабінеті.
+            </p>
+        <% } %>
+
+        <% if (canCancel && payToken) { %>
+            <form class="order-success-cancel" method="post" action="/order/success/<%= orderId %>/cancel-request?t=<%= encodeURIComponent(payToken) %>">
+                <label class="auth-label">
+                    Причина скасування (необовʼязково)
+                    <textarea class="auth-input" name="cancel_note" rows="2" maxlength="500"></textarea>
+                </label>
+                <button type="submit" class="order-success-btn order-success-btn--ghost">Запросити скасування</button>
+            </form>
+        <% } %>
+
+        <div class="order-success-actions">
+            <% if (payStatus === 'unpaid' && payToken) { %>
+                <a class="auth-button order-success-btn" href="/payment/<%= orderId %>?t=<%= encodeURIComponent(payToken) %>" data-soft-nav="false">Оплатити</a>
+            <% } %>
+            <a class="order-success-btn order-success-btn--ghost" href="/">На головну</a>
+            <% if (!isGuestOrder) { %>
+                <a class="order-success-btn order-success-btn--ghost" href="/cabinet">Кабінет</a>
+            <% } %>
+        </div>
+    </div>
+</section>

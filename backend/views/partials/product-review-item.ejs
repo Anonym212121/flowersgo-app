@@ -1,0 +1,41 @@
+<%
+const revDate = rev.createdAt || rev.createdat;
+const revRating = Number(rev.rating);
+const hasStars = Number.isFinite(revRating) && revRating >= 1 && revRating <= 5;
+const firstName = String(rev.first_name || '').trim();
+const lastName = String(rev.last_name || '').trim();
+const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+const fullName = `${firstName} ${lastName}`.trim() || 'Покупець';
+const commentText = rev.comment && String(rev.comment).trim() !== '' ? String(rev.comment).trim() : '';
+const dateLabel = revDate ? new Date(revDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+const avatarUrl = rev.avatar_url && String(rev.avatar_url).trim() !== '' ? String(rev.avatar_url).trim() : '';
+%>
+<li class="product-review-item">
+    <div class="product-review-item-head">
+        <% if (avatarUrl) { %>
+            <img class="product-review-avatar product-review-avatar--img" src="<%= avatarUrl %>" alt="<%= fullName %>" />
+        <% } else { %>
+            <span class="product-review-avatar" aria-hidden="true"><%= initials %></span>
+        <% } %>
+        <div class="product-review-item-meta">
+            <p class="product-review-author"><%= fullName %></p>
+            <div class="product-review-item-sub">
+                <% if (hasStars) { %>
+                    <span class="star-rating star-rating--sm" title="Оцінка <%= revRating %> з 5">
+                        <% for (let star = 1; star <= 5; star += 1) { %>
+                            <span class="star-icon <%= star <= revRating ? 'star-icon--on' : 'star-icon--off' %>">★</span>
+                        <% } %>
+                    </span>
+                <% } else { %>
+                    <span class="product-review-no-rating">без оцінки</span>
+                <% } %>
+                <% if (dateLabel) { %>
+                    <span class="product-review-date"><%= dateLabel %></span>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    <% if (commentText) { %>
+        <p class="product-review-body"><%= commentText %></p>
+    <% } %>
+</li>

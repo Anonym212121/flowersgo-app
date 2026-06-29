@@ -1,0 +1,23 @@
+<%
+const safePage = typeof legalPage !== 'undefined' && legalPage ? legalPage : {};
+const safeBody = typeof renderedBody === 'string' ? renderedBody : '';
+let updatedLabel = '';
+if (safePage.updatedAt) {
+    const d = new Date(safePage.updatedAt);
+    if (!isNaN(d.getTime())) {
+        updatedLabel = d.toLocaleDateString('uk-UA');
+    }
+}
+%>
+<div class="info-page">
+    <h1><%= safePage.title || 'Сторінка' %></h1>
+    <% if (safePage.lead_text) { %>
+        <p class="info-page__lead"><%= safePage.lead_text %></p>
+    <% } %>
+    <% if (updatedLabel) { %>
+        <p class="info-page__updated">Останнє оновлення: <%= updatedLabel %></p>
+    <% } %>
+    <div class="info-page__body">
+        <%- safeBody %>
+    </div>
+</div>

@@ -6,8 +6,14 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
     <h1 class="catalog-title">Обране</h1>
 
     <% if (safeProducts.length === 0) { %>
-        <p>У обраному ще нічого немає.</p>
-        <p><a href="/">Перейти до каталогу</a></p>
+        <div class="catalog-empty">
+            <p class="catalog-empty__title">У обраному ще нічого немає</p>
+            <p class="catalog-empty__text">Натисни сердечко на картці товару в каталогу — і букет зʼявиться тут.</p>
+            <div class="catalog-empty__actions">
+                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary">Обрати букети</a>
+                <a href="/#catalog-hit-root" class="catalog-empty__btn catalog-empty__btn--secondary">Хіти сезону</a>
+            </div>
+        </div>
     <% } else { %>
         <div class="products-grid">
             <% for (const product of safeProducts) { %>

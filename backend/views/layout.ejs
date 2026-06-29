@@ -3,15 +3,61 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><%= title %></title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <%
+    const shopName = 'FlowersGo';
+    const pageTitle = typeof title === 'string' ? title.trim() : shopName;
+    const documentTitle =
+        pageTitle === shopName || pageTitle.endsWith(' — ' + shopName) || pageTitle.endsWith(' | ' + shopName)
+            ? pageTitle
+            : pageTitle + ' — ' + shopName;
+    %>
+    <title><%= documentTitle %></title>
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('site-theme') === 'light') {
+                    document.documentElement.classList.add('theme-light');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="stylesheet" href="/css/main.css" />
     <link rel="stylesheet" href="/css/product.css" />
+    <link rel="stylesheet" href="/css/theme-light.css" />
+    <script src="/js/toast.js"></script>
+    <script src="/js/nav-counts.js"></script>
+    <script src="/js/form-progress.js"></script>
+    <script src="/js/site-notify-auto.js"></script>
 </head>
 <body>
     <%- include('partials/header') %>
-    <main class="main">
+    <main class="main" id="page-main">
         <%- include(bodyPartial) %>
     </main>
+    <% if (headerType !== 'admin' && headerType !== 'warehouse_worker' && headerType !== 'courier') { %>
+        <%- include('partials/footer') %>
+        <%- include('partials/support-widget') %>
+    <% } %>
+    <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+    <button type="button" id="scroll-to-top" class="scroll-to-top" aria-label="Прокрутити нагору" title="Нагору" hidden>↑</button>
+    <script src="/js/theme.js" defer></script>
+    <script src="/js/site-alerts.js" defer></script>
+    <script src="/js/alert-settings-btn.js" defer></script>
+    <% if (headerType === 'admin' || headerType === 'warehouse_worker' || headerType === 'courier' || headerType === 'user') { %>
+        <script src="/js/notifications.js" defer></script>
+    <% } %>
+    <% if (headerType !== 'admin' && headerType !== 'warehouse_worker' && headerType !== 'courier') { %>
+        <script src="/js/support-widget.js" defer></script>
+    <% } %>
+    <script src="/js/list-pager.js" defer></script>
+    <script type="application/json" id="layoutPageConfig"><%- JSON.stringify({
+        wishlistProductIds: typeof wishlistProductIds !== 'undefined' && Array.isArray(wishlistProductIds) ? wishlistProductIds : []
+    }) %></script>
+    <script>
+        window.__wishlistProductIds = JSON.parse(document.getElementById('layoutPageConfig').textContent).wishlistProductIds;
+    </script>
     <script src="/js/main.js" defer></script>
 </body>
 </html>

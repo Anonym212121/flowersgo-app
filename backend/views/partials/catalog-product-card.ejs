@@ -1,0 +1,79 @@
+<%
+const cardShowHit = typeof showHitBadge !== 'undefined' && showHitBadge;
+const basePrice = Number(product.base_price || 0);
+const salePrice = Number(product.sale_price || 0);
+const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice;
+const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0;
+const cardRating = Number(product.average_rating);
+%>
+<article class="product-card">
+    <a href="/product/<%= product.id %>" class="product-card-link">
+    <div class="product-image-wrap">
+        <% if (discountPercent > 0) { %>
+            <span class="discount-badge"><%= discountPercent %>%</span>
+        <% } %>
+        <% if (cardShowHit) { %>
+            <span class="hit-badge">Хіт продажів</span>
+        <% } %>
+        <% if (product.image_url) { %>
+            <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
+        <% } else { %>
+            <div class="product-image product-image--placeholder">Немає фото</div>
+        <% } %>
+    </div>
+
+    <h4 class="product-title"><%= product.name %></h4>
+
+    <% if (Number.isFinite(cardRating) && cardRating > 0) { %>
+        <p class="product-card-rating">
+            <span class="star-rating star-rating--sm" title="Середня оцінка <%= cardRating.toFixed(1) %> з 5">
+                <% for (let star = 1; star <= 5; star += 1) { %>
+                    <span class="star-icon <%= star <= Math.round(cardRating) ? 'star-icon--on' : 'star-icon--off' %>">★</span>
+                <% } %>
+            </span>
+            <strong><%= cardRating.toFixed(1) %></strong>
+        </p>
+    <% } %>
+
+    <p class="product-price">
+        <% if (hasDiscount) { %>
+            <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+        <% } %>
+        <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+    </p>
+
+    <p class="product-stock">
+        <% if (Number(product.stock_quantity) > 0) { %>
+            В наявності: <%= product.stock_quantity %> <%= product.unit_type || 'шт' %>
+        <% } else { %>
+            Немає в наявності
+        <% } %>
+    </p>
+    </a>
+
+    <%
+    const wlIds = typeof wishlistProductIds !== 'undefined' && Array.isArray(wishlistProductIds) ? wishlistProductIds : [];
+    const cardProductId = Number(product.id);
+    const inWishlist = wlIds.some((id) => Number(id) === cardProductId);
+    %>
+    <div class="product-card-actions">
+        <form method="post" action="<%= inWishlist ? '/wishlist/remove' : '/wishlist/add' %>" class="wishlist-form wishlist-ajax">
+            <input type="hidden" name="product_id" value="<%= product.id %>" />
+            <button class="wishlist-star-btn<%= inWishlist ? ' wishlist-star-btn--active' : '' %>" type="submit" title="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>" aria-label="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>"><%= inWishlist ? '★' : '☆' %></button>
+        </form>
+        <% if (Number(product.stock_quantity) > 0) { %>
+            <form method="post" action="/cart/add" class="cart-form cart-ajax">
+                <input type="hidden" name="product_id" value="<%= product.id %>" />
+                <input type="hidden" name="quantity" value="1" />
+                <button class="cart-icon-btn" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+            </form>
+        <% } else { %>
+            <button class="cart-icon-btn" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>
+        <% } %>
+        <% if (Number(product.stock_quantity) > 0) { %>
+            <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
+        <% } else { %>
+            <button class="product-order-btn" type="button" disabled>Замовити</button>
+        <% } %>
+    </div>
+</article>

@@ -1,0 +1,19 @@
+<section class="catalog-section-panel">
+    <div class="catalog-section-head">
+        <h2 class="catalog-section-title"><%= section.title %></h2>
+        <% if (section.categoryId) { %>
+            <a href="/?category_id=<%= section.categoryId %>" class="catalog-section-link catalog-category-nav" data-category-id="<%= section.categoryId %>">
+                Переглянути всі
+            </a>
+        <% } %>
+    </div>
+    <div class="products-grid products-grid--wide">
+        <% for (const product of section.products) { %>
+            <%- include('./catalog-product-card', {
+                product,
+                showHitBadge: false,
+                wishlistProductIds: typeof wishlistProductIds !== 'undefined' ? wishlistProductIds : []
+            }) %>
+        <% } %>
+    </div>
+</section>

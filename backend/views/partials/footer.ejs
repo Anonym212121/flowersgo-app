@@ -1,0 +1,76 @@
+<footer class="site-footer">
+    <div class="site-footer__inner">
+        <div class="site-footer__grid">
+            <div class="site-footer__brand">
+                <a class="site-footer__logo" href="/">
+                    <span class="logo__mark" aria-hidden="true">
+                        <img class="logo__mark-img" src="/images/logo-rose.png" alt="" width="32" height="32" decoding="async" />
+                    </span>
+                    <span class="logo__text">Flowers<span class="logo__accent">Go</span></span>
+                </a>
+                <p class="site-footer__about">
+                    Доставка свіжих квітів, букетів і подарунків по місту. Збираємо замовлення вручну, фото перед відправкою — за запитом.
+                </p>
+                <div class="site-footer__social">
+                    <a href="https://t.me/" target="_blank" rel="noopener noreferrer">Telegram</a>
+                    <a href="https://instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a>
+                    <a href="https://viber.com/" target="_blank" rel="noopener noreferrer">Viber</a>
+                </div>
+            </div>
+
+            <div class="site-footer__col">
+                <h3 class="site-footer__title">Доставка</h3>
+                <ul class="site-footer__list">
+                    <li>Кур'єр по місту — від 2 годин</li>
+                    <li>Точний час і експрес-слоти</li>
+                    <li>Самовивіз з 9:00 до 19:00</li>
+                    <li>Доставка вночі за попереднім записом</li>
+                </ul>
+            </div>
+
+            <div class="site-footer__col">
+                <h3 class="site-footer__title">Покупцям</h3>
+                <ul class="site-footer__links">
+                    <li><a href="/">Каталог</a></li>
+                    <li><a href="/cart">Кошик</a></li>
+                    <li><a href="/wishlist">Обране</a></li>
+                    <% if (headerType === 'guest') { %>
+                        <li><a href="/login">Вхід</a></li>
+                        <li><a href="/register">Реєстрація</a></li>
+                    <% } else { %>
+                        <li><a href="/cabinet">Особистий кабінет</a></li>
+                        <li><a href="/checkout">Оформлення</a></li>
+                    <% } %>
+                    <li><a href="/delivery-terms">Умови доставки</a></li>
+                    <li><a href="/privacy">Конфіденційність</a></li>
+                </ul>
+            </div>
+
+            <div class="site-footer__col">
+                <h3 class="site-footer__title">Контакти</h3>
+                <ul class="site-footer__contacts">
+                    <li><a href="tel:+380671234567">+38 (067) 123-45-67</a></li>
+                    <li><a href="mailto:info@flowersgo.ua">info@flowersgo.ua</a></li>
+                    <li>Щодня з 9:00 до 23:00</li>
+                    <li>Підтримка у месенджерах 24/7</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="site-footer__pay">
+            <span class="site-footer__pay-label">Оплата:</span>
+            <span class="site-footer__badge">Visa / Mastercard</span>
+            <span class="site-footer__badge">LiqPay</span>
+            <span class="site-footer__badge">Готівка кур'єру</span>
+            <span class="site-footer__badge">При отриманні</span>
+        </div>
+
+        <div class="site-footer__bottom">
+            <span>© <%= new Date().getFullYear() %> FlowersGo. Доставка квітів.</span>
+            <span class="site-footer__bottom-links">
+                <a href="/privacy">Політика конфіденційності</a>
+                <a href="/delivery-terms">Умови доставки</a>
+            </span>
+        </div>
+    </div>
+</footer>

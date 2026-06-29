@@ -1,0 +1,9 @@
+<section class="catalog-content checkout-page">
+    <h1 class="checkout-page-title">Оплата замовлення #<%= order.id %></h1>
+
+    <div class="checkout-step-card">
+        <p>До сплати: <strong><%= Number(order.total_amount || 0).toLocaleString('uk-UA') %> грн</strong></p>
+        <p class="payment-sandbox-note">Перенаправлення на LiqPay...</p>
+        <p><a href="<%= checkoutUrl %>" class="auth-button checkout-submit-btn">Відкрити LiqPay</a></p>
+    </div>
+</section>
