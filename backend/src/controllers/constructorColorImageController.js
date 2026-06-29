@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const Product = require('../models/Product');
+const ProductColorVariant = require('../models/ProductColorVariant');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'products');
 
@@ -43,49 +43,54 @@ const upload = multer({
 
 const uploadMiddleware = upload.single('image');
 
-const uploadProductImage = async (req, res) => {
+const uploadVariantImage = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'Немає файлу. Поле форми має називатися image' });
         }
 
-        const productId = Number(req.body.product_id);
-        if (!Number.isFinite(productId) || productId <= 0) {
+        const variantId = Number(req.params.id);
+        if (!Number.isFinite(variantId) || variantId <= 0) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
-            return res.status(400).json({ message: 'Невірний product_id' });
+            return res.status(400).json({ message: 'Невірний id кольору' });
+        }
+
+        const variant = await ProductColorVariant.findById(variantId);
+        if (!variant || Number(variant.is_constructor) !== 1) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch {
+            }
+            return res.status(404).json({ message: 'Колір не знайдено' });
         }
 
         const publicUrl = `/uploads/products/${req.file.filename}`;
-        const updated = await Product.updateImageUrl(productId, publicUrl);
-
+        const updated = await ProductColorVariant.updateImageUrl(variantId, publicUrl);
         if (!updated) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
-            return res.status(404).json({ message: 'Товар не знайдено' });
+            return res.status(404).json({ message: 'Колір не знайдено' });
         }
 
         return res.status(200).json({ ok: true, image_url: publicUrl });
     } catch (err) {
-        console.error('uploadProductImage:', err.message);
+        console.error('uploadVariantImage:', err.message);
         if (req.file && req.file.path) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
         }
-        return res.status(500).json({ message: 'Помилка збереження' });
+        return res.status(500).json({ message: 'Помилка завантаження' });
     }
 };
 
 module.exports = {
     uploadMiddleware,
-    uploadProductImage
+    uploadVariantImage
 };

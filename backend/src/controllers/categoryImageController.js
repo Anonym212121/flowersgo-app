@@ -1,9 +1,9 @@
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const Product = require('../models/Product');
+const Category = require('../models/Category');
 
-const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'products');
+const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'categories');
 
 const ensureUploadsDir = () => {
     if (!fs.existsSync(uploadsDir)) {
@@ -43,42 +43,39 @@ const upload = multer({
 
 const uploadMiddleware = upload.single('image');
 
-const uploadProductImage = async (req, res) => {
+const uploadCategoryImage = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ message: 'Немає файлу. Поле форми має називатися image' });
+            return res.status(400).json({ message: 'Немає файлу' });
         }
 
-        const productId = Number(req.body.product_id);
-        if (!Number.isFinite(productId) || productId <= 0) {
+        const categoryId = Number(req.body.category_id);
+        if (!Number.isFinite(categoryId) || categoryId <= 0) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
-            return res.status(400).json({ message: 'Невірний product_id' });
+            return res.status(400).json({ message: 'Невірний id категорії' });
         }
 
-        const publicUrl = `/uploads/products/${req.file.filename}`;
-        const updated = await Product.updateImageUrl(productId, publicUrl);
+        const publicUrl = `/uploads/categories/${req.file.filename}`;
+        const updated = await Category.updateImageUrl(categoryId, publicUrl);
 
         if (!updated) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
-            return res.status(404).json({ message: 'Товар не знайдено' });
+            return res.status(404).json({ message: 'Категорію не знайдено' });
         }
 
         return res.status(200).json({ ok: true, image_url: publicUrl });
     } catch (err) {
-        console.error('uploadProductImage:', err.message);
+        console.error('uploadCategoryImage:', err.message);
         if (req.file && req.file.path) {
             try {
                 fs.unlinkSync(req.file.path);
             } catch {
-                
             }
         }
         return res.status(500).json({ message: 'Помилка збереження' });
@@ -87,5 +84,5 @@ const uploadProductImage = async (req, res) => {
 
 module.exports = {
     uploadMiddleware,
-    uploadProductImage
+    uploadCategoryImage
 };

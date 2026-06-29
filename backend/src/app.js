@@ -1,15 +1,24 @@
 const path = require('path');
 const express = require('express');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('./config/db');
-
 const app = express();
+app.set('trust proxy', 1);
 const rootDir = path.join(__dirname, '..');
+const bodyLimit = '12mb';
+
+const wantsJson = (req) => {
+    if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
+        return true;
+    }
+    const accept = req.headers.accept || '';
+    return accept.indexOf('application/json') !== -1;
+};
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(rootDir, 'views'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: bodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: bodyLimit }));
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
@@ -62,29 +71,42 @@ const renderErrorPage = (req, res, statusCode) => {
 };
 
 app.use((req, res) => {
-    if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
-        return res.status(404).json({ message: 'Маршрут не знайдено' });
+    if (wantsJson(req)) {
+        return res.status(404).json({ ok: false, message: 'Маршрут не знайдено' });
     }
     return renderErrorPage(req, res, 404);
 });
 
 app.use((err, req, res, next) => {
     console.error('Global error:', err && err.message ? err.message : err);
-    const statusCode = Number(err && err.status) || 500;
+    let statusCode = Number(err && err.status) || 500;
+    if (err && err.type === 'entity.too.large') {
+        statusCode = 413;
+    }
 
-    if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
-        return res.status(statusCode).json({ message: 'Внутрішня помилка сервера' });
+    if (wantsJson(req)) {
+        const message =
+            statusCode === 413
+                ? 'Запит занадто великий'
+                : 'Внутрішня помилка сервера';
+        return res.status(statusCode).json({ ok: false, message });
     }
 
     return renderErrorPage(req, res, statusCode);
 });
 
 const seedDefaults = require('./services/seedDefaults');
+const ensureAdminSchema = require('./services/ensureAdminSchema');
+const seedLegalPages = require('./services/seedLegalPages');
+const { startOrderExpiryJob } = require('./services/orderExpiryService');
 
 const PORT = process.env.PORT || 5000;
 const start = async () => {
     try {
         await seedDefaults();
+        await ensureAdminSchema();
+        await seedLegalPages();
+        startOrderExpiryJob();
     } catch (err) {
         console.error('Seed error:', err && err.message ? err.message : err);
     }

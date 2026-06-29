@@ -1,50 +1,18 @@
 const WishlistModel = require('../models/Wishlist');
 const ProductModel = require('../models/Product');
+const navCountsService = require('../services/navCountsService');
+const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
 
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
         title,
         bodyPartial,
-        headerType: res.locals.headerType || 'guest',
-        currentUser: res.locals.currentUser || null,
-        ...extraLocals
+        ...buildPageLayoutLocals(res, extraLocals)
     });
 };
 
-const parseCookies = (cookieHeader) => {
-    const result = {};
-    if (!cookieHeader || typeof cookieHeader !== 'string') {
-        return result;
-    }
-    const parts = cookieHeader.split(';');
-    for (const part of parts) {
-        const trimmed = part.trim();
-        const idx = trimmed.indexOf('=');
-        if (idx === -1) continue;
-        const key = trimmed.slice(0, idx).trim();
-        const val = trimmed.slice(idx + 1).trim();
-        if (key) {
-            result[key] = decodeURIComponent(val);
-        }
-    }
-    return result;
-};
-
 const readGuestWishlist = (req) => {
-    const cookies = parseCookies(req.headers.cookie);
-    if (!cookies.guest_wishlist) {
-        return [];
-    }
-    try {
-        const arr = JSON.parse(cookies.guest_wishlist);
-        if (!Array.isArray(arr)) return [];
-        return arr
-            .map((id) => Number(id))
-            .filter((id) => Number.isFinite(id) && id > 0)
-            .slice(0, 100);
-    } catch {
-        return [];
-    }
+    return navCountsService.readGuestWishlistIds(req.headers.cookie);
 };
 
 const writeGuestWishlist = (res, ids) => {
@@ -116,7 +84,10 @@ const addProduct = async (req, res) => {
         }
 
         if (wantsJson(req)) {
-            return res.status(200).json({ ok: true });
+            const count = userId
+                ? await WishlistModel.countForUser(userId)
+                : readGuestWishlist(req).length;
+            return res.status(200).json({ ok: true, message: 'Додано в обране', count });
         }
 
         const back = req.get('Referer') || '/';
@@ -149,7 +120,10 @@ const removeProduct = async (req, res) => {
         }
 
         if (wantsJson(req)) {
-            return res.status(200).json({ ok: true });
+            const count = userId
+                ? await WishlistModel.countForUser(userId)
+                : readGuestWishlist(req).length;
+            return res.status(200).json({ ok: true, message: 'Прибрано з обраного', count });
         }
 
         const back = req.get('Referer') || '/wishlist';
@@ -163,8 +137,19 @@ const removeProduct = async (req, res) => {
     }
 };
 
+const listProductIdsJson = async (req, res) => {
+    try {
+        const ids = await navCountsService.getWishlistProductIds(req, res);
+        return res.status(200).json({ ok: true, ids });
+    } catch (err) {
+        console.error('listProductIdsJson:', err.message);
+        return res.status(500).json({ message: 'помилка' });
+    }
+};
+
 module.exports = {
     wishlistPage,
     addProduct,
-    removeProduct
+    removeProduct,
+    listProductIdsJson
 };
