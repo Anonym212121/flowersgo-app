@@ -1,19 +1,27 @@
+const emailValidator = require('./emailValidator');
+
 const loginValidator = (body) => {
     if (!body) {
         return { ok: false, message: 'Тіло запиту відсутнє' };
     }
-    const { email, password } = body;
 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-        return { ok: false, message: 'Email має бути коректним' };
+    const emailCheck = emailValidator(body.email);
+    if (!emailCheck.ok) {
+        return emailCheck;
     }
 
-    if (!password || typeof password !== 'string' || password.length < 1) {
-          return { ok: false, message: 'Пароль має бути заданим' };
+    const password = typeof body.password === 'string' ? body.password : '';
+    if (!password) {
+        return { ok: false, message: 'Вкажіть пароль' };
     }
 
-    return { ok: true };
+    return {
+        ok: true,
+        data: {
+            email: emailCheck.email,
+            password
+        }
+    };
 };
 
 module.exports = loginValidator;
-

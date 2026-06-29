@@ -1,39 +1,71 @@
+const emailValidator = require('./emailValidator');
+const phoneValidator = require('./phoneValidator');
+
+const MIN_PASSWORD = 8;
+const MAX_PASSWORD = 72;
+
 const registerValidator = (body) => {
     if (!body) {
         return { ok: false, message: 'Тіло запиту відсутнє' };
     }
 
-    const { first_name, last_name, email, password, phone } = body;
+    const first_name = typeof body.first_name === 'string' ? body.first_name.trim() : '';
+    const last_name = typeof body.last_name === 'string' ? body.last_name.trim() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+    const password_confirm =
+        typeof body.password_confirm === 'string' ? body.password_confirm : '';
+    const rawPhone = typeof body.phone === 'string' ? body.phone.trim() : '';
 
-    if (!first_name || typeof first_name !== 'string' || first_name.trim().length < 2) {
-        return { ok: false, message: 'Імя має бути не менше 2 символів' };
+    if (first_name.length < 2) {
+        return { ok: false, message: "Ім'я має бути не менше 2 символів" };
     }
 
-    if (!last_name || typeof last_name !== 'string' || last_name.trim().length < 2) {
+    if (last_name.length < 2) {
         return { ok: false, message: 'Прізвище має бути не менше 2 символів' };
     }
- 
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-        return { ok: false, message:'Email має бути коректним' };
+
+    const emailCheck = emailValidator(body.email);
+    if (!emailCheck.ok) {
+        return emailCheck;
     }
 
-    if (!password || typeof password !== 'string' || password.length < 6) {
-        return { ok: false, message: 'Пароль має бути не менше 6 символів' };
+    if (!password || password.length < MIN_PASSWORD) {
+        return { ok: false, message: `Пароль має бути не менше ${MIN_PASSWORD} символів` };
     }
 
-    if (phone !== undefined && phone !== null) {
-        if (typeof phone !== 'string') {
-            return { ok: false, message: 'Номер телефону має бути рядком' };
+    if (password.length > MAX_PASSWORD) {
+        return { ok: false, message: 'Пароль занадто довгий' };
+    }
+
+    if (password !== password_confirm) {
+        return { ok: false, message: 'Підтвердження пароля не збігається' };
+    }
+
+    const phoneCheck = phoneValidator(rawPhone);
+    if (!phoneCheck.ok) {
+        return phoneCheck;
+    }
+
+    const acceptTerms =
+        body.accept_terms === true ||
+        body.accept_terms === 'true' ||
+        body.accept_terms === 'on' ||
+        body.accept_terms === '1';
+
+    if (!acceptTerms) {
+        return { ok: false, message: 'Потрібно погодитися з політикою конфіденційності' };
+    }
+
+    return {
+        ok: true,
+        data: {
+            first_name,
+            last_name,
+            email: emailCheck.email,
+            password,
+            phone: phoneCheck.phone
         }
-
-        const digits = phone.replace(/\D/g, '');
-        if (digits.length < 10 || digits.length > 20) {
-            return { ok: false, message: 'Номер телефону має бути в межах 10-20 цифр' };
-        }
-    }
-
-    return { ok: true };
+    };
 };
 
 module.exports = registerValidator;
-
