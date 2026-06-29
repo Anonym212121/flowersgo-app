@@ -4,7 +4,8 @@ jest.mock('../src/services/emailService', () => ({
     sendEmail: jest.fn(async ({ to, subject, text }) => {
         sentMails.push({ to, subject, text });
         return { ok: true };
-    })
+    }),
+    isConfigured: jest.fn(() => true)
 }));
 
 jest.mock('../src/models/Notification', () => ({

@@ -5,14 +5,7 @@ const isEnabled = () => {
     if (String(process.env.EMAIL_NOTIFY || '1').trim() === '0') {
         return false;
     }
-    const mode = (process.env.EMAIL_PROVIDER_MODE || 'smtp').toLowerCase();
-    if (mode === 'mock') {
-        return true;
-    }
-    const host = process.env.SMTP_HOST || '';
-    const user = process.env.SMTP_USER || '';
-    const pass = process.env.SMTP_PASS || '';
-    return !!(host && user && pass);
+    return emailService.isConfigured();
 };
 
 const baseUrl = () => {
