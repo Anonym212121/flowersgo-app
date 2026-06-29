@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FlowersGo">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#bg)"/>
+  <circle cx="32" cy="30" r="6" fill="#ecfdf5"/>
+  <circle cx="22" cy="34" r="5" fill="#ecfdf5" opacity="0.95"/>
+  <circle cx="42" cy="34" r="5" fill="#ecfdf5" opacity="0.95"/>
+  <circle cx="26" cy="24" r="4.5" fill="#ecfdf5" opacity="0.9"/>
+  <circle cx="38" cy="24" r="4.5" fill="#ecfdf5" opacity="0.9"/>
+  <path d="M32 36c-2 6-8 10-8 14h16c0-4-6-8-8-14z" fill="#064e3b"/>
+</svg>
