@@ -50,10 +50,22 @@ const productIdsForUser = async (userId) => {
     return rows.map((r) => Number(r.product_id));
 };
 
+const countForUser = async (userId) => {
+    const [rows] = await db.execute(
+        `SELECT COUNT(*) AS cnt
+         FROM wishlist w
+         INNER JOIN products p ON p.id = w.product_id
+         WHERE w.user_id = ? AND p.is_active = 1`,
+        [userId]
+    );
+    return Number(rows[0] && rows[0].cnt ? rows[0].cnt : 0);
+};
+
 module.exports = {
     add,
     addMany,
     remove,
     listForUser,
-    productIdsForUser
+    productIdsForUser,
+    countForUser
 };
