@@ -162,6 +162,24 @@ const onCancelRequestForAdmin = async (orderId) => {
     }
 };
 
+const onReviewChangeRequestForAdmin = async (reviewId, requestType) => {
+    const rid = Number(reviewId);
+    if (!Number.isFinite(rid) || rid <= 0) {
+        return;
+    }
+    const kind = requestType === 'delete' ? 'видалення' : 'редагування';
+    try {
+        await notifyRole('admin', {
+            ntype: 'review_change_request',
+            title: 'Запит на зміну відгуку',
+            body: 'Клієнт просить ' + kind + ' відгуку №' + rid,
+            link_url: '/admin'
+        });
+    } catch (err) {
+        console.error('orderRoleNotify:', err.message);
+    }
+};
+
 module.exports = {
     onNewOrderForAdmin,
     onOrderApprovedForWarehouse,
@@ -170,5 +188,6 @@ module.exports = {
     onOrderClosed,
     onPickupCompleted,
     onOrderCancelledForCourier,
-    onCancelRequestForAdmin
+    onCancelRequestForAdmin,
+    onReviewChangeRequestForAdmin
 };

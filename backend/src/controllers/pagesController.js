@@ -75,6 +75,7 @@ const home = async (req, res) => {
             searchQuery
         });
     } catch (err) {
+        console.error('homePage:', err && err.message ? err.message : err);
         return res.status(500).send('помилка');
     }
 };
@@ -250,6 +251,7 @@ const cabinetPage = async (req, res) => {
             cabinetErrorMessage: errMap[errCode] || '',
             cabinetPasswordVerifyStep:
                 req.query.pw_step === 'verify' ||
+                okCode === 'email_code_sent' ||
                 errCode === 'bad_email_code' ||
                 errCode === 'bad_email_code_format'
         });

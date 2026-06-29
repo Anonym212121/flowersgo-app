@@ -1578,6 +1578,18 @@ html.theme-light .cabinet-password-details summary:hover {
     color: #0f172a;
 }
 
+html.theme-light .cabinet-password-hint {
+    color: #64748b;
+}
+
+html.theme-light .cabinet-password-back-btn {
+    color: #64748b;
+}
+
+html.theme-light .cabinet-password-back-btn:hover {
+    color: #334155;
+}
+
 html.theme-light .cabinet-profile-compact .auth-input,
 html.theme-light .cabinet-profile-compact .cabinet-mini-input {
     color: var(--text);

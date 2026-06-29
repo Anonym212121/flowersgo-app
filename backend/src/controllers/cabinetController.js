@@ -354,61 +354,6 @@ const confirmPasswordByEmailCode = async (req, res) => {
     }
 };
 
-const changePasswordSimple = async (req, res) => {
-    try {
-        const current = res.locals.currentUser;
-        if (!current || !current.user_id) {
-            if (isJsonRequest(req)) {
-                return res.status(401).json({ ok: false, message: 'Потрібна авторизація' });
-            }
-            return res.redirect('/login');
-        }
-
-        const new_password = typeof req.body.new_password === 'string' ? req.body.new_password : '';
-        const new_password_confirm =
-            typeof req.body.new_password_confirm === 'string' ? req.body.new_password_confirm : '';
-
-        if (!new_password || new_password.length < 6) {
-            return respond(req, res, {
-                ok: false,
-                err_code: 'bad_new_password',
-                message: 'Новий пароль має бути не менше 6 символів'
-            });
-        }
-        if (new_password !== new_password_confirm) {
-            return respond(req, res, {
-                ok: false,
-                err_code: 'password_confirm_mismatch',
-                message: 'Підтвердження пароля не збігається'
-            });
-        }
-
-        const password_hash = await bcrypt.hash(
-            new_password,
-            Number(process.env.BCRYPT_SALT_ROUNDS || 10)
-        );
-        const passwordUpdated = await UserModel.updatePasswordHashById({
-            user_id: current.user_id,
-            password_hash
-        });
-        if (!passwordUpdated) {
-            return respond(req, res, {
-                ok: false,
-                err_code: 'password_not_updated',
-                message: 'Не вдалося змінити пароль'
-            });
-        }
-
-        return respond(req, res, {
-            ok: true,
-            ok_code: 'password_changed',
-            message: 'Пароль успішно змінено'
-        });
-    } catch (err) {
-        return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
-    }
-};
-
 const archiveOrder = async (req, res) => {
     try {
         const current = res.locals.currentUser;
@@ -538,6 +483,8 @@ const requestReviewEdit = async (req, res) => {
             return respond(req, res, { ok: false, err_code: 'review_edit_failed', message: 'Не вдалося надіслати запит' });
         }
 
+        await orderRoleNotifyService.onReviewChangeRequestForAdmin(reviewId, 'edit');
+
         return respond(req, res, {
             ok: true,
             ok_code: 'review_edit_sent',
@@ -580,6 +527,8 @@ const requestReviewDelete = async (req, res) => {
         if (!result) {
             return respond(req, res, { ok: false, err_code: 'review_delete_failed', message: 'Не вдалося надіслати запит' });
         }
+
+        await orderRoleNotifyService.onReviewChangeRequestForAdmin(reviewId, 'delete');
 
         return respond(req, res, {
             ok: true,
@@ -664,7 +613,6 @@ module.exports = {
     uploadAvatarMiddleware,
     updateProfile,
     updateAvatar,
-    changePasswordSimple,
     requestPasswordEmailCode,
     confirmPasswordByEmailCode,
     archiveOrder,

@@ -2972,6 +2972,32 @@ a:hover {
     gap: 0.65rem;
 }
 
+.cabinet-password-hint {
+    margin: 0.5rem 0 0;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.45;
+}
+
+.cabinet-password-step {
+    margin-top: 0.35rem;
+}
+
+.cabinet-password-back-btn {
+    margin-top: 0.35rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.cabinet-password-back-btn:hover {
+    color: #cbd5e1;
+}
+
 .cabinet-page .warehouse-feedback {
     max-width: none;
     margin: 0 0 0.85rem;

@@ -9,6 +9,8 @@ const avatarUrl = profile && profile.avatar_url ? String(profile.avatar_url) : '
 const savedStreet = profile && profile.saved_delivery_street ? String(profile.saved_delivery_street) : '';
 const savedHouse = profile && profile.saved_delivery_house ? String(profile.saved_delivery_house) : '';
 const savedApartment = profile && profile.saved_delivery_apartment ? String(profile.saved_delivery_apartment) : '';
+const passwordVerifyStep = typeof cabinetPasswordVerifyStep !== 'undefined' && !!cabinetPasswordVerifyStep;
+const profileEmail = profile && profile.email ? String(profile.email).trim() : '';
 let savedAddressText = '—';
 if (savedStreet && savedHouse) {
     savedAddressText = savedStreet + ', буд. ' + savedHouse;
@@ -297,7 +299,7 @@ if (savedStreet && savedHouse) {
                 </form>
             </div>
 
-            <form method="post" action="/cabinet/profile" class="cabinet-profile-form" id="cabinetProfileForm">
+            <form method="post" action="/cabinet/profile" class="cabinet-profile-form" id="cabinetProfileForm" data-draft-key="flowersgo_cabinet_profile_draft:<%= profile.id %>">
                 <div class="cabinet-profile-grid">
                     <label class="cabinet-mini-label">
                         Ім'я
@@ -336,19 +338,36 @@ if (savedStreet && savedHouse) {
                 <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Зберегти профіль</button>
             </form>
 
-            <details class="cabinet-password-details">
+            <details class="cabinet-password-details" id="cabinetPasswordDetails" data-password-verify-step="<%= passwordVerifyStep ? '1' : '0' %>"<%= passwordVerifyStep ? ' open' : '' %>>
                 <summary>Зміна пароля</summary>
-                <form method="post" action="/cabinet/password/simple" class="cabinet-password-form" id="cabinetPasswordSimpleForm">
-                    <label class="cabinet-mini-label">
-                        Новий пароль
-                        <input class="auth-input cabinet-mini-input" type="password" name="new_password" id="newPasswordInput" minlength="6" required />
-                    </label>
-                    <label class="cabinet-mini-label">
-                        Підтвердження
-                        <input class="auth-input cabinet-mini-input" type="password" name="new_password_confirm" id="newPasswordConfirmInput" minlength="6" required />
-                    </label>
-                    <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="savePasswordBtn">Змінити пароль</button>
-                </form>
+                <% if (!profileEmail) { %>
+                    <p class="cabinet-password-hint">Щоб змінити пароль, спочатку вкажіть email у профілі вище.</p>
+                <% } else { %>
+                    <p class="cabinet-password-hint">Код підтвердження надішлемо на <strong><%= profileEmail %></strong></p>
+                    <div class="cabinet-password-step" id="cabinetPasswordStepRequest"<%= passwordVerifyStep ? ' hidden' : '' %>>
+                        <form method="post" action="/cabinet/password/request-email" class="cabinet-password-form" id="cabinetPasswordRequestForm">
+                            <label class="cabinet-mini-label">
+                                Новий пароль
+                                <input class="auth-input cabinet-mini-input" type="password" name="new_password" id="newPasswordInput" minlength="6" required autocomplete="new-password" />
+                            </label>
+                            <label class="cabinet-mini-label">
+                                Підтвердження
+                                <input class="auth-input cabinet-mini-input" type="password" name="new_password_confirm" id="newPasswordConfirmInput" minlength="6" required autocomplete="new-password" />
+                            </label>
+                            <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="sendPasswordCodeBtn">Надіслати код на email</button>
+                        </form>
+                    </div>
+                    <div class="cabinet-password-step" id="cabinetPasswordStepVerify"<%= passwordVerifyStep ? '' : ' hidden' %>>
+                        <form method="post" action="/cabinet/password/confirm-email" class="cabinet-password-form" id="cabinetPasswordVerifyForm">
+                            <label class="cabinet-mini-label">
+                                Код з листа (6 цифр)
+                                <input class="auth-input cabinet-mini-input" type="text" name="email_code" id="emailCodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" required autocomplete="one-time-code" placeholder="000000" />
+                            </label>
+                            <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="confirmPasswordCodeBtn">Підтвердити і змінити пароль</button>
+                        </form>
+                        <button type="button" class="cabinet-password-back-btn" id="cabinetPasswordBackBtn">Ввести пароль заново</button>
+                    </div>
+                <% } %>
             </details>
         </div>
     </section>
@@ -359,10 +378,39 @@ if (savedStreet && savedHouse) {
     var feedback = document.getElementById('cabinetGlobalFeedback');
     var avatarForm = document.getElementById('cabinetAvatarForm');
     var profileForm = document.getElementById('cabinetProfileForm');
-    var passwordForm = document.getElementById('cabinetPasswordSimpleForm');
-    var savePasswordBtn = document.getElementById('savePasswordBtn');
+    var passwordRequestForm = document.getElementById('cabinetPasswordRequestForm');
+    var passwordVerifyForm = document.getElementById('cabinetPasswordVerifyForm');
+    var passwordStepRequest = document.getElementById('cabinetPasswordStepRequest');
+    var passwordStepVerify = document.getElementById('cabinetPasswordStepVerify');
+    var passwordDetails = document.getElementById('cabinetPasswordDetails');
+    var sendPasswordCodeBtn = document.getElementById('sendPasswordCodeBtn');
+    var confirmPasswordCodeBtn = document.getElementById('confirmPasswordCodeBtn');
+    var passwordBackBtn = document.getElementById('cabinetPasswordBackBtn');
     var newPasswordInput = document.getElementById('newPasswordInput');
     var newPasswordConfirmInput = document.getElementById('newPasswordConfirmInput');
+    var emailCodeInput = document.getElementById('emailCodeInput');
+    var passwordVerifyStepActive = passwordDetails
+        ? passwordDetails.getAttribute('data-password-verify-step') === '1'
+        : false;
+
+    function showPasswordRequestStep() {
+        if (passwordStepRequest) passwordStepRequest.hidden = false;
+        if (passwordStepVerify) passwordStepVerify.hidden = true;
+        if (passwordVerifyForm) passwordVerifyForm.reset();
+    }
+
+    function showPasswordVerifyStep() {
+        if (passwordStepRequest) passwordStepRequest.hidden = true;
+        if (passwordStepVerify) passwordStepVerify.hidden = false;
+        if (passwordDetails) passwordDetails.open = true;
+        if (emailCodeInput) emailCodeInput.focus();
+    }
+
+    function openPasswordFlowInProfile() {
+        activateCabinetTab('profile');
+        setProfileMode('edit');
+        if (passwordDetails) passwordDetails.open = true;
+    }
 
     function renderMessage(type, text) {
         if (typeof window.showToast === 'function') {
@@ -531,8 +579,9 @@ if (savedStreet && savedHouse) {
     setProfileMode('view');
 
     if (profileForm && typeof window.bindFormDraft === 'function') {
+        var profileDraftKey = profileForm.getAttribute('data-draft-key') || 'flowersgo_cabinet_profile_draft';
         window.bindFormDraft(profileForm, {
-            key: 'flowersgo_cabinet_profile_draft:<%= profile.id %>',
+            key: profileDraftKey,
             notifyMessage: 'Чернетку профілю відновлено',
             clearOnSubmit: false,
             onRestore: function () {
@@ -589,6 +638,31 @@ if (savedStreet && savedHouse) {
     if (profileEditErrs.indexOf(urlErr) !== -1) {
         activateCabinetTab('profile');
         setProfileMode('edit');
+    }
+
+    var passwordFlowOk = ['email_code_sent', 'password_changed'];
+    var passwordFlowErr = [
+        'email_required_for_password_reset', 'email_not_sent', 'email_code_not_saved',
+        'bad_new_password', 'password_confirm_mismatch', 'bad_email_code', 'bad_email_code_format',
+        'email_code_expired', 'email_attempts_over', 'password_not_updated'
+    ];
+    var passwordVerifyErrs = ['bad_email_code', 'bad_email_code_format'];
+    if (
+        urlParams.get('pw_step') === 'verify' ||
+        passwordFlowOk.indexOf(urlOk) !== -1 ||
+        passwordFlowErr.indexOf(urlErr) !== -1
+    ) {
+        openPasswordFlowInProfile();
+        if (
+            passwordVerifyStepActive ||
+            urlOk === 'email_code_sent' ||
+            urlParams.get('pw_step') === 'verify' ||
+            passwordVerifyErrs.indexOf(urlErr) !== -1
+        ) {
+            showPasswordVerifyStep();
+        } else {
+            showPasswordRequestStep();
+        }
     }
 
     if (profileForm) {
@@ -860,8 +934,8 @@ if (savedStreet && savedHouse) {
         });
     });
 
-    if (savePasswordBtn && passwordForm) {
-        savePasswordBtn.addEventListener('click', async function () {
+    if (sendPasswordCodeBtn && passwordRequestForm) {
+        sendPasswordCodeBtn.addEventListener('click', async function () {
             var p1 = newPasswordInput ? String(newPasswordInput.value || '') : '';
             var p2 = newPasswordConfirmInput ? String(newPasswordConfirmInput.value || '') : '';
             if (p1.length < 6) {
@@ -873,12 +947,37 @@ if (savedStreet && savedHouse) {
                 return;
             }
             try {
-                var data = await submitForm(passwordForm, false);
-                renderMessage('ok', data.message || 'Пароль змінено');
-                passwordForm.reset();
+                var data = await submitForm(passwordRequestForm, false);
+                renderMessage('ok', data.message || 'Код надіслано на пошту');
+                showPasswordVerifyStep();
             } catch (err) {
                 renderMessage('error', err.message || 'Помилка');
             }
+        });
+    }
+
+    if (confirmPasswordCodeBtn && passwordVerifyForm) {
+        confirmPasswordCodeBtn.addEventListener('click', async function () {
+            var code = emailCodeInput ? String(emailCodeInput.value || '').trim() : '';
+            if (!/^\d{6}$/.test(code)) {
+                renderMessage('error', 'Код з листа має містити 6 цифр');
+                return;
+            }
+            try {
+                var data = await submitForm(passwordVerifyForm, false);
+                renderMessage('ok', data.message || 'Пароль змінено');
+                if (passwordRequestForm) passwordRequestForm.reset();
+                if (passwordVerifyForm) passwordVerifyForm.reset();
+                showPasswordRequestStep();
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            }
+        });
+    }
+
+    if (passwordBackBtn) {
+        passwordBackBtn.addEventListener('click', function () {
+            showPasswordRequestStep();
         });
     }
 })();

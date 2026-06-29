@@ -98,7 +98,6 @@ router.post('/cart/clear', cartController.clear);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
 router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfile);
 router.post('/cabinet/avatar', pageRequireLogin, cabinetController.uploadAvatarMiddleware, cabinetController.updateAvatar);
-router.post('/cabinet/password/simple', pageRequireLogin, cabinetController.changePasswordSimple);
 router.post('/cabinet/password/request-email', pageRequireLogin, cabinetController.requestPasswordEmailCode);
 router.post('/cabinet/password/confirm-email', pageRequireLogin, cabinetController.confirmPasswordByEmailCode);
 router.post('/cabinet/orders/:id/archive', pageRequireLogin, cabinetController.archiveOrder);

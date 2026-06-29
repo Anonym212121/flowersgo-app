@@ -27,15 +27,48 @@
 * **Backend API:** [https://flowersgo-app.onrender.com](https://flowersgo-app.onrender.com)
 * **Database:** Керований екземпляр MySQL на платформі Aiven.
 
-## 🔄 CI/CD та Віддзеркалення (Mirroring)
+## 🔄 CI/CD та віддзеркалення
 
-У проєкті реалізовано автоматизований Pipeline, що зв'язує університетський GitLab та GitHub для деплою:
+Ланцюжок розробки та розгортання:
 
-1. **GitLab (git.ztu.edu.ua):** Основне місце розробки та зберігання коду
-2. **GitHub Mirroring:** Налаштовано автоматичне віддзеркалення коду через SSH-Key. Кожний `push` у GitLab автоматично оновлює репозиторій на GitHub.
-3. **Render Auto-Deploy:** Render відстежує зміни в GitHub-репозиторії та автоматично оновлює робову версію сайту.
+```
+локально → develop → GitLab (git.ztu.edu.ua) → GitLab CI
+                ↓
+         Merge Request → main (захищена гілка на ЗТУ)
+                ↓
+         push GitHub main → Render (auto-deploy) + mirror → GitLab
+```
 
-##Швидкий запуск локально
+### GitLab CI (`.gitlab-ci.yml`)
+
+При `push` на GitLab запускається pipeline:
+
+1. **build** — `npm install` у `backend/`
+2. **test** — `npm test`
+3. **docker** — `docker build` для перевірки образу
+
+Це перевірка якості коду (CI), без деплою на production.
+
+### Деплой на Render (CD)
+
+Render підключений до **GitHub**, гілка **`main`**. Після `git push github main` сервіс автоматично збирає та перезапускає застосунок (`npm install`, `npm start`, root directory: `backend`).
+
+База даних — окремо на **Aiven**; підключення через змінні оточення на Render (`DB_HOST`, `DB_NAME`, `DB_SSL=1`).
+
+### Mirror GitHub → GitLab (`.github/workflows/mirror.yml`)
+
+Після `push` у GitHub (`main` або `docker`) GitHub Actions намагається віддзеркалити коміт на GitLab ЗТУ.
+
+Гілка `main` на GitLab захищена (лише через Merge Request), тому синхронізація офіційного `main` на ЗТУ — через **MR `develop` → `main`**. Mirror доповнює зв’язок репозиторіїв, але не замінює MR.
+
+### Remotes
+
+| Remote   | Призначення                          |
+|----------|--------------------------------------|
+| `origin` | GitLab ЗТУ (розробка, CI, захист)  |
+| `github` | GitHub (тригер деплою на Render)     |
+
+## 🐳 Швидкий запуск локально
 
 1. Створіть файл `.env` у папці `backend/` із параметрами підключення до бази даних.
 2. Запустіть систему через Docker Compose:
