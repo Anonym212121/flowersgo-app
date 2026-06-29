@@ -294,6 +294,7 @@ const requestPasswordEmailCode = async (req, res) => {
             show_verify_step: true
         });
     } catch (err) {
+        console.error('requestPasswordEmailCode:', err.message);
         return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
     }
 };
@@ -350,6 +351,7 @@ const confirmPasswordByEmailCode = async (req, res) => {
         await PasswordEmailCodeModel.consumeCode(activeCode.id);
         return respond(req, res, { ok: true, ok_code: 'password_changed', message: 'Пароль успішно змінено' });
     } catch (err) {
+        console.error('confirmPasswordByEmailCode:', err.message);
         return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
     }
 };

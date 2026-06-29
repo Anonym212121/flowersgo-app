@@ -2959,6 +2959,31 @@ a:hover {
     font-size: 0.9rem;
 }
 
+.cabinet-password-wrap {
+    margin-top: 1rem;
+    max-width: 420px;
+}
+
+.cabinet-password-feedback {
+    margin: 0 0 0.65rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.cabinet-password-feedback--ok {
+    background: rgba(34, 197, 94, 0.12);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.cabinet-password-feedback--error {
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
 .cabinet-password-details summary {
     cursor: pointer;
     color: #cbd5e1;

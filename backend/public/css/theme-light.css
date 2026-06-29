@@ -1590,6 +1590,18 @@ html.theme-light .cabinet-password-back-btn:hover {
     color: #334155;
 }
 
+html.theme-light .cabinet-password-feedback--ok {
+    background: #ecfdf5;
+    color: #166534;
+    border-color: #86efac;
+}
+
+html.theme-light .cabinet-password-feedback--error {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fca5a5;
+}
+
 html.theme-light .cabinet-profile-compact .auth-input,
 html.theme-light .cabinet-profile-compact .cabinet-mini-input {
     color: var(--text);

@@ -9,25 +9,19 @@ const orderDeliveryFields = require('../utils/orderDeliveryFields');
 
 
 const sendMail = async (order, subject, text) => {
-
     const email = orderDeliveryFields.customerEmailFromRow(order);
-
     if (!email) {
-
         return;
-
     }
 
-    await emailService.sendEmail({
-
+    const result = await emailService.sendEmail({
         to: email,
-
         subject: subject,
-
         text: text
-
     });
-
+    if (!result.ok) {
+        console.error('orderWarehouseNotify mail:', subject, result.message || 'failed');
+    }
 };
 
 
