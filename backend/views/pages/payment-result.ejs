@@ -12,14 +12,14 @@ const showPayAgain = !isPaid && canPayAgain && payToken;
         <% } %>
     </h1>
 
-    <div class="checkout-step-card">
+    <div class="checkout-step-card" id="paymentResultCard" data-order-id="<%= order.id %>" data-paid="<%= isPaid ? '1' : '0' %>"<% if (!isPaid && payToken) { %> data-pay-token="<%= encodeURIComponent(payToken) %>"<% } %>>
         <p>Замовлення #<%= order.id %></p>
-        <p>Статус оплати: <strong><%= typeof paymentStatusText !== 'undefined' ? paymentStatusText : order.payment_status %></strong></p>
+        <p>Статус оплати: <strong id="paymentResultStatus"><%= typeof paymentStatusText !== 'undefined' ? paymentStatusText : order.payment_status %></strong></p>
 
         <% if (isPaid) { %>
             <p>Дякуємо! Оплату зафіксовано. Замовлення очікує підтвердження адміністратора.</p>
         <% } else { %>
-            <p>Оплата не пройшла або ви закрили сторінку LiqPay. Можете спробувати ще раз.</p>
+            <p id="paymentResultHint">Перевіряємо статус у LiqPay… Якщо ви щойно оплатили, зачекайте кілька секунд.</p>
             <% if (showPayAgain) { %>
                 <p>
                     <a href="/payment/<%= order.id %>?t=<%= encodeURIComponent(payToken) %>" class="auth-button" data-soft-nav="false">Спробувати оплатити знову</a>
@@ -28,7 +28,64 @@ const showPayAgain = !isPaid && canPayAgain && payToken;
         <% } %>
 
         <p class="error-link-row">
-            <a href="<%= isPaid ? '/cabinet?ok=payment_paid' : '/cabinet' %>" class="auth-button">До кабінету</a>
+            <a href="<%= isPaid ? '/cabinet?ok=payment_paid' : '/cabinet' %>" class="auth-button" data-soft-nav="false">До кабінету</a>
         </p>
     </div>
 </section>
+
+<% if (!isPaid && payToken) { %>
+<script>
+(function () {
+    var card = document.getElementById('paymentResultCard');
+    if (!card || card.getAttribute('data-paid') === '1') {
+        return;
+    }
+
+    var orderId = card.getAttribute('data-order-id');
+    var token = card.getAttribute('data-pay-token') || '';
+    if (!token) {
+        return;
+    }
+
+    var busy = false;
+    var tries = 0;
+    var maxTries = 24;
+
+    function syncPayment() {
+        if (busy || tries >= maxTries) {
+            return;
+        }
+        busy = true;
+        tries += 1;
+
+        var url = '/payment/sync/' + encodeURIComponent(orderId) + '?t=' + token;
+        fetch(url, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' }
+        })
+            .then(function (res) {
+                return res.json();
+            })
+            .then(function (data) {
+                if (data && data.paid) {
+                    window.location.replace('/cabinet?ok=payment_paid');
+                }
+            })
+            .catch(function () {})
+            .finally(function () {
+                busy = false;
+                if (tries < maxTries) {
+                    window.setTimeout(syncPayment, 2500);
+                } else {
+                    var hint = document.getElementById('paymentResultHint');
+                    if (hint) {
+                        hint.textContent = 'Оплата ще не підтверджена. Спробуйте оновити сторінку або натисніть «Спробувати оплатити знову».';
+                    }
+                }
+            });
+    }
+
+    window.setTimeout(syncPayment, 800);
+})();
+</script>
+<% } %>

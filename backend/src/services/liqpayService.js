@@ -2,6 +2,8 @@ const crypto = require('crypto');
 const https = require('https');
 const querystring = require('querystring');
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 const getKeys = () => {
     return {
         publicKey: process.env.LIQPAY_PUBLIC_KEY || '',
@@ -109,6 +111,15 @@ const liqpayRequest = (params) => {
         const signature = makeSignature(data);
         const body = querystring.stringify({ data, signature });
 
+        let settled = false;
+        const finish = (fn, value) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            fn(value);
+        };
+
         const req = https.request(
             {
                 hostname: 'www.liqpay.ua',
@@ -127,15 +138,20 @@ const liqpayRequest = (params) => {
                 res.on('end', () => {
                     try {
                         const json = JSON.parse(chunks);
-                        resolve(json);
+                        finish(resolve, json);
                     } catch (err) {
-                        resolve(null);
+                        finish(resolve, null);
                     }
                 });
             }
         );
 
-        req.on('error', reject);
+        req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+            req.destroy();
+            finish(reject, new Error('LiqPay API timeout'));
+        });
+
+        req.on('error', (err) => finish(reject, err));
         req.write(body);
         req.end();
     });

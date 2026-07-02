@@ -95,6 +95,18 @@ const formatDateTime = (dt) => {
     return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
 };
 
+const startOfDay = (dt) => {
+    return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, 0, 0, 0);
+};
+
+const isSameDay = (a, b) => {
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+};
+
 const validateSelection = (payload, now, config) => {
     const method = payload && payload.method;
     const fee = getDeliveryFee(method, config);
@@ -120,25 +132,43 @@ const validateSelection = (payload, now, config) => {
         return { ok: false, message: 'Вкажіть дату й час доставки' };
     }
 
+    const todayStart = startOfDay(nowTime);
+    const deliveryDayStart = startOfDay(dt);
+    if (deliveryDayStart.getTime() < todayStart.getTime()) {
+        return { ok: false, message: 'Дата доставки в минулому — оберіть сьогодні або пізніше' };
+    }
+
     if (method === 'pickup') {
         const hour = dt.getHours();
-        if (hour < config.pickupStartHour || hour >= config.pickupEndHour) {
+        const minute = dt.getMinutes();
+        const endMinutes = config.pickupEndHour * 60;
+        const chosenMinutes = hour * 60 + minute;
+        const startMinutes = config.pickupStartHour * 60;
+        if (chosenMinutes < startMinutes || chosenMinutes >= endMinutes) {
             return { ok: false, message: `Самовивіз доступний з ${config.pickupStartHour}:00 до ${config.pickupEndHour}:00` };
         }
-        const earliest = new Date(nowTime.getTime() + config.pickupBufferMin * 60000);
-        if (dt.getTime() < earliest.getTime()) {
-            return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання' };
+        if (isSameDay(dt, nowTime)) {
+            const earliest = new Date(nowTime.getTime() + config.pickupBufferMin * 60000);
+            if (dt.getTime() < earliest.getTime()) {
+                return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання' };
+            }
         }
         return { ok: true, fee, deliveryDatetime: formatDateTime(dt) };
     }
 
     const hour = dt.getHours();
-    if (hour < config.workStartHour || hour >= config.workEndHour) {
+    const minute = dt.getMinutes();
+    const endMinutes = config.workEndHour * 60;
+    const chosenMinutes = hour * 60 + minute;
+    const startMinutes = config.workStartHour * 60;
+    if (chosenMinutes < startMinutes || chosenMinutes >= endMinutes) {
         return { ok: false, message: `Доставка доступна з ${config.workStartHour}:00 до ${config.workEndHour}:00` };
     }
-    const earliest = new Date(nowTime.getTime() + config.standardBufferMin * 60000);
-    if (dt.getTime() < earliest.getTime()) {
-        return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання й доставку' };
+    if (isSameDay(dt, nowTime)) {
+        const earliest = new Date(nowTime.getTime() + config.standardBufferMin * 60000);
+        if (dt.getTime() < earliest.getTime()) {
+            return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання й доставку' };
+        }
     }
 
     return { ok: true, fee, deliveryDatetime: formatDateTime(dt) };

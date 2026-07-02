@@ -8,6 +8,7 @@ const ReviewModel = require('../models/Review');
 const PasswordEmailCodeModel = require('../models/PasswordEmailCode');
 const orderCancelService = require('../services/orderCancelService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
+const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const emailService = require('../services/emailService');
 const paymentToken = require('../utils/paymentToken');
 
@@ -427,6 +428,8 @@ const requestOrderCancel = async (req, res) => {
 
         try {
             await orderRoleNotifyService.onCancelRequestForAdmin(orderId);
+            await orderRoleNotifyService.onCancelRequestForWarehouse(orderId);
+            await orderWarehouseNotifyService.notifyCustomerCancelRequestSent(orderId);
         } catch (notifyErr) {
             console.error('onCancelRequestForAdmin:', notifyErr.message);
         }
@@ -584,6 +587,8 @@ const requestGuestOrderCancel = async (req, res) => {
 
         try {
             await orderRoleNotifyService.onCancelRequestForAdmin(orderId);
+            await orderRoleNotifyService.onCancelRequestForWarehouse(orderId);
+            await orderWarehouseNotifyService.notifyCustomerCancelRequestSent(orderId);
         } catch (notifyErr) {
             console.error('onCancelRequestForAdmin:', notifyErr.message);
         }

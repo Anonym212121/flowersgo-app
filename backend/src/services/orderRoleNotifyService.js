@@ -1,6 +1,20 @@
 const UserModel = require('../models/User');
+const OrderModel = require('../models/Order');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
+const orderNotifyMessages = require('./orderNotifyMessages');
+
+const loadOrder = async (orderId) => {
+    return OrderModel.getRowForCustomerNotify(orderId);
+};
+
+const courierName = (userRow) => {
+    if (!userRow) {
+        return 'Кур\'єре';
+    }
+    const name = [userRow.first_name, userRow.last_name].filter(Boolean).join(' ').trim();
+    return name || 'Кур\'єре';
+};
 
 const notifyUsers = async (userIds, payload) => {
     const ids = Array.isArray(userIds) ? userIds : [];
@@ -27,29 +41,52 @@ const notifyUser = async (userId, payload) => {
     return ok;
 };
 
-const onNewOrderForAdmin = async (orderId) => {
+const notifyRoleWithOrder = async (roleName, orderId, buildMsg) => {
     try {
-        await notifyRole('admin', {
-            order_id: orderId,
-            ntype: 'order_pending_admin',
-            title: 'Нове замовлення',
-            body: 'Замовлення №' + orderId + ' очікує підтвердження адміністратора',
-            link_url: '/admin'
-        });
+        const order = await loadOrder(orderId);
+        const msg = buildMsg(orderId, order);
+        await notifyRole(roleName, { order_id: orderId, ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
 };
 
+const onNewOrderForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.newOrder);
+};
+
 const onOrderApprovedForWarehouse = async (orderId) => {
+    await notifyRoleWithOrder('warehouse_worker', orderId, orderNotifyMessages.warehouse.orderToAssemble);
+};
+
+const onCancelRequestForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.cancelRequest);
+};
+
+const onCancelRequestForWarehouse = async (orderId) => {
+    await notifyRoleWithOrder('warehouse_worker', orderId, orderNotifyMessages.warehouse.cancelRequest);
+};
+
+const onOrderCancelledForWarehouse = async (orderId) => {
+    await notifyRoleWithOrder('warehouse_worker', orderId, orderNotifyMessages.warehouse.orderCancelled);
+};
+
+const onWarehouseCourierPickedUp = async (orderId) => {
+    await notifyRoleWithOrder('warehouse_worker', orderId, orderNotifyMessages.warehouse.courierPickedUp);
+};
+
+const onOrderShippedForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.orderShipped);
+};
+
+const onOrderDeliveredForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.orderDelivered);
+};
+
+const onOrderExpiredForAdmin = async (orderId) => {
     try {
-        await notifyRole('warehouse_worker', {
-            order_id: orderId,
-            ntype: 'order_to_warehouse',
-            title: 'Замовлення від адміна',
-            body: 'Замовлення №' + orderId + ' підтверджено — можна комплектувати',
-            link_url: '/warehouse/orders/' + orderId
-        });
+        const msg = orderNotifyMessages.admin.orderExpired(orderId);
+        await notifyRole('admin', { order_id: orderId, ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -57,13 +94,10 @@ const onOrderApprovedForWarehouse = async (orderId) => {
 
 const onCourierBooked = async (orderId, courierId) => {
     try {
-        await notifyUser(courierId, {
-            order_id: orderId,
-            ntype: 'courier_booked',
-            title: 'Замовлення заброньовано',
-            body: 'Замовлення №' + orderId + ' призначено вам — очікуйте збірку на складі',
-            link_url: '/courier/orders/' + orderId
-        });
+        const order = await loadOrder(orderId);
+        const courier = await UserModel.getUserid(courierId);
+        const msg = orderNotifyMessages.courier.booked(orderId, order, courierName(courier));
+        await notifyUser(courierId, { order_id: orderId, ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -74,13 +108,10 @@ const onOrderReadyForCourier = async (orderId, courierId) => {
         return;
     }
     try {
-        await notifyUser(courierId, {
-            order_id: orderId,
-            ntype: 'courier_ready',
-            title: 'Готово до видачі',
-            body: 'Замовлення №' + orderId + ' зібрано — забирай на складі',
-            link_url: '/courier/orders/' + orderId
-        });
+        const order = await loadOrder(orderId);
+        const courier = await UserModel.getUserid(courierId);
+        const msg = orderNotifyMessages.courier.readyForPickup(orderId, order, courierName(courier));
+        await notifyUser(courierId, { order_id: orderId, ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -88,21 +119,14 @@ const onOrderReadyForCourier = async (orderId, courierId) => {
 
 const onOrderClosed = async (orderId, courierId) => {
     try {
-        await notifyRole('admin', {
-            order_id: orderId,
-            ntype: 'order_closed',
-            title: 'Замовлення завершено',
-            body: 'Замовлення №' + orderId + ' закрито кур\'єром',
-            link_url: '/admin'
-        });
+        const order = await loadOrder(orderId);
+        const adminMsg = orderNotifyMessages.admin.orderClosed(orderId, order);
+        await notifyRole('admin', { order_id: orderId, ...adminMsg });
+
         if (courierId) {
-            await notifyUser(courierId, {
-                order_id: orderId,
-                ntype: 'order_closed_courier',
-                title: 'Замовлення закрито',
-                body: 'Замовлення №' + orderId + ' успішно завершено',
-                link_url: '/courier/orders?view=history'
-            });
+            const courier = await UserModel.getUserid(courierId);
+            const msg = orderNotifyMessages.courier.closed(orderId, order, courierName(courier));
+            await notifyUser(courierId, { order_id: orderId, ...msg });
         }
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
@@ -111,20 +135,12 @@ const onOrderClosed = async (orderId, courierId) => {
 
 const onPickupCompleted = async (orderId) => {
     try {
-        await notifyRole('admin', {
-            order_id: orderId,
-            ntype: 'order_pickup_done',
-            title: 'Самовивіз завершено',
-            body: 'Замовлення №' + orderId + ' видано клієнту на складі',
-            link_url: '/admin'
-        });
-        await notifyRole('warehouse_worker', {
-            order_id: orderId,
-            ntype: 'order_pickup_done_wh',
-            title: 'Самовивіз завершено',
-            body: 'Замовлення №' + orderId + ' закрито',
-            link_url: '/warehouse/orders/' + orderId
-        });
+        const order = await loadOrder(orderId);
+        const adminMsg = orderNotifyMessages.admin.pickupCompleted(orderId, order);
+        await notifyRole('admin', { order_id: orderId, ...adminMsg });
+
+        const whMsg = orderNotifyMessages.warehouse.pickupCompleted(orderId, order);
+        await notifyRole('warehouse_worker', { order_id: orderId, ...whMsg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -136,27 +152,10 @@ const onOrderCancelledForCourier = async (orderId, courierId) => {
         return;
     }
     try {
-        await notifyUser(cid, {
-            order_id: orderId,
-            ntype: 'courier_order_cancelled',
-            title: 'Замовлення скасовано',
-            body: 'Замовлення №' + orderId + ' знято з вашого маршруту',
-            link_url: '/courier/orders'
-        });
-    } catch (err) {
-        console.error('orderRoleNotify:', err.message);
-    }
-};
-
-const onCancelRequestForAdmin = async (orderId) => {
-    try {
-        await notifyRole('admin', {
-            order_id: orderId,
-            ntype: 'order_cancel_request',
-            title: 'Запит на скасування',
-            body: 'Клієнт просить скасувати замовлення №' + orderId,
-            link_url: '/admin'
-        });
+        const order = await loadOrder(orderId);
+        const courier = await UserModel.getUserid(cid);
+        const msg = orderNotifyMessages.courier.cancelled(orderId, order, courierName(courier));
+        await notifyUser(cid, { order_id: orderId, ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -167,14 +166,9 @@ const onReviewChangeRequestForAdmin = async (reviewId, requestType) => {
     if (!Number.isFinite(rid) || rid <= 0) {
         return;
     }
-    const kind = requestType === 'delete' ? 'видалення' : 'редагування';
     try {
-        await notifyRole('admin', {
-            ntype: 'review_change_request',
-            title: 'Запит на зміну відгуку',
-            body: 'Клієнт просить ' + kind + ' відгуку №' + rid,
-            link_url: '/admin'
-        });
+        const msg = orderNotifyMessages.admin.reviewChangeRequest(rid, requestType);
+        await notifyRole('admin', { ...msg });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -183,11 +177,17 @@ const onReviewChangeRequestForAdmin = async (reviewId, requestType) => {
 module.exports = {
     onNewOrderForAdmin,
     onOrderApprovedForWarehouse,
+    onCancelRequestForAdmin,
+    onCancelRequestForWarehouse,
+    onOrderCancelledForWarehouse,
+    onWarehouseCourierPickedUp,
+    onOrderShippedForAdmin,
+    onOrderDeliveredForAdmin,
+    onOrderExpiredForAdmin,
     onCourierBooked,
     onOrderReadyForCourier,
     onOrderClosed,
     onPickupCompleted,
     onOrderCancelledForCourier,
-    onCancelRequestForAdmin,
     onReviewChangeRequestForAdmin
 };

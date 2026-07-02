@@ -1,12 +1,7 @@
 const emailService = require('./emailService');
 const OrderModel = require('../models/Order');
 const UserModel = require('../models/User');
-const { mapOrderForWarehouse } = require('../utils/warehouseOrderView');
-
-const getAppBaseUrl = () => {
-    const raw = process.env.APP_BASE_URL || 'http://localhost:5000';
-    return raw.replace(/\/+$/, '');
-};
+const orderNotifyMessages = require('./orderNotifyMessages');
 
 const notifyCourierOnAssign = async (orderId, courierId) => {
     const cid = Number(courierId);
@@ -20,42 +15,22 @@ const notifyCourierOnAssign = async (orderId, courierId) => {
         return;
     }
 
-    const data = await OrderModel.getDetailForWarehouse(orderId);
-    if (!data || !data.order) {
+    const orderRow = await OrderModel.getRowForCustomerNotify(orderId);
+    if (!orderRow) {
         return;
     }
 
-    const order = mapOrderForWarehouse(data.order);
-    const name =
-        [courier.first_name, courier.last_name].filter(Boolean).join(' ').trim() || 'Кур\'єре';
+    const name = [courier.first_name, courier.last_name].filter(Boolean).join(' ').trim() || 'Кур\'єре';
+    const msg = orderNotifyMessages.courier.assignDetail(orderId, orderRow, name);
 
-    const lines = [
-        'Вітаємо, ' + name + '!',
-        '',
-        'Вам призначено замовлення №' + orderId + '.'
-    ];
-
-    if (data.order.status_name === 'processing') {
-        lines.push('Статус: комплектується на складі — забереш, коли буде «Готово до видачі».');
-    } else {
-        lines.push('Статус: готове до видачі — забери на складі.');
-    }
-
-    lines.push('Адреса: ' + (order.delivery_place_display || '—'));
-    lines.push('Доставка: ' + (order.delivery_display || '—'));
-
-    if (order.receiver_phone) {
-        lines.push('Тел. одержувача: ' + order.receiver_phone);
-    }
-
-    lines.push('');
-    lines.push('Відкрити в кабінеті: ' + getAppBaseUrl() + '/courier/orders/' + orderId);
-
-    await emailService.sendEmail({
+    const result = await emailService.sendEmail({
         to: notifyEmail,
-        subject: 'Нове замовлення №' + orderId + ' для доставки',
-        text: lines.join('\n')
+        subject: msg.subject,
+        text: msg.text
     });
+    if (!result.ok) {
+        console.error('orderCourierNotify mail:', notifyEmail, result.message || 'failed');
+    }
 };
 
 module.exports = {

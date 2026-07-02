@@ -15,11 +15,21 @@ const pageRequireLoginOrPayToken = (req, res, next) => {
     if (orderId > 0) {
         let data = req.query.data || (req.body && req.body.data) || '';
         let signature = req.query.signature || (req.body && req.body.signature) || '';
+        const normalize = (raw) => {
+            let value = String(raw).trim().replace(/ /g, '+');
+            if (value.indexOf('%') !== -1) {
+                try {
+                    value = decodeURIComponent(value);
+                } catch (err) {
+                }
+            }
+            return value;
+        };
         if (data) {
-            data = String(data).replace(/ /g, '+');
+            data = normalize(data);
         }
         if (signature) {
-            signature = String(signature).replace(/ /g, '+');
+            signature = normalize(signature);
         }
         if (data && signature && liqpayService.verifySignature(data, signature)) {
             const payload = liqpayService.parseData(data);

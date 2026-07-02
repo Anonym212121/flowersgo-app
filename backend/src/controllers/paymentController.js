@@ -42,12 +42,37 @@ const tryLiqpayReturnPayload = (req) => {
     if (!data || !signature) {
         return null;
     }
-    data = String(data).replace(/ /g, '+');
-    signature = String(signature).replace(/ /g, '+');
+
+    const normalize = (raw) => {
+        let value = String(raw).trim().replace(/ /g, '+');
+        if (value.indexOf('%') !== -1) {
+            try {
+                value = decodeURIComponent(value);
+            } catch (err) {
+            }
+        }
+        return value;
+    };
+
+    data = normalize(data);
+    signature = normalize(signature);
     if (!liqpayService.verifySignature(data, signature)) {
         return null;
     }
     return liqpayService.parseData(data);
+};
+
+const redirectAfterPaid = (res, order) => {
+    const isGuest = order.user_id == null;
+    const tokenUid = isGuest ? 0 : Number(order.user_id);
+    const payToken = paymentToken.makeForOrder(order.id, tokenUid);
+
+    if (isGuest) {
+        return res.redirect(
+            '/order/success/' + order.id + '?t=' + encodeURIComponent(payToken) + '&ok=payment_paid'
+        );
+    }
+    return res.redirect('/cabinet?ok=payment_paid');
 };
 
 const resolvePaymentAccess = async (req, res, orderId, order) => {
@@ -143,10 +168,9 @@ const payPage = async (req, res) => {
             return res.status(400).send('Сума замовлення некоректна');
         }
 
-        const resultBaseUrl = getRequestBaseUrl(req) || getPublicBaseUrl(req);
-        const callbackBaseUrl = getPublicBaseUrl(req);
+        const publicBaseUrl = getPublicBaseUrl(req);
         const token = paymentToken.makeForOrder(order.id, tokenUid);
-        const resultUrl = resultBaseUrl + '/payment/result/' + order.id + '?t=' + encodeURIComponent(token);
+        const resultUrl = publicBaseUrl + '/payment/result/' + order.id + '?t=' + encodeURIComponent(token);
 
         let orderRef = order.liqpay_last_ref ? String(order.liqpay_last_ref).trim() : '';
         if (!orderRef) {
@@ -159,7 +183,7 @@ const payPage = async (req, res) => {
             amount: amount,
             description: 'Замовлення #' + order.id + ' - FlowersGo',
             resultUrl: resultUrl,
-            serverUrl: callbackBaseUrl + '/payment/liqpay/callback',
+            serverUrl: publicBaseUrl + '/payment/liqpay/callback',
             orderRef: orderRef
         });
 
@@ -229,19 +253,25 @@ const result = async (req, res) => {
             }
         }
 
-        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
+        order = await OrderModel.getByIdForPayment(orderId);
+        if (order && order.payment_status === 'paid') {
+            return redirectAfterPaid(res, order);
+        }
+
+        if (order && order.payment_status !== 'paid' && order.payment_status !== 'cod') {
+            order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
+        }
+
+        if (!order) {
+            return res.status(404).send('Замовлення не знайдено');
+        }
 
         const isGuest = order.user_id == null;
         const tokenUid = isGuest ? 0 : Number(order.user_id);
         const payToken = paymentToken.makeForOrder(order.id, tokenUid);
 
         if (order.payment_status === 'paid') {
-            if (isGuest) {
-                return res.redirect(
-                    '/order/success/' + order.id + '?t=' + encodeURIComponent(payToken) + '&ok=payment_paid'
-                );
-            }
-            return res.redirect('/cabinet?ok=payment_paid');
+            return redirectAfterPaid(res, order);
         }
 
         const canPayAgain = paymentService.getPaymentBlockReason(order) === 'ok';
@@ -264,12 +294,17 @@ const syncStatus = async (req, res) => {
             return res.status(400).json({ ok: false, message: 'Невірний номер замовлення' });
         }
 
-        const currentUserId = getPageUserId(res);
-        if (!currentUserId || !(await OrderModel.belongsToUser(orderId, currentUserId))) {
+        let order = await OrderModel.getByIdForPayment(orderId);
+        if (!order) {
+            return res.status(404).json({ ok: false, message: 'Замовлення не знайдено' });
+        }
+
+        const canAccess = await resolvePaymentAccess(req, res, orderId, order);
+        if (!canAccess) {
             return res.status(403).json({ ok: false, message: 'Немає доступу' });
         }
 
-        const order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
+        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
         if (!order) {
             return res.status(404).json({ ok: false, message: 'Замовлення не знайдено' });
         }

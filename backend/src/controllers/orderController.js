@@ -420,6 +420,17 @@ const updateOrderStatusForWarehouse = async (req, res) => {
             } catch (notifyErr) {
                 console.error('notifyCustomerOnStatus:', notifyErr.message);
             }
+            try {
+                if (newStatusName === 'shipped') {
+                    await orderRoleNotifyService.onOrderShippedForAdmin(orderId);
+                    await orderRoleNotifyService.onWarehouseCourierPickedUp(orderId);
+                }
+                if (newStatusName === 'delivered') {
+                    await orderRoleNotifyService.onOrderDeliveredForAdmin(orderId);
+                }
+            } catch (roleErr) {
+                console.error('orderRoleNotify status:', roleErr.message);
+            }
         }
 
         if (newStatusName === 'ready_for_pickup') {

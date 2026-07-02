@@ -65,6 +65,49 @@ describe('checkout — час доставки (як на формі)', () => {
         );
         expect(result.ok).toBe(false);
     });
+
+    test('сьогодні 21:00 о 16:00 — проходить', () => {
+        const now = new Date(2026, 5, 21, 16, 0, 0, 0);
+        const result = deliveryService.validateSelection(
+            {
+                method: 'exact',
+                date: '2026-06-21',
+                time: '21:00'
+            },
+            now,
+            cfg
+        );
+        expect(result.ok).toBe(true);
+    });
+
+    test('вчорашня дата — помилка', () => {
+        const now = new Date(2026, 5, 21, 16, 0, 0, 0);
+        const result = deliveryService.validateSelection(
+            {
+                method: 'standard',
+                date: '2026-06-20',
+                time: '21:00'
+            },
+            now,
+            cfg
+        );
+        expect(result.ok).toBe(false);
+        expect(result.message).toContain('минулому');
+    });
+
+    test('завтра 14:00 — буфер не застосовується', () => {
+        const now = new Date(2026, 5, 21, 22, 0, 0, 0);
+        const result = deliveryService.validateSelection(
+            {
+                method: 'standard',
+                date: '2026-06-22',
+                time: '09:00'
+            },
+            now,
+            cfg
+        );
+        expect(result.ok).toBe(true);
+    });
 });
 
 describe('скасування — ready_for_pickup', () => {

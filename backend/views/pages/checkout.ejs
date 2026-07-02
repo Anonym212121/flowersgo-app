@@ -540,7 +540,13 @@ function applyProfileAddressIfNeeded() {
         var endH = m === 'pickup' ? cfg.pickupEndHour : cfg.workEndHour;
         var bufferMin = m === 'pickup' ? cfg.pickupBufferMin : cfg.standardBufferMin;
         var now = new Date();
-        var isToday = dateInput && dateInput.value === fmtDate(now);
+        var todayStr = fmtDate(now);
+        var dateVal = dateInput ? dateInput.value : todayStr;
+        if (dateVal < todayStr) {
+            dateInput.value = todayStr;
+            dateVal = todayStr;
+        }
+        var isToday = dateVal === todayStr;
         var earliest = new Date(now.getTime() + bufferMin * 60000);
         for (var h = startH; h + cfg.slotHours <= endH; h += cfg.slotHours) {
             if (isToday) {
@@ -556,6 +562,8 @@ function applyProfileAddressIfNeeded() {
         }
         if (slotSelect.options.length === 0) {
             addEmptyOption(slotSelect);
+        } else if (!slotSelect.value) {
+            slotSelect.selectedIndex = 0;
         }
     }
 
@@ -578,6 +586,12 @@ function applyProfileAddressIfNeeded() {
         }
         var val = exactInput.value;
         var dateVal = dateInput ? dateInput.value : '';
+        var now = new Date();
+        var todayStr = fmtDate(now);
+        if (dateVal && dateVal < todayStr) {
+            dateInput.value = todayStr;
+            dateVal = todayStr;
+        }
         if (!val || !dateVal) {
             setExactMsg('Введіть точний час доставки', '');
             hiddenTime.value = '';
@@ -587,7 +601,15 @@ function applyProfileAddressIfNeeded() {
         var timeParts = val.split(':');
         var hh = parseInt(timeParts[0], 10);
         var mm = parseInt(timeParts[1], 10);
-        if (hh < cfg.workStartHour || hh >= cfg.workEndHour) {
+        if (!Number.isFinite(hh) || !Number.isFinite(mm)) {
+            setExactMsg('Введіть коректний час', 'err');
+            hiddenTime.value = '';
+            return false;
+        }
+        var chosenMinutes = hh * 60 + mm;
+        var startMinutes = cfg.workStartHour * 60;
+        var endMinutes = cfg.workEndHour * 60;
+        if (chosenMinutes < startMinutes || chosenMinutes >= endMinutes) {
             setExactMsg('Доставка працює з ' + cfg.workStartHour + ':00 до ' + cfg.workEndHour + ':00', 'err');
             hiddenTime.value = '';
             return false;
@@ -595,12 +617,21 @@ function applyProfileAddressIfNeeded() {
 
         var dateParts = dateVal.split('-');
         var chosen = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]), hh, mm, 0, 0);
-        var earliest = new Date(Date.now() + cfg.standardBufferMin * 60000);
-        if (chosen.getTime() < earliest.getTime()) {
-            var human = pad(earliest.getDate()) + '.' + pad(earliest.getMonth() + 1) + ' о ' + pad(earliest.getHours()) + ':' + pad(earliest.getMinutes());
-            setExactMsg('Зарано — потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
+        var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+        if (chosen.getTime() < todayStart.getTime()) {
+            setExactMsg('Дата в минулому — оберіть сьогодні або пізніше', 'err');
             hiddenTime.value = '';
             return false;
+        }
+
+        if (dateVal === todayStr) {
+            var earliest = new Date(now.getTime() + cfg.standardBufferMin * 60000);
+            if (chosen.getTime() < earliest.getTime()) {
+                var human = pad(earliest.getDate()) + '.' + pad(earliest.getMonth() + 1) + ' о ' + pad(earliest.getHours()) + ':' + pad(earliest.getMinutes());
+                setExactMsg('Зарано — потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
+                hiddenTime.value = '';
+                return false;
+            }
         }
 
         setExactMsg('Час доступний — можна замовити', 'ok');
@@ -1087,6 +1118,11 @@ function applyProfileAddressIfNeeded() {
 
         var dateEl = document.getElementById('deliveryDate');
         if (dateEl && data.delivery_date) {
+            var today = new Date();
+            var todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+            if (data.delivery_date < todayStr) {
+                data.delivery_date = todayStr;
+            }
             dateEl.value = data.delivery_date;
             dateEl.dispatchEvent(new Event('change'));
         }
@@ -1289,7 +1325,7 @@ function applyProfileAddressIfNeeded() {
         if (deliveryMethod === 'standard' || deliveryMethod === 'pickup') {
             if (!hiddenTime || !hiddenTime.value) {
                 e.preventDefault();
-                showErr('Оберіть період доставки або іншу дату');
+                showErr('Оберіть період доставки. Якщо на сьогодні немає вільних слотів — оберіть завтра');
                 return;
             }
         }

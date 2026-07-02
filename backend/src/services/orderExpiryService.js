@@ -2,6 +2,7 @@ const OrderModel = require('../models/Order');
 
 const courierAssignService = require('./courierAssignService');
 const orderWarehouseNotifyService = require('./orderWarehouseNotifyService');
+const orderRoleNotifyService = require('./orderRoleNotifyService');
 
 
 
@@ -21,6 +22,7 @@ const cancelExpiredUnpaid = async () => {
         for (let i = 0; i < ids.length; i++) {
             try {
                 await orderWarehouseNotifyService.notifyCustomerOrderExpired(ids[i]);
+                await orderRoleNotifyService.onOrderExpiredForAdmin(ids[i]);
             } catch (notifyErr) {
                 console.error('notifyCustomerOrderExpired:', notifyErr.message);
             }

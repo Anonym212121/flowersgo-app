@@ -165,17 +165,14 @@ const applyLiqpayStatus = async (orderId, payload) => {
             await confirmPaidInTransaction(conn, order, confirmedId);
             await conn.commit();
 
-            try {
-                await orderRoleNotifyService.onNewOrderForAdmin(oid);
-            } catch (notifyErr) {
-                console.error('onNewOrderForAdmin:', notifyErr.message);
-            }
-
-            try {
-                await orderWarehouseNotifyService.notifyCustomerPaymentSuccess(oid);
-            } catch (notifyErr) {
-                console.error('notifyCustomerPaymentSuccess:', notifyErr.message);
-            }
+            setImmediate(() => {
+                orderRoleNotifyService.onNewOrderForAdmin(oid).catch((notifyErr) => {
+                    console.error('onNewOrderForAdmin:', notifyErr.message);
+                });
+                orderWarehouseNotifyService.notifyCustomerPaymentSuccess(oid).catch((notifyErr) => {
+                    console.error('notifyCustomerPaymentSuccess:', notifyErr.message);
+                });
+            });
 
             return { ok: true, reason: 'paid' };
         } catch (err) {

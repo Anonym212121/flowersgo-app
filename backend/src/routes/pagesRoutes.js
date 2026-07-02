@@ -111,7 +111,7 @@ router.post('/order/success/:orderId/cancel-request', cabinetController.requestG
 router.post('/payment/liqpay/callback', paymentController.callback);
 router.get('/payment/result/:orderId', pageRequireLoginOrPayToken, paymentController.result);
 router.post('/payment/result/:orderId', pageRequireLoginOrPayToken, paymentController.result);
-router.get('/payment/sync/:orderId', pageRequireLogin, paymentController.syncStatus);
+router.get('/payment/sync/:orderId', pageRequireLoginOrPayToken, paymentController.syncStatus);
 router.get('/payment/:orderId', pageRequireLoginOrPayToken, paymentController.payPage);
 router.get('/admin', pageRequireAdminPage, pagesController.adminDashboard);
 router.get('/warehouse/orders', pageRequireWarehousePage, pagesController.warehouseOrdersPage);

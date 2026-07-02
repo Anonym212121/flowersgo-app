@@ -7,14 +7,23 @@ const trimEnv = (name) => {
     return typeof raw === 'string' ? raw.trim() : '';
 };
 
-const getMode = () => (trimEnv('EMAIL_PROVIDER_MODE') || 'smtp').toLowerCase();
-
 const isSmtpConfigured = () => {
     return !!(trimEnv('SMTP_HOST') && trimEnv('SMTP_USER') && trimEnv('SMTP_PASS'));
 };
 
 const isResendConfigured = () => {
     return !!trimEnv('RESEND_API_KEY');
+};
+
+const getMode = () => {
+    const explicit = trimEnv('EMAIL_PROVIDER_MODE').toLowerCase();
+    if (explicit === 'mock' || explicit === 'resend' || explicit === 'smtp') {
+        return explicit;
+    }
+    if (isResendConfigured()) {
+        return 'resend';
+    }
+    return 'smtp';
 };
 
 const getTransporter = () => {
@@ -60,15 +69,50 @@ const mapSmtpError = (err) => {
     return 'Не вдалося відправити лист через SMTP.';
 };
 
+const emailOnlyPattern = /^[^\s<>]+@[^\s<>]+\.[^\s<>]+$/;
+const namedFromPattern = /^[^<]+<[^\s<>]+@[^\s<>]+\.[^\s<>]+>$/;
+
+const normalizeResendFrom = (raw) => {
+    let value = typeof raw === 'string' ? raw.trim() : '';
+    if (!value) {
+        return '';
+    }
+
+    if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+    ) {
+        value = value.slice(1, -1).trim();
+    }
+
+    if (emailOnlyPattern.test(value)) {
+        return 'FlowersGo <' + value + '>';
+    }
+
+    if (namedFromPattern.test(value)) {
+        return value;
+    }
+
+    const looseMatch = value.match(/^(.+?)\s+([^\s<>]+@[^\s<>]+\.[^\s<>]+)$/);
+    if (looseMatch) {
+        return looseMatch[1].trim() + ' <' + looseMatch[2].trim() + '>';
+    }
+
+    return '';
+};
+
 const sendViaResend = async ({ to, subject, text }) => {
     const apiKey = trimEnv('RESEND_API_KEY');
     if (!apiKey) {
         return { ok: false, message: 'RESEND_API_KEY не налаштований на сервері.' };
     }
 
-    const from = trimEnv('RESEND_FROM') || trimEnv('SMTP_FROM') || trimEnv('SMTP_USER');
+    const from = normalizeResendFrom(trimEnv('RESEND_FROM'));
     if (!from) {
-        return { ok: false, message: 'RESEND_FROM або SMTP_FROM не налаштований.' };
+        return {
+            ok: false,
+            message: 'RESEND_FROM не налаштований. Вкажіть підтверджений email відправника у змінних Render.'
+        };
     }
 
     try {
@@ -149,7 +193,10 @@ const isConfigured = () => {
     if (mode === 'resend') {
         return isResendConfigured();
     }
-    return isSmtpConfigured();
+    if (isSmtpConfigured()) {
+        return true;
+    }
+    return isResendConfigured();
 };
 
 module.exports = {

@@ -6,20 +6,12 @@ jest.mock('../src/config/db', () => ({
 const UserModel = require('../src/models/User');
 
 describe('resolveCourierNotifyEmail', () => {
-    test('пріоритет робочого email', () => {
+    test('повертає email з реєстрації', () => {
         const email = UserModel.resolveCourierNotifyEmail({
-            email: 'personal@test.com',
+            email: 'courier@shop.ua',
             courier_work_email: 'work@shop.ua'
         });
-        expect(email).toBe('work@shop.ua');
-    });
-
-    test('fallback на особистий', () => {
-        const email = UserModel.resolveCourierNotifyEmail({
-            email: 'personal@test.com',
-            courier_work_email: ''
-        });
-        expect(email).toBe('personal@test.com');
+        expect(email).toBe('courier@shop.ua');
     });
 
     test('порожньо без email', () => {

@@ -101,6 +101,8 @@ const approveForAdmin = async (req, res) => {
 
             await orderRoleNotifyService.onOrderApprovedForWarehouse(id);
 
+            await orderWarehouseNotifyService.notifyCustomerOrderConfirmed(id);
+
         } catch (hookErr) {
 
             console.error('approveForAdmin hooks:', hookErr.message);
@@ -148,10 +150,11 @@ const rejectForAdmin = async (req, res) => {
 
 
         let refundMessage = '';
+        let refundResult = null;
 
         if (order.payment_status === 'paid') {
 
-            const refundResult = await orderCancelRefundService.tryRefundPaidOrder(order);
+            refundResult = await orderCancelRefundService.tryRefundPaidOrder(order);
 
             refundMessage = refundResult.message || '';
 
@@ -175,6 +178,9 @@ const rejectForAdmin = async (req, res) => {
 
         try {
             await orderWarehouseNotifyService.notifyCustomerOrderRejected(id);
+            if (refundResult && refundResult.refund_status === 'refunded') {
+                await orderWarehouseNotifyService.notifyCustomerRefundProcessed(id, refundResult.message || '');
+            }
         } catch (notifyErr) {
             console.error('notifyCustomerOrderRejected:', notifyErr.message);
         }
@@ -259,6 +265,7 @@ const approveCancelForAdmin = async (req, res) => {
 
         try {
             await orderWarehouseNotifyService.notifyCustomerCancelApproved(id);
+            await orderRoleNotifyService.onOrderCancelledForWarehouse(id);
         } catch (notifyErr) {
             console.error('notifyCustomerCancelApproved:', notifyErr.message);
         }

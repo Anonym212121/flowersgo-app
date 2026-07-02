@@ -501,17 +501,10 @@ const updateCourierWorkEmailById = async (userId, workEmail) => {
 };
 
 const resolveCourierNotifyEmail = (userRow) => {
-    if (!userRow) {
+    if (!userRow || !userRow.email) {
         return '';
     }
-
-    const work = userRow.courier_work_email ? String(userRow.courier_work_email).trim() : '';
-    if (work) {
-        return work;
-    }
-
-    const personal = userRow.email ? String(userRow.email).trim() : '';
-    return personal;
+    return String(userRow.email).trim();
 };
 
 const listUserIdsByRole = async (roleName) => {

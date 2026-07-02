@@ -1793,6 +1793,44 @@ const cancelExpiredUnpaidOrders = async () => {
     return { count: cancelledIds.length, ids: cancelledIds };
 };
 
+const getRowForCustomerNotify = async (orderId) => {
+    const oid = Number(orderId);
+    if (!Number.isFinite(oid) || oid <= 0) {
+        return null;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT o.id,
+                o.user_id,
+                o.delivery_method,
+                o.delivery_address,
+                o.customer_first_name,
+                o.customer_last_name,
+                o.customer_phone,
+                o.delivery_street,
+                o.delivery_house,
+                o.delivery_apartment,
+                o.recipient_note,
+                o.bouquet_note,
+                o.receiver_name,
+                o.receiver_phone,
+                o.payment_status,
+                o.total_amount,
+                o.delivery_date,
+                o.delivery_timeslot,
+                s.status_name,
+                COALESCE(NULLIF(TRIM(o.customer_email), ''), u.email, '') AS customer_email
+         FROM orders o
+         INNER JOIN statuses s ON o.status_id = s.id
+         LEFT JOIN users u ON o.user_id = u.id
+         WHERE o.id = ?
+         LIMIT 1`,
+        [oid]
+    );
+
+    return rows && rows.length > 0 ? rows[0] : null;
+};
+
 const getDetailForWarehouse = async (orderId) => {
     const oid = Number(orderId);
     if (!Number.isFinite(oid) || oid <= 0) {
@@ -1965,6 +2003,7 @@ module.exports = {
     listForAdminAll,
     countUnassignedCourier,
     getDetailForAdmin,
+    getRowForCustomerNotify,
     getByIdForWarehouse,
     getByIdForCourier,
     getDetailForWarehouse,

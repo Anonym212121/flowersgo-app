@@ -1,12 +1,7 @@
 const emailService = require('./emailService');
 const UserModel = require('../models/User');
 
-const isEnabled = () => {
-    if (String(process.env.EMAIL_NOTIFY || '1').trim() === '0') {
-        return false;
-    }
-    return emailService.isConfigured();
-};
+const isEnabled = () => String(process.env.EMAIL_NOTIFY || '1').trim() !== '0';
 
 const baseUrl = () => {
     const raw = process.env.APP_BASE_URL || 'http://localhost:5000';
@@ -27,14 +22,10 @@ const buildText = (title, body, linkUrl) => {
 };
 
 const resolveEmailForUser = (userRow) => {
-    if (!userRow) {
+    if (!userRow || !userRow.email) {
         return '';
     }
-    if (userRow.role_name === 'courier') {
-        return UserModel.resolveCourierNotifyEmail(userRow);
-    }
-    const email = userRow.email ? String(userRow.email).trim() : '';
-    return email;
+    return String(userRow.email).trim();
 };
 
 const sendToAddress = async (email, payload) => {
@@ -50,13 +41,19 @@ const sendToAddress = async (email, payload) => {
     const title = payload && payload.title ? payload.title : 'Сповіщення';
     const body = payload && payload.body ? payload.body : '';
     const linkUrl = payload && payload.link_url ? payload.link_url : '';
+    const subject = payload && payload.email_subject ? payload.email_subject : 'FlowersGo: ' + title;
+    const text =
+        payload && payload.email_body ? payload.email_body : buildText(title, body, linkUrl);
 
     try {
-        await emailService.sendEmail({
+        const result = await emailService.sendEmail({
             to,
-            subject: 'FlowersGo: ' + title,
-            text: buildText(title, body, linkUrl)
+            subject,
+            text
         });
+        if (!result.ok) {
+            console.error('notificationEmail address:', to, result.message || 'failed');
+        }
     } catch (err) {
         console.error('notificationEmail address:', err.message);
     }
