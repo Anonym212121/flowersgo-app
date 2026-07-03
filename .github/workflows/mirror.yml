@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
       - docker
 
 jobs:
@@ -21,5 +22,44 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           GITLAB_REPO: ${{ secrets.GITLAB_REPO }}
         run: |
-          git remote add gitlab https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@git.ztu.edu.ua/ipz/2022-2026/ipz-22-4/skovlyuk-matviy/diplomaflowersdelivery.git
-          git push gitlab HEAD:${GITHUB_REF_NAME}
+          if [ -z "$GITLAB_USERNAME" ] || [ -z "$GITLAB_TOKEN" ] || [ -z "$GITLAB_REPO" ]; then
+            echo "::error::Не задано secrets у GitHub → Settings → Secrets and variables → Actions"
+            echo "Потрібні: GITLAB_USERNAME, GITLAB_TOKEN, GITLAB_REPO"
+            exit 1
+          fi
+
+          REPO_PATH="$GITLAB_REPO"
+          REPO_PATH="${REPO_PATH#https://}"
+          REPO_PATH="${REPO_PATH#http://}"
+          REPO_PATH="${REPO_PATH#/}"
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "GitHub Mirror"
+
+          git remote add gitlab "https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@${REPO_PATH}"
+
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "Дзеркалимо GitHub/${BRANCH} → GitLab/${BRANCH}"
+
+          set +e
+          PUSH_OUT=$(git push gitlab "HEAD:refs/heads/${BRANCH}" 2>&1)
+          PUSH_CODE=$?
+          set -e
+
+          echo "$PUSH_OUT"
+
+          if [ "$PUSH_CODE" -ne 0 ]; then
+            if echo "$PUSH_OUT" | grep -qiE "protected|pre-receive hook declined|not allowed to push"; then
+              echo "::error::GitLab відхилив push — гілка ${BRANCH} захищена."
+              echo "GitLab → Settings → Repository → Protected branches → ${BRANCH} → Allowed to push: Maintainers + твій PAT"
+            elif echo "$PUSH_OUT" | grep -qiE "401|403|authentication|access denied|could not read Username|invalid credentials"; then
+              echo "::error::Помилка авторизації GitLab. Перевір GITLAB_USERNAME і GITLAB_TOKEN (scope: write_repository)."
+            elif echo "$PUSH_OUT" | grep -qiE "non-fast-forward|rejected"; then
+              echo "::error::Історія на GitLab відрізняється від GitHub (non-fast-forward). Зроби MR або sync вручну."
+            else
+              echo "::error::git push завершився з кодом ${PUSH_CODE}"
+            fi
+            exit "$PUSH_CODE"
+          fi
+
+          echo "Дзеркало на GitLab оновлено."
