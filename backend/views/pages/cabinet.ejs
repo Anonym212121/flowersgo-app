@@ -65,20 +65,7 @@ if (savedStreet && savedHouse) {
                 <% for (const o of safeOrders) { %>
                     <% const pay = o.payment_status || 'unpaid'; %>
                     <% const isArchived = Number(o.is_archived) === 1; %>
-                    <%
-                    let statusShort = o.status_label || o.status_name || '—';
-                    if (o.status_name === 'cancelled') {
-                        statusShort = 'Скасовано';
-                    } else if (o.has_cancel_request) {
-                        statusShort = 'Скасування очікує';
-                    } else if (Number(o.admin_approved) === -1) {
-                        statusShort = 'Відхилено';
-                    } else if (Number(o.admin_approved) === 0) {
-                        statusShort = 'На модерації';
-                    } else if (o.status_name === 'ready_for_pickup' && o.delivery_method === 'pickup') {
-                        statusShort = 'Готовий до самовивозу';
-                    }
-                    %>
+                    <% const statusShort = o.order_summary_badge || o.status_label || o.status_name || '—'; %>
                     <article
                         class="cabinet-order-card <%= isArchived ? 'cabinet-order-card--archived' : '' %>"
                         data-order-id="<%= o.id %>"
@@ -99,30 +86,28 @@ if (savedStreet && savedHouse) {
                             <div class="cabinet-order-row">
                                 <span class="cabinet-order-label">Оплата</span>
                                 <div class="cabinet-order-value cabinet-orders-pay">
-                                    <% if (pay === 'paid') { %>
+                                    <% if (o.can_pay_online) { %>
+                                        <div class="cabinet-pay-block" data-order-id="<%= o.id %>" data-deadline-at="<%= o.pay_deadline_iso || '' %>">
+                                            <span class="warehouse-badge pay-no cabinet-pay-badge">Очікує</span>
+                                            <a href="/payment/<%= o.id %>?t=<%= encodeURIComponent(o.pay_token || '') %>&r=<%= Date.now() %>" class="cabinet-pay-btn" data-soft-nav="false">Оплатити</a>
+                                            <span class="cabinet-pay-timer">⏱ <span class="cabinet-pay-timer-value"><%= o.pay_time_left_label || '00:00:00' %></span></span>
+                                        </div>
+                                    <% } else if (o.payment_badge_text) { %>
+                                        <span class="warehouse-badge <%= o.payment_badge_cls || 'pay-no' %>"><%= o.payment_badge_text %></span>
+                                    <% } else if (pay === 'paid') { %>
                                         <span class="warehouse-badge pay-ok">Оплачено</span>
                                     <% } else if (pay === 'refunded') { %>
                                         <span class="warehouse-badge pay-ok">Повернено</span>
                                     <% } else if (pay === 'cod') { %>
                                         <span class="warehouse-badge pay-cod">При отриманні</span>
+                                    <% } else if (o.pay_block_reason === 'rejected') { %>
+                                        <span class="cabinet-pay-expired">Відхилено адміном</span>
+                                    <% } else if (o.pay_block_reason === 'cancel_pending') { %>
+                                        <span class="cabinet-pay-expired">Очікує рішення щодо скасування</span>
                                     <% } else if (o.status_name === 'cancelled' || Number(o.admin_approved) === -1) { %>
                                         <span class="warehouse-badge pay-no">Скасовано</span>
-                                    <% } else if (o.has_cancel_request) { %>
-                                        <span class="warehouse-badge pay-cod">Скасування очікує</span>
                                     <% } else { %>
-                                        <div class="cabinet-pay-block" data-order-id="<%= o.id %>" data-deadline-at="<%= o.pay_deadline_iso || '' %>">
-                                            <span class="warehouse-badge pay-no cabinet-pay-badge">Очікує</span>
-                                            <% if (o.can_pay_online) { %>
-                                                <a href="/payment/<%= o.id %>?t=<%= encodeURIComponent(o.pay_token || '') %>&r=<%= Date.now() %>" class="cabinet-pay-btn" data-soft-nav="false">Оплатити</a>
-                                                <span class="cabinet-pay-timer">⏱ <span class="cabinet-pay-timer-value"><%= o.pay_time_left_label || '00:00:00' %></span></span>
-                                            <% } else if (o.pay_block_reason === 'rejected') { %>
-                                                <span class="cabinet-pay-expired">Відхилено адміном</span>
-                                            <% } else if (o.pay_block_reason === 'cancel_pending') { %>
-                                                <span class="cabinet-pay-expired">Очікує рішення щодо скасування</span>
-                                            <% } else { %>
-                                                <span class="cabinet-pay-expired">Час вичерпано</span>
-                                            <% } %>
-                                        </div>
+                                        <span class="cabinet-pay-expired">Час вичерпано</span>
                                     <% } %>
                                 </div>
                             </div>
@@ -145,8 +130,8 @@ if (savedStreet && savedHouse) {
                                     <span class="cabinet-order-value"><%= o.cancel_request_note %></span>
                                 </div>
                             <% } %>
-                            <% if (o.refund_status === 'manual') { %>
-                                <p class="cabinet-cancel-hint">Повернення коштів оформлює адміністратор — зв’яжіться з нами, якщо питання.</p>
+                            <% if (o.refund_hint) { %>
+                                <p class="cabinet-cancel-hint cabinet-refund-hint"><%= o.refund_hint %></p>
                             <% } %>
                             <% if (o.can_request_cancel) { %>
                                 <div class="cabinet-cancel-block">

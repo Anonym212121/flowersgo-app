@@ -72,7 +72,8 @@ describe('email notifications', () => {
     test('клієнту надсилається лист при оплаті', async () => {
         await orderWarehouseNotifyService.notifyCustomerPaymentSuccess(77);
         expect(sentMails.length).toBe(1);
-        expect(sentMails[0].subject).toContain('Оплату');
+        expect(sentMails[0].subject).toContain('карткою');
+        expect(sentMails[0].text).toContain('карткою');
     });
 
     test('клієнту надсилається лист при підтвердженні адміном', async () => {

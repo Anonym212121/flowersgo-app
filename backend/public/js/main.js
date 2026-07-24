@@ -194,6 +194,43 @@ document.addEventListener('submit', async (e) => {
     }
 });
 
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.classList.contains('catalog-search')) {
+        return;
+    }
+
+    const input = form.querySelector('#catalog-q') || form.querySelector('input[name="q"]');
+    if (!input) {
+        return;
+    }
+
+    const value = String(input.value || '').trim();
+    if (!value) {
+        e.preventDefault();
+        input.value = '';
+        input.setCustomValidity('Заповни поле');
+        input.reportValidity();
+        return;
+    }
+
+    input.setCustomValidity('');
+});
+
+document.addEventListener('input', (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) {
+        return;
+    }
+    if (input.id !== 'catalog-q' && input.name !== 'q') {
+        return;
+    }
+    if (!input.closest('.catalog-search')) {
+        return;
+    }
+    input.setCustomValidity('');
+});
+
 function escapeHtml(text) {
     return String(text)
         .replace(/&/g, '&amp;')
@@ -810,6 +847,11 @@ async function softNavigate(url, pushState) {
     softNavBusy = true;
     main.classList.add('page-main--loading');
 
+    const navTimeout = window.setTimeout(() => {
+        softNavBusy = false;
+        main.classList.remove('page-main--loading');
+    }, 12000);
+
     try {
         const res = await fetch(url, {
             credentials: 'same-origin',
@@ -845,6 +887,7 @@ async function softNavigate(url, pushState) {
     } catch (err) {
         window.location.href = url;
     } finally {
+        window.clearTimeout(navTimeout);
         softNavBusy = false;
         main.classList.remove('page-main--loading');
     }

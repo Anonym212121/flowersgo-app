@@ -15,6 +15,17 @@ const bouquetPreviewService = require('../services/bouquetPreviewService');
 const orderStockService = require('../services/orderStockService');
 const orderPriceService = require('../services/orderPriceService');
 const UserModel = require('../models/User');
+const { respondWithMessage, defaultCheckoutActions } = require('../utils/pageMessage');
+
+const checkoutError = (req, res, statusCode, message, options) => {
+    return respondWithMessage(req, res, statusCode, message, {
+        title: 'Оформлення замовлення',
+        messageTitle: 'Не вдалося оформити замовлення',
+        icon: 'warn',
+        actions: defaultCheckoutActions(),
+        ...(options || {})
+    });
+};
 
 const getUserId = (res) => {
     const raw = res.locals.currentUser && res.locals.currentUser.user_id;
@@ -103,25 +114,25 @@ const createOrder = async (req, res) => {
                 if (wantsJson(req)) {
                     return res.status(403).json({ message: 'Обліковий запис заблоковано' });
                 }
-                return res.status(403).send('Обліковий запис заблоковано');
+                return checkoutError(req, res, 403, 'Обліковий запис заблоковано', {
+                    messageTitle: 'Акаунт заблоковано',
+                    actions: [
+                        { label: 'Дізнатися причину', href: '/account-blocked', primary: true },
+                        { label: 'На головну', href: '/' }
+                    ]
+                });
             }
         }
 
         const rawItems = parseItemsFromBody(req.body.items);
         const priceResult = await orderPriceService.resolveItemsPrices(rawItems);
         if (!priceResult.ok) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: priceResult.message });
-            }
-            return res.status(400).send(priceResult.message);
+            return checkoutError(req, res, 400, priceResult.message);
         }
 
         const items = priceResult.items;
         if (items.length === 0) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: 'Додай хоча б один товар до замовлення' });
-            }
-            return res.status(400).send('Додай хоча б один товар до замовлення');
+            return checkoutError(req, res, 400, 'Додай хоча б один товар до замовлення');
         }
 
         const first = typeof req.body.customer_first_name === 'string' ? req.body.customer_first_name.trim() : '';
@@ -130,28 +141,19 @@ const createOrder = async (req, res) => {
         let emailOpt = typeof req.body.customer_email === 'string' ? req.body.customer_email.trim() : '';
 
         if (!first || !last || !phone) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: "Заповни ім'я, прізвище та телефон" });
-            }
-            return res.status(400).send("Заповни ім'я, прізвище та телефон");
+            return checkoutError(req, res, 400, "Заповни ім'я, прізвище та телефон");
         }
 
         const phoneCheck = phoneValidator(phone);
         if (!phoneCheck.ok) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: phoneCheck.message });
-            }
-            return res.status(400).send(phoneCheck.message);
+            return checkoutError(req, res, 400, phoneCheck.message);
         }
         phone = phoneCheck.phone;
 
         if (emailOpt) {
             const emailCheck = emailValidator(emailOpt);
             if (!emailCheck.ok) {
-                if (wantsJson(req)) {
-                    return res.status(400).json({ message: emailCheck.message });
-                }
-                return res.status(400).send(emailCheck.message);
+                return checkoutError(req, res, 400, emailCheck.message);
             }
             emailOpt = emailCheck.email;
         }
@@ -167,10 +169,7 @@ const createOrder = async (req, res) => {
         }, new Date(), deliveryConfig);
 
         if (!deliveryCheck.ok) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: deliveryCheck.message });
-            }
-            return res.status(400).send(deliveryCheck.message);
+            return checkoutError(req, res, 400, deliveryCheck.message);
         }
 
         const delivery_fee = deliveryCheck.fee;
@@ -185,10 +184,7 @@ const createOrder = async (req, res) => {
             house = null;
             apartment = null;
         } else if (!street || !house) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: 'Вкажи вулицю та будинок' });
-            }
-            return res.status(400).send('Вкажи вулицю та будинок');
+            return checkoutError(req, res, 400, 'Вкажи вулицю та будинок');
         }
 
         const recipient_mode = req.body.recipient_mode === 'other' ? 'other' : 'self';
@@ -203,18 +199,12 @@ const createOrder = async (req, res) => {
 
         if (recipient_mode === 'other') {
             if (!recFirst || !recLast || !recPhone) {
-                if (wantsJson(req)) {
-                    return res.status(400).json({ message: "Заповни ім'я, прізвище та телефон одержувача" });
-                }
-                return res.status(400).send("Заповни ім'я, прізвище та телефон одержувача");
+                return checkoutError(req, res, 400, "Заповни ім'я, прізвище та телефон одержувача");
             }
 
             const recPhoneCheck = phoneValidator(recPhone);
             if (!recPhoneCheck.ok) {
-                if (wantsJson(req)) {
-                    return res.status(400).json({ message: 'Телефон одержувача: ' + recPhoneCheck.message });
-                }
-                return res.status(400).send('Телефон одержувача: ' + recPhoneCheck.message);
+                return checkoutError(req, res, 400, 'Телефон одержувача: ' + recPhoneCheck.message);
             }
             recPhone = recPhoneCheck.phone;
         }
@@ -236,10 +226,7 @@ const createOrder = async (req, res) => {
 
         const stockCheck = await orderStockService.validateItemsStock(items);
         if (!stockCheck.ok) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: stockCheck.message });
-            }
-            return res.status(400).send(stockCheck.message);
+            return checkoutError(req, res, 400, stockCheck.message);
         }
 
         const orderId = await OrderModel.createWithTransaction({
@@ -262,10 +249,7 @@ const createOrder = async (req, res) => {
         });
 
         if (!orderId) {
-            if (wantsJson(req)) {
-                return res.status(400).json({ message: 'Не вдалося оформити замовлення' });
-            }
-            return res.status(400).send('Не вдалося оформити замовлення');
+            return checkoutError(req, res, 400, 'Не вдалося оформити замовлення');
         }
 
         const payment_method = req.body.payment_method === 'cod' ? 'cod' : 'card';
@@ -325,7 +309,10 @@ const createOrder = async (req, res) => {
         if (wantsJson(req)) {
             return res.status(500).json({ message: 'помилка' });
         }
-        return res.status(500).send('помилка');
+        return checkoutError(req, res, 500, 'Сталася помилка сервера. Спробуйте ще раз.', {
+            messageTitle: 'Помилка сервера',
+            icon: 'error'
+        });
     }
 };
 

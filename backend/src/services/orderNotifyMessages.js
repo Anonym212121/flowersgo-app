@@ -1,5 +1,6 @@
 const orderDeliveryFields = require('../utils/orderDeliveryFields');
 const formatDelivery = require('../utils/formatDelivery');
+const refundStatusLabel = require('../utils/refundStatusLabel');
 
 const baseUrl = () => String(process.env.APP_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
 
@@ -116,16 +117,16 @@ const customer = {
     paymentSuccess(order) {
         const id = order.id;
         return {
-            subject: 'Оплату за замовлення №' + id + ' отримано',
+            subject: 'Оплату карткою за замовлення №' + id + ' отримано',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'Оплату зафіксовано. Замовлення передано на перевірку адміністратору — після підтвердження почнемо комплектацію.',
+                'Оплату карткою онлайн зафіксовано. Замовлення передано на перевірку адміністратору — після підтвердження почнемо комплектацію.',
                 order,
                 '/cabinet'
             ),
             ntype: 'order_paid',
-            title: 'Оплату отримано',
-            body: 'Замовлення №' + id + ' оплачено. Очікуйте підтвердження.',
+            title: 'Оплату карткою отримано',
+            body: 'Замовлення №' + id + ' оплачено карткою. Очікуйте підтвердження.',
             link_url: '/cabinet'
         };
     },
@@ -268,13 +269,23 @@ const customer = {
         };
     },
 
-    cancelApproved(order) {
+    cancelApproved(order, refundNote) {
         const id = order.id;
+        let detail = 'Замовлення скасовано за вашим запитом.';
+        const note = typeof refundNote === 'string' ? refundNote.trim() : '';
+        if (note) {
+            detail += '\n\n' + note;
+        } else {
+            const extra = refundStatusLabel.refundNoteForEmail(order);
+            if (extra) {
+                detail += '\n\n' + extra;
+            }
+        }
         return {
             subject: 'Скасування №' + id + ' підтверджено',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'Замовлення скасовано за вашим запитом.',
+                detail,
                 order,
                 '/cabinet'
             ),

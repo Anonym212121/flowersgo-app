@@ -110,8 +110,8 @@ const notifyCustomerCancelRequestSent = async (orderId) => {
     await notifyCustomerEvent(orderId, orderNotifyMessages.customer.cancelRequestSent);
 };
 
-const notifyCustomerCancelApproved = async (orderId) => {
-    await notifyCustomerEvent(orderId, orderNotifyMessages.customer.cancelApproved);
+const notifyCustomerCancelApproved = async (orderId, refundNote) => {
+    await notifyCustomerEvent(orderId, orderNotifyMessages.customer.cancelApproved, refundNote || '');
 };
 
 const notifyCustomerCancelRejected = async (orderId) => {

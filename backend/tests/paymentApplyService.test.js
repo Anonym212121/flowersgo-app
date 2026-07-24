@@ -44,6 +44,11 @@ describe('paymentApplyService — guard оплати', () => {
         expect(paymentService.getPaymentBlockReason(order)).toBe('expired');
     });
 
+    test('sandbox у БД вважається оплаченим', () => {
+        expect(paymentService.isPaymentPaid({ payment_status: 'sandbox' })).toBe(true);
+        expect(paymentService.isPaymentPaid({ payment_status: 'unpaid' })).toBe(false);
+    });
+
     test('cancel_request блокує оплату', () => {
         const order = {
             admin_approved: 1,

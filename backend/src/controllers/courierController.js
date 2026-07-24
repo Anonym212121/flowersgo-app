@@ -7,6 +7,11 @@ const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const courierAssignService = require('../services/courierAssignService');
 const { mapOrderForWarehouse, buildWarehouseStats } = require('../utils/warehouseOrderView');
 const { buildMapsLink } = require('../utils/mapsLink');
+const {
+    respondWithMessage,
+    respondServerError,
+    defaultCourierActions
+} = require('../utils/pageMessage');
 
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
@@ -146,7 +151,7 @@ const courierOrdersPage = async (req, res) => {
         });
     } catch (err) {
         console.error('courierOrdersPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Кур\'єр', actions: defaultCourierActions() });
     }
 };
 
@@ -199,12 +204,20 @@ const courierOrderDetailPage = async (req, res) => {
 
         const orderId = Number(req.params.id);
         if (!Number.isFinite(orderId) || orderId <= 0) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Кур\'єр',
+                messageTitle: 'Замовлення не знайдено',
+                actions: defaultCourierActions()
+            });
         }
 
         const data = await OrderModel.getDetailForCourier(orderId, courierId);
         if (!data) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Кур\'єр',
+                messageTitle: 'Замовлення не знайдено',
+                actions: defaultCourierActions()
+            });
         }
 
         const order = mapOrderForWarehouse(data.order);
@@ -250,7 +263,7 @@ const courierOrderDetailPage = async (req, res) => {
         });
     } catch (err) {
         console.error('courierOrderDetailPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Кур\'єр', actions: defaultCourierActions() });
     }
 };
 
@@ -299,7 +312,7 @@ const courierShiftPage = async (req, res) => {
         });
     } catch (err) {
         console.error('courierShiftPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Кур\'єр', actions: defaultCourierActions() });
     }
 };
 

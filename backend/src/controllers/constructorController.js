@@ -4,6 +4,7 @@ const constructorService = require('../services/constructorService');
 const bouquetPreviewService = require('../services/bouquetPreviewService');
 const constructorConfig = require('../config/constructor');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const { respondServerError, defaultHomeActions } = require('../utils/pageMessage');
 
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
@@ -46,7 +47,7 @@ const constructorPage = async (req, res) => {
         });
     } catch (err) {
         console.error('constructorPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Конструктор', actions: defaultHomeActions() });
     }
 };
 

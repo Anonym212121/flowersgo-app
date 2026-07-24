@@ -17,7 +17,15 @@ const isIncomingPaid = (payload) => {
     return PAID_LIQPAY_STATUSES.includes(String(payload.status));
 };
 
-const tryRefundIncoming = async (payload, amount) => {
+const tryRefundIncoming = (payload, amount) => {
+    setImmediate(() => {
+        tryRefundIncomingAsync(payload, amount).catch((err) => {
+            console.error('tryRefundIncoming:', err.message);
+        });
+    });
+};
+
+const tryRefundIncomingAsync = async (payload, amount) => {
     const ref = payload && payload.order_id ? String(payload.order_id).trim() : '';
     const sum = Number(amount);
     if (!ref || !Number.isFinite(sum) || sum <= 0) {
@@ -40,7 +48,7 @@ const tryRefundIncoming = async (payload, amount) => {
     }
 };
 
-const isOrderClosedForPayment = (order) => {
+const isOrderClosedForPayment = (order, options) => {
     if (!order) {
         return true;
     }
@@ -54,39 +62,98 @@ const isOrderClosedForPayment = (order) => {
     if (statusName === 'cancelled') {
         return true;
     }
+    if (options && options.ignorePaymentWindow) {
+        return false;
+    }
     if (order.payment_status === 'unpaid' && !paymentService.isPaymentWindowOpenForOrder(order)) {
         return true;
     }
     return false;
 };
 
-const confirmPaidInTransaction = async (conn, order, toStatusId) => {
-    const oid = Number(order.id);
-    await conn.execute(
-        `UPDATE orders
-         SET payment_status = 'paid', paid_at = COALESCE(paid_at, NOW())
-         WHERE id = ? AND payment_status = 'unpaid'`,
+const loadOrderForPaymentApply = async (orderId) => {
+    const oid = Number(orderId);
+    const [rows] = await db.execute(
+        `SELECT o.id,
+                o.user_id,
+                o.status_id,
+                o.total_amount,
+                o.payment_status,
+                o.payment_deadline_at,
+                o.createdAt,
+                o.admin_approved,
+                o.cancel_request_at,
+                o.liqpay_last_ref,
+                s.status_name
+         FROM orders o
+         INNER JOIN statuses s ON s.id = o.status_id
+         WHERE o.id = ?
+         LIMIT 1`,
         [oid]
     );
+    return rows && rows[0] ? rows[0] : null;
+};
 
-    const fromStatusId = Number(order.status_id);
-    if (Number.isFinite(toStatusId) && toStatusId > 0 && fromStatusId !== toStatusId) {
-        const can = await StatusModel.canTransition(fromStatusId, toStatusId);
-        if (can) {
-            const [statusResult] = await conn.execute(
-                `UPDATE orders SET status_id = ? WHERE id = ? AND status_id = ?`,
-                [toStatusId, oid, fromStatusId]
-            );
-            if (statusResult && statusResult.affectedRows > 0) {
-                await OrderStatusLogModel.insert({
-                    order_id: oid,
-                    user_id: null,
-                    from_status_id: fromStatusId,
-                    to_status_id: toStatusId
-                });
+const markOrderPaidFromLiqpay = async (order, payload) => {
+    const oid = Number(order.id);
+
+    if (order.payment_status === 'paid' || order.payment_status === 'cod') {
+        return { ok: true, reason: 'already_paid' };
+    }
+
+    if (paymentService.isLegacyLiqpayPaidStatus(order.payment_status)) {
+        await OrderModel.updatePaymentStatus(oid, 'paid');
+        return { ok: true, reason: 'already_paid' };
+    }
+
+    if (isOrderClosedForPayment(order, { ignorePaymentWindow: true })) {
+        tryRefundIncoming(payload, order.total_amount);
+        return { ok: false, reason: 'closed_refunded' };
+    }
+
+    const incomingAmount = Number(payload.amount);
+    const orderAmount = Number(order.total_amount);
+    if (Number.isFinite(incomingAmount) && Number.isFinite(orderAmount)) {
+        if (Math.abs(incomingAmount - orderAmount) > 0.015) {
+            tryRefundIncoming(payload, incomingAmount);
+            return { ok: false, reason: 'amount_mismatch' };
+        }
+    }
+
+    await OrderModel.updatePaymentStatus(oid, 'paid');
+
+    if (order.status_name === 'pending') {
+        const confirmedId = await OrderModel.getStatusIdByName('confirmed');
+        const fromStatusId = Number(order.status_id);
+        if (confirmedId && Number.isFinite(fromStatusId) && fromStatusId !== confirmedId) {
+            const can = await StatusModel.canTransition(fromStatusId, confirmedId);
+            if (can) {
+                const ok = await OrderModel.updateStatusIfCurrent(oid, fromStatusId, confirmedId);
+                if (ok) {
+                    await OrderStatusLogModel.insert({
+                        order_id: oid,
+                        user_id: null,
+                        from_status_id: fromStatusId,
+                        to_status_id: confirmedId
+                    });
+                }
             }
         }
     }
+
+    try {
+        await orderRoleNotifyService.onNewOrderForAdmin(oid);
+    } catch (notifyErr) {
+        console.error('onNewOrderForAdmin:', notifyErr.message);
+    }
+
+    try {
+        await orderWarehouseNotifyService.notifyCustomerPaymentSuccess(oid);
+    } catch (notifyErr) {
+        console.error('notifyCustomerPaymentSuccess:', notifyErr.message);
+    }
+
+    return { ok: true, reason: 'paid' };
 };
 
 const applyLiqpayStatus = async (orderId, payload) => {
@@ -96,91 +163,12 @@ const applyLiqpayStatus = async (orderId, payload) => {
     }
 
     if (isIncomingPaid(payload)) {
-        const conn = await db.getConnection();
-        try {
-            await conn.beginTransaction();
-
-            const [rows] = await conn.execute(
-                `SELECT o.id,
-                        o.user_id,
-                        o.status_id,
-                        o.total_amount,
-                        o.payment_status,
-                        o.payment_deadline_at,
-                        o.createdAt,
-                        o.admin_approved,
-                        o.cancel_request_at,
-                        o.liqpay_last_ref,
-                        s.status_name
-                 FROM orders o
-                 INNER JOIN statuses s ON s.id = o.status_id
-                 WHERE o.id = ?
-                 LIMIT 1
-                 FOR UPDATE`,
-                [oid]
-            );
-
-            const order = rows && rows[0];
-            if (!order) {
-                await conn.rollback();
-                return { ok: false, reason: 'not_found' };
-            }
-
-            if (order.payment_status === 'paid') {
-                const incomingRef = payload.order_id ? String(payload.order_id).trim() : '';
-                const savedRef = order.liqpay_last_ref ? String(order.liqpay_last_ref).trim() : '';
-                if (incomingRef && savedRef && incomingRef !== savedRef) {
-                    await tryRefundIncoming(payload, order.total_amount);
-                }
-                await conn.commit();
-                return { ok: true, reason: 'already_paid' };
-            }
-
-            if (order.payment_status === 'cod') {
-                await conn.commit();
-                return { ok: true, reason: 'cod' };
-            }
-
-            if (isOrderClosedForPayment(order)) {
-                await conn.rollback();
-                await tryRefundIncoming(payload, order.total_amount);
-                return { ok: false, reason: 'closed_refunded' };
-            }
-
-            const incomingAmount = Number(payload.amount);
-            const orderAmount = Number(order.total_amount);
-            if (Number.isFinite(incomingAmount) && Number.isFinite(orderAmount)) {
-                if (Math.abs(incomingAmount - orderAmount) > 0.015) {
-                    await conn.rollback();
-                    await tryRefundIncoming(payload, incomingAmount);
-                    return { ok: false, reason: 'amount_mismatch' };
-                }
-            }
-
-            let confirmedId = null;
-            if (order.status_name === 'pending') {
-                confirmedId = await OrderModel.getStatusIdByName('confirmed');
-            }
-
-            await confirmPaidInTransaction(conn, order, confirmedId);
-            await conn.commit();
-
-            setImmediate(() => {
-                orderRoleNotifyService.onNewOrderForAdmin(oid).catch((notifyErr) => {
-                    console.error('onNewOrderForAdmin:', notifyErr.message);
-                });
-                orderWarehouseNotifyService.notifyCustomerPaymentSuccess(oid).catch((notifyErr) => {
-                    console.error('notifyCustomerPaymentSuccess:', notifyErr.message);
-                });
-            });
-
-            return { ok: true, reason: 'paid' };
-        } catch (err) {
-            await conn.rollback();
-            throw err;
-        } finally {
-            conn.release();
+        const order = await loadOrderForPaymentApply(oid);
+        if (!order) {
+            return { ok: false, reason: 'not_found' };
         }
+
+        return markOrderPaidFromLiqpay(order, payload);
     }
 
     const order = await OrderModel.getByIdForPayment(oid);
@@ -188,15 +176,8 @@ const applyLiqpayStatus = async (orderId, payload) => {
         return { ok: false, reason: 'not_found' };
     }
 
-    if (order.payment_status === 'paid' || order.payment_status === 'cod') {
+    if (paymentService.isPaymentPaid(order) || order.payment_status === 'cod') {
         return { ok: true, reason: 'already_paid' };
-    }
-
-    if (order.payment_status === 'unpaid') {
-        const newStatus = String(payload.status || '');
-        if (newStatus) {
-            await OrderModel.updatePaymentStatus(oid, newStatus);
-        }
     }
 
     return { ok: false, reason: 'not_paid' };

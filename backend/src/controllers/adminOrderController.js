@@ -158,12 +158,6 @@ const rejectForAdmin = async (req, res) => {
 
             refundMessage = refundResult.message || '';
 
-            if (refundResult.refund_status === 'refunded') {
-
-                await OrderModel.updatePaymentStatus(id, 'refunded');
-
-            }
-
         }
 
 
@@ -176,10 +170,26 @@ const rejectForAdmin = async (req, res) => {
 
         }
 
+        if (refundResult && refundResult.refund_status !== 'not_needed') {
+            let paymentStatus = order.payment_status;
+            let refundedAt = null;
+            if (refundResult.refund_status === 'refunded') {
+                paymentStatus = 'refunded';
+                refundedAt = new Date();
+            }
+            await OrderModel.updateRefundInfo(id, {
+                refund_status: refundResult.refund_status,
+                payment_status: paymentStatus,
+                refunded_at: refundedAt
+            });
+        }
+
         try {
             await orderWarehouseNotifyService.notifyCustomerOrderRejected(id);
             if (refundResult && refundResult.refund_status === 'refunded') {
                 await orderWarehouseNotifyService.notifyCustomerRefundProcessed(id, refundResult.message || '');
+            } else if (refundResult && refundResult.message) {
+                await orderWarehouseNotifyService.notifyCustomerRefundProcessed(id, refundResult.message);
             }
         } catch (notifyErr) {
             console.error('notifyCustomerOrderRejected:', notifyErr.message);
@@ -264,7 +274,7 @@ const approveCancelForAdmin = async (req, res) => {
         }
 
         try {
-            await orderWarehouseNotifyService.notifyCustomerCancelApproved(id);
+            await orderWarehouseNotifyService.notifyCustomerCancelApproved(id, refundResult.message || '');
             await orderRoleNotifyService.onOrderCancelledForWarehouse(id);
         } catch (notifyErr) {
             console.error('notifyCustomerCancelApproved:', notifyErr.message);
@@ -327,6 +337,51 @@ const rejectCancelForAdmin = async (req, res) => {
     } catch (err) {
 
         console.error('rejectCancelForAdmin:', err.message);
+
+        return res.status(500).json({ message: 'помилка' });
+
+    }
+
+};
+
+
+
+const markRefundCompleteForAdmin = async (req, res) => {
+
+    try {
+
+        const id = Number(req.params.id);
+
+        if (!Number.isFinite(id) || id <= 0) {
+
+            return res.status(400).json({ message: 'Невірне замовлення' });
+
+        }
+
+
+
+        const ok = await OrderModel.markRefundCompleted(id);
+
+        if (!ok) {
+
+            return res.status(400).json({ message: 'Повернення вже виконано або недоступне для цього замовлення' });
+
+        }
+
+        try {
+            await orderWarehouseNotifyService.notifyCustomerRefundProcessed(
+                id,
+                'Кошти повернено на вашу картку. Зазвичай банк зараховує їх протягом 3–10 банківських днів.'
+            );
+        } catch (notifyErr) {
+            console.error('markRefundComplete notify:', notifyErr.message);
+        }
+
+        return res.status(200).json({ message: 'Повернення позначено як виконане' });
+
+    } catch (err) {
+
+        console.error('markRefundCompleteForAdmin:', err.message);
 
         return res.status(500).json({ message: 'помилка' });
 
@@ -419,7 +474,9 @@ module.exports = {
 
     approveCancelForAdmin,
 
-    rejectCancelForAdmin
+    rejectCancelForAdmin,
+
+    markRefundCompleteForAdmin
 
 };
 

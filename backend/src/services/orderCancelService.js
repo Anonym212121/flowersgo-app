@@ -1,5 +1,6 @@
 const HOURS_BEFORE_DELIVERY = 2;
 const HOURS_BEFORE_DELIVERY_PROCESSING = 4;
+const refundStatusLabel = require('../utils/refundStatusLabel');
 
 const CANCELABLE_STATUSES = ['pending', 'confirmed', 'processing', 'ready_for_pickup'];
 const TOO_LATE_STATUSES = ['shipped', 'delivered', 'accepted', 'rejected', 'cancelled'];
@@ -118,6 +119,10 @@ const getCancelBlockMessage = (reason) => {
 const getRefundHintForCustomer = (order) => {
     if (!order) {
         return '';
+    }
+
+    if (refundStatusLabel.isOrderCancelled(order)) {
+        return refundStatusLabel.refundStatusHint(order);
     }
 
     const pay = order.payment_status;

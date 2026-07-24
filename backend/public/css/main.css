@@ -684,6 +684,7 @@ a:hover { color: #bae6fd; }
     white-space: nowrap;
 }
 .warehouse-badge.pay-ok { background: rgba(16, 185, 129, 0.16); color: #86efac; border: 1px solid rgba(16, 185, 129, 0.48); }
+.warehouse-badge.pay-refund { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.48); }
 .warehouse-badge.pay-cod { background: rgba(245, 158, 11, 0.16); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.45); }
 .warehouse-badge.pay-no { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.42); }
 
@@ -4600,6 +4601,117 @@ a.warehouse-order-no:hover {
     color: #cbd5e1;
     background: rgba(11, 18, 32, 0.7);
     font-weight: 600;
+}
+
+.message-page {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+.message-card {
+    padding: 1.6rem 1.35rem;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(23, 36, 58, 0.95), rgba(17, 26, 43, 0.95));
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.message-card--warn {
+    border-color: rgba(251, 191, 36, 0.35);
+}
+
+.message-card--error {
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
+.message-card--success {
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+.message-icon {
+    margin: 0 0 0.35rem;
+    font-size: 2rem;
+    line-height: 1;
+}
+
+.message-code {
+    margin: 0 0 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+}
+
+.message-title {
+    margin: 0 0 0.75rem;
+    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+    color: var(--white);
+}
+
+.message-text {
+    margin: 0 0 0.85rem;
+    color: #dbe6f5;
+    line-height: 1.55;
+    font-size: 1rem;
+}
+
+.message-hint {
+    margin: 0 0 1.1rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    background: rgba(56, 189, 248, 0.08);
+    color: #cbd5e1;
+    font-size: 0.92rem;
+    line-height: 1.45;
+    text-align: left;
+}
+
+.message-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    justify-content: center;
+}
+
+.message-btn-primary {
+    min-width: 210px;
+}
+
+.message-btn-secondary {
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(11, 18, 32, 0.7);
+    color: #cbd5e1;
+}
+
+.message-btn-secondary:hover {
+    border-color: rgba(148, 163, 184, 0.55);
+    color: #f8fafc;
+}
+
+html.theme-light .message-card {
+    background: linear-gradient(180deg, #ffffff, #f8fafc);
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+html.theme-light .message-title {
+    color: #0f172a;
+}
+
+html.theme-light .message-text {
+    color: #334155;
+}
+
+html.theme-light .message-hint {
+    background: rgba(56, 189, 248, 0.08);
+    border-color: rgba(56, 189, 248, 0.25);
+    color: #475569;
+}
+
+html.theme-light .message-btn-secondary {
+    background: #f8fafc;
+    color: #334155;
 }
 
 .checkout-page-title {

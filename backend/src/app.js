@@ -57,16 +57,18 @@ const getErrorViewModel = (statusCode) => {
     };
 };
 
+const buildPageLayoutLocals = require('./utils/pageLayoutLocals');
+
 const renderErrorPage = (req, res, statusCode) => {
     const viewModel = getErrorViewModel(statusCode);
     return res.status(statusCode).render('layout', {
-        title: viewModel.title,
-        bodyPartial: 'pages/error',
-        headerType: 'guest',
-        currentUser: null,
-        statusCode,
-        errorTitle: viewModel.errorTitle,
-        errorMessage: viewModel.errorMessage
+        ...buildPageLayoutLocals(res, {
+            title: viewModel.title,
+            bodyPartial: 'pages/error',
+            statusCode,
+            errorTitle: viewModel.errorTitle,
+            errorMessage: viewModel.errorMessage
+        })
     });
 };
 

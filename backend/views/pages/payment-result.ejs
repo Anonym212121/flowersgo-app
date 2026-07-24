@@ -1,22 +1,25 @@
 <%
-const isPaid = order && order.payment_status === 'paid';
-const showPayAgain = !isPaid && canPayAgain && payToken;
+const paid = typeof isPaid !== 'undefined' ? !!isPaid : order && order.payment_status === 'paid';
+const showPayAgain = !paid && canPayAgain && payToken;
+const redirectUrl = typeof successRedirectUrl === 'string' && successRedirectUrl.trim() !== ''
+    ? successRedirectUrl.trim()
+    : '/cabinet?ok=payment_paid';
 %>
 
 <section class="catalog-content checkout-page">
     <h1 class="checkout-page-title">
-        <% if (isPaid) { %>
+        <% if (paid) { %>
             Оплату отримано
         <% } else { %>
             Оплата не завершена
         <% } %>
     </h1>
 
-    <div class="checkout-step-card" id="paymentResultCard" data-order-id="<%= order.id %>" data-paid="<%= isPaid ? '1' : '0' %>"<% if (!isPaid && payToken) { %> data-pay-token="<%= encodeURIComponent(payToken) %>"<% } %>>
+    <div class="checkout-step-card" id="paymentResultCard" data-order-id="<%= order.id %>" data-paid="<%= paid ? '1' : '0' %>" data-success-url="<%= redirectUrl %>"<% if (!paid && payToken) { %> data-pay-token="<%= payToken %>"<% } %>>
         <p>Замовлення #<%= order.id %></p>
         <p>Статус оплати: <strong id="paymentResultStatus"><%= typeof paymentStatusText !== 'undefined' ? paymentStatusText : order.payment_status %></strong></p>
 
-        <% if (isPaid) { %>
+        <% if (paid) { %>
             <p>Дякуємо! Оплату зафіксовано. Замовлення очікує підтвердження адміністратора.</p>
         <% } else { %>
             <p id="paymentResultHint">Перевіряємо статус у LiqPay… Якщо ви щойно оплатили, зачекайте кілька секунд.</p>
@@ -28,12 +31,12 @@ const showPayAgain = !isPaid && canPayAgain && payToken;
         <% } %>
 
         <p class="error-link-row">
-            <a href="<%= isPaid ? '/cabinet?ok=payment_paid' : '/cabinet' %>" class="auth-button" data-soft-nav="false">До кабінету</a>
+            <a href="<%= paid ? redirectUrl : '/cabinet' %>" class="auth-button" data-soft-nav="false">До кабінету</a>
         </p>
     </div>
 </section>
 
-<% if (!isPaid && payToken) { %>
+<% if (!paid && payToken) { %>
 <script>
 (function () {
     var card = document.getElementById('paymentResultCard');
@@ -43,40 +46,54 @@ const showPayAgain = !isPaid && canPayAgain && payToken;
 
     var orderId = card.getAttribute('data-order-id');
     var token = card.getAttribute('data-pay-token') || '';
+    var successUrl = card.getAttribute('data-success-url') || '/cabinet?ok=payment_paid';
     if (!token) {
         return;
     }
 
     var busy = false;
     var tries = 0;
-    var maxTries = 24;
+    var maxTries = 20;
+    var stopped = false;
 
     function syncPayment() {
-        if (busy || tries >= maxTries) {
+        if (stopped || busy || tries >= maxTries) {
             return;
         }
         busy = true;
         tries += 1;
 
-        var url = '/payment/sync/' + encodeURIComponent(orderId) + '?t=' + token;
+        var url = '/payment/sync/' + encodeURIComponent(orderId) + '?t=' + encodeURIComponent(token);
+        var timeoutId = window.setTimeout(function () {
+            busy = false;
+            if (!stopped && tries < maxTries) {
+                window.setTimeout(syncPayment, 1500);
+            }
+        }, 9000);
+
         fetch(url, {
             credentials: 'same-origin',
             headers: { Accept: 'application/json' }
         })
             .then(function (res) {
+                if (!res.ok) {
+                    return null;
+                }
                 return res.json();
             })
             .then(function (data) {
                 if (data && data.paid) {
-                    window.location.replace('/cabinet?ok=payment_paid');
+                    stopped = true;
+                    window.location.replace(successUrl);
                 }
             })
             .catch(function () {})
             .finally(function () {
+                window.clearTimeout(timeoutId);
                 busy = false;
-                if (tries < maxTries) {
-                    window.setTimeout(syncPayment, 2500);
-                } else {
+                if (!stopped && tries < maxTries) {
+                    window.setTimeout(syncPayment, 1500);
+                } else if (!stopped && tries >= maxTries) {
                     var hint = document.getElementById('paymentResultHint');
                     if (hint) {
                         hint.textContent = 'Оплата ще не підтверджена. Спробуйте оновити сторінку або натисніть «Спробувати оплатити знову».';
@@ -85,7 +102,7 @@ const showPayAgain = !isPaid && canPayAgain && payToken;
             });
     }
 
-    window.setTimeout(syncPayment, 800);
+    window.setTimeout(syncPayment, 500);
 })();
 </script>
 <% } %>

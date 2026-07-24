@@ -1,6 +1,7 @@
 const liqpayService = require('./liqpayService');
 
-const REFUND_OK = ['reversed', 'success', 'sandbox', 'wait_accept'];
+const REFUND_DONE = ['reversed', 'success', 'sandbox'];
+const REFUND_PROCESSING = ['wait_accept'];
 
 const tryRefundPaidOrder = async (order) => {
     if (!order || order.payment_status !== 'paid') {
@@ -26,20 +27,28 @@ const tryRefundPaidOrder = async (order) => {
     }
 
     try {
-        const result = await liqpayService.refundPayment(ref, amount);
-        if (result && REFUND_OK.includes(result.status)) {
+        const result = await liqpayService.refundPayment(ref, amount, { timeoutMs: 5000 });
+        if (result && REFUND_DONE.includes(result.status)) {
             return { refund_status: 'refunded', message: 'Кошти повернено на картку через LiqPay' };
+        }
+        if (result && REFUND_PROCESSING.includes(result.status)) {
+            return {
+                refund_status: 'processing',
+                message: 'Повернення ініційовано — кошти надійдуть на картку протягом 3–10 банківських днів'
+            };
         }
 
         const errText = result && result.err_description ? String(result.err_description) : '';
         return {
-            refund_status: 'manual',
-            message: errText || 'LiqPay не підтвердив повернення — адмін оформить вручну'
+            refund_status: 'pending',
+            message:
+                errText ||
+                'Замовлення скасовано. Повернення коштів обробляється — очікуйте 3–10 банківських днів'
         };
     } catch (err) {
         return {
-            refund_status: 'manual',
-            message: 'Помилка LiqPay — повернення вручну'
+            refund_status: 'pending',
+            message: 'Замовлення скасовано. Повернення коштів обробляється — очікуйте 3–10 банківських днів'
         };
     }
 };

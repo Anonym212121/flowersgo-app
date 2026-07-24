@@ -124,7 +124,13 @@
 
     const refundStatusLabel = (status) => {
         if (status === 'refunded') {
-            return 'Повернено через LiqPay';
+            return 'Кошти повернуто через LiqPay';
+        }
+        if (status === 'processing') {
+            return 'Повернення обробляється (LiqPay)';
+        }
+        if (status === 'pending') {
+            return 'Очікує повернення коштів';
         }
         if (status === 'manual') {
             return 'Потрібне ручне повернення';
@@ -1011,6 +1017,15 @@
                       o.refunded_at ? ' (' + api.escapeHtml(formatAdminDateTime(o.refunded_at)) + ')' : ''
                   }</p>`
                 : '';
+        const canMarkRefund =
+            o.refund_status === 'pending' ||
+            o.refund_status === 'processing' ||
+            o.refund_status === 'manual';
+        const refundActionBlock = canMarkRefund
+            ? `<div class="admin-order-moderation-actions">
+                <button type="button" class="admin-primary-btn" id="admin-detail-refund-complete">Повернення виконано</button>
+               </div>`
+            : '';
         const paymentDeadline =
             o.payment_status === 'unpaid' && o.payment_deadline_at
                 ? `<p><strong>Дедлайн оплати:</strong> ${api.escapeHtml(formatAdminDateTime(o.payment_deadline_at))}</p>`
@@ -1043,6 +1058,7 @@
                     ${paymentDeadline}
                     ${liqpayRef}
                     ${refundBlock}
+                    ${refundActionBlock}
                     <p><strong>Сума:</strong> ${Number(o.total_price || 0).toLocaleString('uk-UA')} грн</p>
                 </section>
                 <section class="admin-order-card">
@@ -1142,6 +1158,22 @@
                 try {
                     const data = await api.apiFetch(`/api/admin/orders/${orderId}/cancel/reject`, { method: 'POST' });
                     api.showMessage(data.message || 'Запит відхилено');
+                    await renderOrderDetail(api, orderId);
+                } catch (err) {
+                    api.showMessage(err.message, true);
+                }
+            });
+        }
+
+        const refundCompleteBtn = document.getElementById('admin-detail-refund-complete');
+        if (refundCompleteBtn) {
+            refundCompleteBtn.addEventListener('click', async () => {
+                if (!window.confirm('Позначити повернення коштів як виконане? Клієнт отримає сповіщення.')) {
+                    return;
+                }
+                try {
+                    const data = await api.apiFetch(`/api/admin/orders/${orderId}/refund/complete`, { method: 'POST' });
+                    api.showMessage(data.message || 'Готово');
                     await renderOrderDetail(api, orderId);
                 } catch (err) {
                     api.showMessage(err.message, true);

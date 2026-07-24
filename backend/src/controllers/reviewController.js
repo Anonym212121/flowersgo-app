@@ -1,16 +1,29 @@
 const ProductModel = require('../models/Product');
 const ReviewModel = require('../models/Review');
+const {
+    respondWithMessage,
+    respondServerError,
+    defaultCatalogActions
+} = require('../utils/pageMessage');
 
 const createPageReview = async (req, res) => {
     try {
         const productId = Number(req.params.id);
         if (!Number.isFinite(productId) || productId <= 0) {
-            return res.status(400).send('Невірний товар');
+            return respondWithMessage(req, res, 400, 'Невірний товар', {
+                title: 'Відгук',
+                messageTitle: 'Помилка',
+                actions: defaultCatalogActions()
+            });
         }
 
         const product = await ProductModel.findById(productId);
         if (!product || Number(product.is_active) === 0) {
-            return res.status(404).send('Товар не знайдено');
+            return respondWithMessage(req, res, 404, 'Товар не знайдено', {
+                title: 'Відгук',
+                messageTitle: 'Товар не знайдено',
+                actions: defaultCatalogActions()
+            });
         }
 
         const user = res.locals.currentUser;
@@ -34,7 +47,8 @@ const createPageReview = async (req, res) => {
 
         return res.redirect(`/product/${productId}`);
     } catch (err) {
-        return res.status(500).send('помилка');
+        console.error('createPageReview:', err.message);
+        return respondServerError(req, res, { title: 'Відгук' });
     }
 };
 

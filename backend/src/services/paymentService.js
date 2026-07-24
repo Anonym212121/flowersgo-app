@@ -1,5 +1,23 @@
 const PAYMENT_WINDOW_MINUTES = 10;
 
+const LIQPAY_PAID_STATUSES = ['sandbox', 'success', 'wait_accept'];
+
+const isLegacyLiqpayPaidStatus = (status) => {
+    const s = String(status || '').trim();
+    return LIQPAY_PAID_STATUSES.includes(s);
+};
+
+const isPaymentPaid = (order) => {
+    if (!order) {
+        return false;
+    }
+    const s = String(order.payment_status || '').trim();
+    if (s === 'paid') {
+        return true;
+    }
+    return isLegacyLiqpayPaidStatus(s);
+};
+
 const getPaymentDeadlineMs = (createdAt) => {
     const created = new Date(createdAt).getTime();
     if (!Number.isFinite(created)) {
@@ -81,7 +99,7 @@ const getPaymentBlockReason = (order) => {
     if (!order) {
         return 'unknown';
     }
-    if (order.payment_status === 'paid' || order.payment_status === 'cod' || order.payment_status === 'refunded') {
+    if (isPaymentPaid(order) || order.payment_status === 'cod' || order.payment_status === 'refunded') {
         return 'none';
     }
     if (order.cancel_request_at) {
@@ -98,6 +116,9 @@ const getPaymentBlockReason = (order) => {
 
 module.exports = {
     PAYMENT_WINDOW_MINUTES,
+    LIQPAY_PAID_STATUSES,
+    isLegacyLiqpayPaidStatus,
+    isPaymentPaid,
     getPaymentDeadlineMs,
     getPaymentDeadlineMsForOrder,
     getPaymentDeadlineIsoForOrder,

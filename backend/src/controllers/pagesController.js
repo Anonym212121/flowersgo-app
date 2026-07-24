@@ -11,6 +11,7 @@ const bouquetPreviewService = require('../services/bouquetPreviewService');
 const deliveryService = require('../services/deliveryService');
 const paymentService = require('../services/paymentService');
 const orderCancelService = require('../services/orderCancelService');
+const refundStatusLabel = require('../utils/refundStatusLabel');
 const formatDelivery = require('../utils/formatDelivery');
 const orderDeliveryFields = require('../utils/orderDeliveryFields');
 const { mapOrderForWarehouse, buildWarehouseStats, filterWarehouseOrdersByTab, LOW_STOCK_LIMIT } = require('../utils/warehouseOrderView');
@@ -24,6 +25,18 @@ const sanitizeLegalHtml = require('../utils/sanitizeLegalHtml');
 const homeCatalogService = require('../services/homeCatalogService');
 const recentDeliveryService = require('../services/recentDeliveryService');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const {
+    respondWithMessage,
+    renderPageMessage,
+    respondServerError,
+    defaultCatalogActions,
+    defaultCheckoutActions,
+    defaultHomeActions,
+    defaultOrderActions,
+    defaultWarehouseActions
+} = require('../utils/pageMessage');
+
+const pageServerError = (req, res, pageTitle) => respondServerError(req, res, { title: pageTitle });
 
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
@@ -76,7 +89,7 @@ const home = async (req, res) => {
         });
     } catch (err) {
         console.error('homePage:', err && err.message ? err.message : err);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Каталог');
     }
 };
 
@@ -109,7 +122,13 @@ const registerPage = (req, res) => {
 const renderLegalPublicPage = async (res, slug) => {
     const page = await LegalPageModel.getBySlug(slug);
     if (!page) {
-        return res.status(404).send('Сторінку не знайдено');
+        return renderPageMessage(null, res, {
+            statusCode: 404,
+            message: 'Сторінку не знайдено',
+            title: 'Сторінка',
+            messageTitle: 'Сторінку не знайдено',
+            actions: defaultHomeActions()
+        });
     }
 
     let delivery = deliveryService.buildConfig(null);
@@ -135,7 +154,7 @@ const privacyPage = async (req, res) => {
         return await renderLegalPublicPage(res, 'privacy');
     } catch (err) {
         console.error('privacyPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Політика конфіденційності');
     }
 };
 
@@ -144,7 +163,7 @@ const deliveryTermsPage = async (req, res) => {
         return await renderLegalPublicPage(res, 'delivery-terms');
     } catch (err) {
         console.error('deliveryTermsPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Умови доставки');
     }
 };
 
@@ -167,14 +186,15 @@ const cabinetPage = async (req, res) => {
         const myReviews = await ReviewModel.listByUserId(current.user_id);
         let rawOrders = await OrderModel.listByUserId(current.user_id);
         for (const row of rawOrders) {
-            if (row.payment_status === 'unpaid') {
-                await paymentSyncService.syncOrderPaymentFromLiqpay(row.id);
+            if (row.payment_status === 'unpaid' && row.liqpay_last_ref) {
+                await paymentSyncService.syncOrderPaymentFromLiqpay(row.id, { quick: true });
             }
         }
         rawOrders = await OrderModel.listByUserId(current.user_id);
         const orders = rawOrders.map((row) => {
             const secondsLeft = paymentService.getSecondsLeftForOrder(row);
             const blockReason = orderCancelService.getCancelBlockReason(row);
+            const paymentBadge = refundStatusLabel.paymentBadgeForCabinet(row);
             return {
                 ...row,
                 can_pay_online: paymentService.canPayOnline(row),
@@ -187,6 +207,10 @@ const cabinetPage = async (req, res) => {
                 cancel_block_message: orderCancelService.getCancelBlockMessage(blockReason),
                 cancel_refund_hint: orderCancelService.getRefundHintForCustomer(row),
                 has_cancel_request: !!row.cancel_request_at,
+                order_summary_badge: refundStatusLabel.orderSummaryBadge(row),
+                refund_hint: refundStatusLabel.refundStatusHint(row),
+                payment_badge_cls: paymentBadge.cls,
+                payment_badge_text: paymentBadge.text,
                 delivery_info: orderDeliveryFields.formatOrderDeliveryDisplay(row),
                 ...formatDelivery.withDeliveryDisplay(row)
             };
@@ -257,7 +281,7 @@ const cabinetPage = async (req, res) => {
         });
     } catch (err) {
         console.error('cabinetPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Особистий кабінет');
     }
 };
 
@@ -275,7 +299,8 @@ const cartPage = async (req, res) => {
             constructorPreview
         });
     } catch (err) {
-        return res.status(500).send('помилка');
+        console.error('cartPage:', err.message);
+        return pageServerError(req, res, 'Кошик');
     }
 };
 
@@ -317,16 +342,29 @@ const checkoutPage = async (req, res) => {
             id = Number(rawId);
         }
         if (!Number.isFinite(id) || id <= 0) {
-            return res.status(400).send('помилка');
+            return respondWithMessage(req, res, 400, 'Невірний товар для оформлення', {
+                title: 'Оформлення замовлення',
+                messageTitle: 'Помилка',
+                actions: defaultCheckoutActions()
+            });
         }
 
         const product = await ProductModel.findById(id);
         if (!product || Number(product.is_active) === 0) {
-            return res.status(404).send('Товар не знайдено');
+            return respondWithMessage(req, res, 404, 'Товар не знайдено', {
+                title: 'Оформлення замовлення',
+                messageTitle: 'Товар не знайдено',
+                actions: defaultCatalogActions()
+            });
         }
 
         if (Number(product.stock_quantity) <= 0) {
-            return res.status(400).send('Товар недоступний для замовлення');
+            return respondWithMessage(req, res, 400, 'Товар недоступний для замовлення', {
+                title: 'Оформлення замовлення',
+                messageTitle: 'Товар недоступний',
+                hint: 'Оберіть інший букет у каталозі.',
+                actions: defaultCatalogActions()
+            });
         }
 
         const rawUpsell = process.env.CHECKOUT_UPSELL_PRODUCT_IDS || '';
@@ -346,7 +384,7 @@ const checkoutPage = async (req, res) => {
         });
     } catch (err) {
         console.error('checkoutPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Оформлення замовлення');
     }
 };
 
@@ -354,12 +392,22 @@ const orderSuccessPage = async (req, res) => {
     try {
         const orderId = Number(req.params.orderId);
         if (!orderId || orderId <= 0) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Замовлення',
+                messageTitle: 'Замовлення не знайдено',
+                hint: 'Перевірте номер замовлення або увійдіть у свій обліковий запис.',
+                actions: defaultOrderActions()
+            });
         }
 
         const order = await OrderModel.getSummaryById(orderId);
         if (!order) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Замовлення',
+                messageTitle: 'Замовлення не знайдено',
+                hint: 'Перевірте номер замовлення або увійдіть у свій обліковий запис.',
+                actions: defaultOrderActions()
+            });
         }
 
         let canSee = false;
@@ -387,16 +435,36 @@ const orderSuccessPage = async (req, res) => {
             canCancel = orderCancelService.canCustomerRequestCancel(cancelRow);
         }
 
+        let paymentPaid = paymentService.isPaymentPaid(order);
+        const okFlag = typeof req.query.ok === 'string' ? req.query.ok.trim() : '';
+
+        if (!paymentPaid && okFlag === 'payment_paid') {
+            paymentPaid = true;
+            if (order.payment_status === 'unpaid') {
+                order.payment_status = 'paid';
+            }
+        } else if (!paymentPaid) {
+            const payRow = await OrderModel.getByIdForPayment(orderId);
+            if (payRow && payRow.liqpay_last_ref) {
+                const synced = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId, { quick: true });
+                if (synced && paymentService.isPaymentPaid(synced)) {
+                    order.payment_status = 'paid';
+                    paymentPaid = true;
+                }
+            }
+        }
+
         return renderLayout(res, 'Замовлення прийнято', 'pages/order-success', {
             order: order,
             payToken: payToken,
-            okFlag: req.query.ok || '',
+            okFlag: okFlag,
             isGuestOrder: order.user_id == null,
-            canCancel: canCancel
+            canCancel: canCancel,
+            paymentPaid: paymentPaid
         });
     } catch (err) {
         console.error('orderSuccessPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Замовлення');
     }
 };
 
@@ -404,12 +472,20 @@ const productPage = async (req, res) => {
     try {
         const id = Number(req.params.id);
         if (!Number.isFinite(id) || id <= 0) {
-            return res.status(404).send('Товар не знайдено');
+            return respondWithMessage(req, res, 404, 'Товар не знайдено', {
+                title: 'Каталог',
+                messageTitle: 'Товар не знайдено',
+                actions: defaultCatalogActions()
+            });
         }
 
         const product = await ProductModel.findById(id);
         if (!product || Number(product.is_active) === 0) {
-            return res.status(404).send('Товар не знайдено');
+            return respondWithMessage(req, res, 404, 'Товар не знайдено', {
+                title: 'Каталог',
+                messageTitle: 'Товар не знайдено',
+                actions: defaultCatalogActions()
+            });
         }
 
         if (Number(product.is_constructor) === 1) {
@@ -426,7 +502,8 @@ const productPage = async (req, res) => {
             reviews
         });
     } catch (err) {
-        return res.status(500).send('помилка');
+        console.error('productPage:', err.message);
+        return pageServerError(req, res, 'Товар');
     }
 };
 
@@ -518,7 +595,7 @@ const warehouseOrdersPage = async (req, res) => {
         });
     } catch (err) {
         console.error('warehouseOrdersPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Склад');
     }
 };
 
@@ -563,12 +640,20 @@ const warehouseOrderDetailPage = async (req, res) => {
     try {
         const orderId = Number(req.params.id);
         if (!Number.isFinite(orderId) || orderId <= 0) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Склад',
+                messageTitle: 'Замовлення не знайдено',
+                actions: defaultWarehouseActions()
+            });
         }
 
         const data = await OrderModel.getDetailForWarehouse(orderId);
         if (!data) {
-            return res.status(404).send('Замовлення не знайдено');
+            return respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+                title: 'Склад',
+                messageTitle: 'Замовлення не знайдено',
+                actions: defaultWarehouseActions()
+            });
         }
 
         const order = mapOrderForWarehouse(data.order);
@@ -616,7 +701,7 @@ const warehouseOrderDetailPage = async (req, res) => {
         });
     } catch (err) {
         console.error('warehouseOrderDetailPage:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Склад');
     }
 };
 
@@ -628,7 +713,7 @@ const adminProductsList = async (req, res) => {
         });
     } catch (err) {
         console.error('adminProductsList:', err.message);
-        return res.status(500).send('помилка');
+        return pageServerError(req, res, 'Адмін');
     }
 };
 

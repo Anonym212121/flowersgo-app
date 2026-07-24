@@ -1037,6 +1037,12 @@ html.theme-light .warehouse-badge.pay-cod {
     border-color: rgba(245, 158, 11, 0.35);
 }
 
+html.theme-light .warehouse-badge.pay-refund {
+    background: #fff7ed;
+    color: #c2410c;
+    border-color: rgba(249, 115, 22, 0.35);
+}
+
 html.theme-light .warehouse-badge.pay-no {
     background: #fef2f2;
     color: #b91c1c;

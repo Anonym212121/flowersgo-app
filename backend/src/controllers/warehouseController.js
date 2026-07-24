@@ -1,6 +1,7 @@
 const ProductModel = require('../models/Product');
 const StockAdjustmentModel = require('../models/StockAdjustment');
 const { LOW_STOCK_LIMIT } = require('../utils/warehouseOrderView');
+const { respondServerError, defaultWarehouseActions } = require('../utils/pageMessage');
 
 const getUserId = (res) => {
     const raw = res.locals.currentUser && res.locals.currentUser.user_id;
@@ -67,7 +68,7 @@ const warehouseStockPage = async (req, res) => {
         });
     } catch (err) {
         console.error('warehouseStockPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Склад', actions: defaultWarehouseActions() });
     }
 };
 

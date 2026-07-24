@@ -2,6 +2,12 @@ const WishlistModel = require('../models/Wishlist');
 const ProductModel = require('../models/Product');
 const navCountsService = require('../services/navCountsService');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const {
+    respondWithMessage,
+    respondServerError,
+    defaultWishlistActions,
+    defaultCatalogActions
+} = require('../utils/pageMessage');
 
 const renderLayout = (res, title, bodyPartial, extraLocals = {}) => {
     return res.status(200).render('layout', {
@@ -58,7 +64,7 @@ const wishlistPage = async (req, res) => {
         return renderLayout(res, 'Обране', 'pages/wishlist', { products });
     } catch (err) {
         console.error('wishlistPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Обране', actions: defaultWishlistActions() });
     }
 };
 
@@ -69,7 +75,11 @@ const addProduct = async (req, res) => {
             if (wantsJson(req)) {
                 return res.status(400).json({ message: 'Невірний товар' });
             }
-            return res.status(400).send('Невірний товар');
+            return respondWithMessage(req, res, 400, 'Невірний товар', {
+                title: 'Обране',
+                messageTitle: 'Помилка',
+                actions: defaultWishlistActions()
+            });
         }
 
         const userId = getUserId(res);
@@ -97,7 +107,7 @@ const addProduct = async (req, res) => {
         if (wantsJson(req)) {
             return res.status(500).json({ message: 'помилка' });
         }
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Обране', actions: defaultWishlistActions() });
     }
 };
 
@@ -108,7 +118,11 @@ const removeProduct = async (req, res) => {
             if (wantsJson(req)) {
                 return res.status(400).json({ message: 'Невірний товар' });
             }
-            return res.status(400).send('Невірний товар');
+            return respondWithMessage(req, res, 400, 'Невірний товар', {
+                title: 'Обране',
+                messageTitle: 'Помилка',
+                actions: defaultWishlistActions()
+            });
         }
 
         const userId = getUserId(res);
@@ -133,7 +147,7 @@ const removeProduct = async (req, res) => {
         if (wantsJson(req)) {
             return res.status(500).json({ message: 'помилка' });
         }
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Обране', actions: defaultWishlistActions() });
     }
 };
 

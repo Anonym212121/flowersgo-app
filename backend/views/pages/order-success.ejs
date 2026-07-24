@@ -3,6 +3,9 @@ const o = order || null;
 const orderId = o ? o.id : 0;
 const total = o ? Number(o.total_amount || 0) : 0;
 const payStatus = o ? String(o.payment_status || '') : '';
+const paidOnline = typeof paymentPaid !== 'undefined'
+    ? !!paymentPaid
+    : payStatus === 'paid' || payStatus === 'sandbox' || payStatus === 'success' || payStatus === 'wait_accept';
 %>
 
 <section class="catalog-content order-success-page">
@@ -23,7 +26,7 @@ const payStatus = o ? String(o.payment_status || '') : '';
             <p><strong>Номер:</strong> № <%= orderId %></p>
             <p><strong>Сума:</strong> <%= total.toLocaleString('uk-UA') %> грн</p>
             <p><strong>Оплата:</strong>
-                <% if (payStatus === 'paid') { %>
+                <% if (paidOnline) { %>
                     <span class="order-success-status order-success-status--paid">Оплачено</span>
                 <% } else if (payStatus === 'cod') { %>
                     <span class="order-success-status order-success-status--cod">При отриманні</span>
@@ -56,7 +59,7 @@ const payStatus = o ? String(o.payment_status || '') : '';
         <% } %>
 
         <div class="order-success-actions">
-            <% if (payStatus === 'unpaid' && payToken) { %>
+            <% if (!paidOnline && payStatus === 'unpaid' && payToken) { %>
                 <a class="auth-button order-success-btn" href="/payment/<%= orderId %>?t=<%= encodeURIComponent(payToken) %>" data-soft-nav="false">Оплатити</a>
             <% } %>
             <a class="order-success-btn order-success-btn--ghost" href="/">На головну</a>

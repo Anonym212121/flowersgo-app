@@ -237,6 +237,7 @@ const listByUserId = async (userId) => {
                 o.admin_approved,
                 o.payment_status,
                 o.refund_status,
+                o.refunded_at,
                 o.cancel_request_at,
                 o.cancel_request_note,
                 o.createdAt,
@@ -1531,6 +1532,7 @@ const finishCancelAfterApprove = async (orderId, refundStatus) => {
     }
 
     const conn = await db.getConnection();
+    let fromStatusId = null;
     try {
         await conn.beginTransaction();
 
@@ -1549,7 +1551,7 @@ const finishCancelAfterApprove = async (orderId, refundStatus) => {
             return false;
         }
 
-        const fromStatusId = Number(order.status_id);
+        fromStatusId = Number(order.status_id);
 
         if (Number(order.admin_approved) === 1) {
             await restoreStockForOrder(conn, oid);
@@ -1568,7 +1570,7 @@ const finishCancelAfterApprove = async (orderId, refundStatus) => {
             adminApproved = -1;
         }
 
-        await conn.execute(
+        const [updateResult] = await conn.execute(
             `UPDATE orders
              SET status_id = ?,
                  payment_status = ?,
@@ -1576,11 +1578,27 @@ const finishCancelAfterApprove = async (orderId, refundStatus) => {
                  refunded_at = ?,
                  admin_approved = ?,
                  courier_id = NULL,
-                 assigned_at = NULL
-             WHERE id = ?`,
+                 assigned_at = NULL,
+                 cancel_request_at = NULL,
+                 cancel_request_note = NULL
+             WHERE id = ? AND cancel_request_at IS NOT NULL`,
             [cancelledId, paymentStatus, status, refundedAt, adminApproved, oid]
         );
 
+        if (!updateResult || updateResult.affectedRows <= 0) {
+            await conn.rollback();
+            return false;
+        }
+
+        await conn.commit();
+    } catch (err) {
+        await conn.rollback();
+        throw err;
+    } finally {
+        conn.release();
+    }
+
+    if (fromStatusId && fromStatusId !== cancelledId) {
         try {
             await OrderStatusLog.insert({
                 order_id: oid,
@@ -1591,15 +1609,68 @@ const finishCancelAfterApprove = async (orderId, refundStatus) => {
         } catch (logErr) {
             console.error('finishCancelAfterApprove log:', logErr.message);
         }
-
-        await conn.commit();
-        return true;
-    } catch (err) {
-        await conn.rollback();
-        throw err;
-    } finally {
-        conn.release();
     }
+
+    return true;
+};
+
+const updateRefundInfo = async (orderId, { refund_status, payment_status, refunded_at }) => {
+    const oid = Number(orderId);
+    if (!Number.isFinite(oid) || oid <= 0) {
+        return false;
+    }
+
+    const refundStatus = typeof refund_status === 'string' ? refund_status.trim() : null;
+    const paymentStatus = typeof payment_status === 'string' ? payment_status.trim() : null;
+
+    const [result] = await db.execute(
+        `UPDATE orders
+         SET refund_status = COALESCE(?, refund_status),
+             payment_status = COALESCE(?, payment_status),
+             refunded_at = ?
+         WHERE id = ?`,
+        [refundStatus, paymentStatus, refunded_at || null, oid]
+    );
+
+    return result && result.affectedRows > 0;
+};
+
+const markRefundCompleted = async (orderId) => {
+    const oid = Number(orderId);
+    if (!Number.isFinite(oid) || oid <= 0) {
+        return false;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT id, payment_status, refund_status
+         FROM orders
+         WHERE id = ?
+         LIMIT 1`,
+        [oid]
+    );
+    const order = rows && rows[0];
+    if (!order) {
+        return false;
+    }
+
+    const refund = String(order.refund_status || '').trim();
+    if (refund === 'refunded' || order.payment_status === 'refunded') {
+        return false;
+    }
+    if (refund !== 'pending' && refund !== 'processing' && refund !== 'manual') {
+        return false;
+    }
+
+    const [result] = await db.execute(
+        `UPDATE orders
+         SET refund_status = 'refunded',
+             payment_status = 'refunded',
+             refunded_at = NOW()
+         WHERE id = ?`,
+        [oid]
+    );
+
+    return result && result.affectedRows > 0;
 };
 
 const archiveByUserId = async (orderId, userId) => {
@@ -1815,6 +1886,8 @@ const getRowForCustomerNotify = async (orderId) => {
                 o.receiver_name,
                 o.receiver_phone,
                 o.payment_status,
+                o.refund_status,
+                o.refunded_at,
                 o.total_amount,
                 o.delivery_date,
                 o.delivery_timeslot,
@@ -2015,6 +2088,8 @@ module.exports = {
     getByIdForCancelAdmin,
     rejectCancelRequest,
     finishCancelAfterApprove,
+    updateRefundInfo,
+    markRefundCompleted,
     completePickupByWarehouse,
     cancelExpiredUnpaidOrders,
     findLastDeliveredHighlight

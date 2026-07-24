@@ -4,8 +4,15 @@ const paymentService = require('../services/paymentService');
 const { paymentStatusLabel } = require('../utils/paymentStatusLabel');
 const paymentApplyService = require('../services/paymentApplyService');
 const paymentSyncService = require('../services/paymentSyncService');
+const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const { getPageUserId } = require('../utils/pageUser');
 const paymentToken = require('../utils/paymentToken');
+const {
+    respondWithMessage,
+    respondServerError,
+    defaultOrderActions,
+    defaultHomeActions
+} = require('../utils/pageMessage');
 
 const getRequestBaseUrl = (req) => {
     const host = req.get('host');
@@ -17,11 +24,16 @@ const getRequestBaseUrl = (req) => {
 };
 
 const getPublicBaseUrl = (req) => {
+    const requestBase = getRequestBaseUrl(req);
+    if (/localhost|127\.0\.0\.1/i.test(requestBase)) {
+        return requestBase;
+    }
+
     const fromEnv = process.env.APP_BASE_URL;
     if (fromEnv && fromEnv.trim() !== '') {
         return fromEnv.trim().replace(/\/+$/, '');
     }
-    return getRequestBaseUrl(req);
+    return requestBase;
 };
 
 const renderLayout = (res, title, bodyPartial, extraLocals) => {
@@ -54,12 +66,51 @@ const tryLiqpayReturnPayload = (req) => {
         return value;
     };
 
-    data = normalize(data);
-    signature = normalize(signature);
-    if (!liqpayService.verifySignature(data, signature)) {
-        return null;
+    const rawData = String(data).trim();
+    const rawSignature = String(signature).trim();
+    const candidates = [normalize(rawData), rawData.replace(/ /g, '+'), rawData];
+
+    for (let i = 0; i < candidates.length; i += 1) {
+        const dataCandidate = candidates[i];
+        const signatureCandidate = normalize(rawSignature);
+        if (liqpayService.verifySignature(dataCandidate, signatureCandidate)) {
+            return liqpayService.parseData(dataCandidate);
+        }
     }
-    return liqpayService.parseData(data);
+
+    return null;
+};
+
+const notifyCustomerCardPayment = async (orderId) => {
+    try {
+        await orderWarehouseNotifyService.notifyCustomerPaymentSuccess(orderId);
+    } catch (notifyErr) {
+        console.error('notifyCustomerCardPayment:', notifyErr.message);
+    }
+};
+
+const applyReturnPayload = async (orderId, liqpayPayload) => {
+    if (!liqpayPayload) {
+        return false;
+    }
+
+    const parsedId = liqpayService.parseOrderIdFromLiqpay(liqpayPayload.order_id);
+    if (parsedId !== orderId) {
+        return false;
+    }
+
+    const applyResult = await paymentApplyService.applyLiqpayStatus(orderId, liqpayPayload);
+    if (applyResult && applyResult.ok) {
+        return true;
+    }
+
+    if (paymentApplyService.isIncomingPaid(liqpayPayload)) {
+        await OrderModel.updatePaymentStatus(orderId, 'paid');
+        await notifyCustomerCardPayment(orderId);
+        return true;
+    }
+
+    return false;
 };
 
 const redirectAfterPaid = (res, order) => {
@@ -100,16 +151,23 @@ const resolvePaymentAccess = async (req, res, orderId, order) => {
     return false;
 };
 
+const orderNotFoundPage = (req, res) =>
+    respondWithMessage(req, res, 404, 'Замовлення не знайдено', {
+        title: 'Оплата',
+        messageTitle: 'Замовлення не знайдено',
+        actions: defaultOrderActions()
+    });
+
 const payPage = async (req, res) => {
     try {
         const orderId = Number(req.params.orderId);
         if (!orderId || orderId <= 0) {
-            return res.status(404).send('Замовлення не знайдено');
+            return orderNotFoundPage(req, res);
         }
 
         let order = await OrderModel.getByIdForPayment(orderId);
         if (!order) {
-            return res.status(404).send('Замовлення не знайдено');
+            return orderNotFoundPage(req, res);
         }
 
         const canAccess = await resolvePaymentAccess(req, res, orderId, order);
@@ -117,14 +175,14 @@ const payPage = async (req, res) => {
             return res.redirect('/login?next=' + encodeURIComponent(req.originalUrl || '/cabinet'));
         }
 
-        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
+        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId, { quick: true });
 
         const isGuest = order.user_id == null;
         const tokenUid = isGuest ? 0 : Number(order.user_id);
         const payToken = paymentToken.makeForOrder(order.id, tokenUid);
         const successBase = '/order/success/' + order.id + '?t=' + encodeURIComponent(payToken);
 
-        if (order.payment_status === 'paid') {
+        if (paymentService.isPaymentPaid(order)) {
             if (isGuest) {
                 return res.redirect(successBase + '&ok=payment_paid');
             }
@@ -160,12 +218,24 @@ const payPage = async (req, res) => {
 
         const keys = liqpayService.getKeys();
         if (!keys.publicKey || !keys.privateKey) {
-            return res.status(500).send('LiqPay не налаштовано. Додайте ключі в .env');
+            return respondWithMessage(req, res, 500, 'LiqPay не налаштовано. Зверніться до адміністратора.', {
+                title: 'Оплата',
+                messageTitle: 'Оплата недоступна',
+                icon: 'error',
+                actions: defaultHomeActions()
+            });
         }
 
         const amount = Number(order.total_amount);
         if (!amount || amount < 1) {
-            return res.status(400).send('Сума замовлення некоректна');
+            return respondWithMessage(req, res, 400, 'Сума замовлення некоректна', {
+                title: 'Оплата',
+                messageTitle: 'Неможливо оплатити',
+                actions: [
+                    { label: 'До замовлення', href: '/order/success/' + order.id, primary: true },
+                    { label: 'На головну', href: '/' }
+                ]
+            });
         }
 
         const publicBaseUrl = getPublicBaseUrl(req);
@@ -196,7 +266,7 @@ const payPage = async (req, res) => {
         });
     } catch (err) {
         console.error('payPage:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Оплата' });
     }
 };
 
@@ -230,12 +300,12 @@ const result = async (req, res) => {
     try {
         const orderId = Number(req.params.orderId);
         if (!orderId || orderId <= 0) {
-            return res.status(404).send('Замовлення не знайдено');
+            return orderNotFoundPage(req, res);
         }
 
         let order = await OrderModel.getByIdForPayment(orderId);
         if (!order) {
-            return res.status(404).send('Замовлення не знайдено');
+            return orderNotFoundPage(req, res);
         }
 
         const canAccess = await resolvePaymentAccess(req, res, orderId, order);
@@ -247,43 +317,54 @@ const result = async (req, res) => {
 
         const liqpayPayload = tryLiqpayReturnPayload(req);
         if (liqpayPayload) {
-            const parsedId = liqpayService.parseOrderIdFromLiqpay(liqpayPayload.order_id);
-            if (parsedId === orderId) {
-                await paymentApplyService.applyLiqpayStatus(orderId, liqpayPayload);
-            }
+            await applyReturnPayload(orderId, liqpayPayload);
         }
 
         order = await OrderModel.getByIdForPayment(orderId);
-        if (order && order.payment_status === 'paid') {
+        order = await paymentSyncService.repairLegacyPaidStatus(orderId, order);
+
+        if (order && paymentService.isPaymentPaid(order)) {
+            if (order.payment_status !== 'paid') {
+                await OrderModel.updatePaymentStatus(orderId, 'paid');
+                order = await OrderModel.getByIdForPayment(orderId);
+                await notifyCustomerCardPayment(orderId);
+            }
             return redirectAfterPaid(res, order);
-        }
-
-        if (order && order.payment_status !== 'paid' && order.payment_status !== 'cod') {
-            order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
-        }
-
-        if (!order) {
-            return res.status(404).send('Замовлення не знайдено');
         }
 
         const isGuest = order.user_id == null;
         const tokenUid = isGuest ? 0 : Number(order.user_id);
         const payToken = paymentToken.makeForOrder(order.id, tokenUid);
 
-        if (order.payment_status === 'paid') {
-            return redirectAfterPaid(res, order);
+        if (req.method === 'POST') {
+            const backUrl = '/payment/result/' + orderId + '?t=' + encodeURIComponent(payToken);
+            return res.redirect(303, backUrl);
         }
+
+        if (!order) {
+            return orderNotFoundPage(req, res);
+        }
+
+        const successRedirectUrl = isGuest
+            ? '/order/success/' + order.id + '?t=' + encodeURIComponent(payToken) + '&ok=payment_paid'
+            : '/cabinet?ok=payment_paid';
+
+        paymentSyncService.syncOrderPaymentFromLiqpay(orderId, { quick: true }).catch((syncErr) => {
+            console.error('payment result background sync:', syncErr.message);
+        });
 
         const canPayAgain = paymentService.getPaymentBlockReason(order) === 'ok';
         return renderLayout(res, 'Результат оплати', 'pages/payment-result', {
             order: order,
             payToken: payToken,
             canPayAgain: canPayAgain,
-            paymentStatusText: paymentStatusLabel(order.payment_status)
+            paymentStatusText: paymentStatusLabel(order.payment_status),
+            successRedirectUrl: successRedirectUrl,
+            isPaid: false
         });
     } catch (err) {
         console.error('payment result:', err.message);
-        return res.status(500).send('помилка');
+        return respondServerError(req, res, { title: 'Оплата' });
     }
 };
 
@@ -304,7 +385,7 @@ const syncStatus = async (req, res) => {
             return res.status(403).json({ ok: false, message: 'Немає доступу' });
         }
 
-        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId);
+        order = await paymentSyncService.syncOrderPaymentFromLiqpay(orderId, { quick: true });
         if (!order) {
             return res.status(404).json({ ok: false, message: 'Замовлення не знайдено' });
         }
@@ -312,7 +393,7 @@ const syncStatus = async (req, res) => {
         return res.json({
             ok: true,
             payment_status: order.payment_status,
-            paid: order.payment_status === 'paid'
+            paid: paymentService.isPaymentPaid(order)
         });
     } catch (err) {
         console.error('payment syncStatus:', err.message);

@@ -12,6 +12,12 @@ const paymentStatusLabel = (status) => {
     if (s === 'refunded') {
         return 'Повернено';
     }
+    if (s === 'sandbox') {
+        return 'Оплачено (тест)';
+    }
+    if (s === 'success' || s === 'wait_accept') {
+        return 'Оплачено онлайн';
+    }
     return s || '—';
 };
 
@@ -28,6 +34,12 @@ const paymentStatusLabelShort = (status) => {
     }
     if (s === 'refunded') {
         return 'Повернено';
+    }
+    if (s === 'sandbox') {
+        return 'Оплачено (тест)';
+    }
+    if (s === 'success' || s === 'wait_accept') {
+        return 'Оплачено';
     }
     return s || '—';
 };

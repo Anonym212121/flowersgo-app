@@ -1,10 +1,14 @@
-<section class="catalog-content error-page">
-    <div class="error-box">
-        <p class="error-code"><%= statusCode %></p>
-        <h1 class="error-title"><%= errorTitle %></h1>
-        <p class="error-message"><%= errorMessage %></p>
-        <p class="error-link-row">
-            <a href="/" class="error-link">Повернутися на головну</a>
-        </p>
-    </div>
-</section>
+<%
+const errorActions = [
+    { label: 'На головну', href: '/', primary: true },
+    { label: 'У кошик', href: '/cart' }
+];
+%>
+<%- include('message', {
+    messageIcon: 'error',
+    statusCode: typeof statusCode !== 'undefined' ? statusCode : 500,
+    messageTitle: typeof errorTitle !== 'undefined' ? errorTitle : 'Помилка',
+    messageText: typeof errorMessage !== 'undefined' ? errorMessage : 'Сталася помилка',
+    messageHint: '',
+    messageActions: errorActions
+}) %>

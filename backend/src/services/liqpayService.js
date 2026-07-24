@@ -3,6 +3,7 @@ const https = require('https');
 const querystring = require('querystring');
 
 const REQUEST_TIMEOUT_MS = 15000;
+const STATUS_TIMEOUT_MS = 4000;
 
 const getKeys = () => {
     return {
@@ -94,11 +95,17 @@ const buildCheckoutForm = ({ orderId, amount, description, resultUrl, serverUrl,
     return { data, signature, orderRef: ref };
 };
 
-const fetchPaymentStatus = (orderRef) => {
-    return liqpayRequest({ action: 'status', order_id: orderRef });
+const fetchPaymentStatus = (orderRef, options) => {
+    const params = { action: 'status', order_id: orderRef };
+    if (isSandbox()) {
+        params.sandbox = '1';
+    }
+    const timeoutMs = options && options.timeoutMs ? options.timeoutMs : STATUS_TIMEOUT_MS;
+    return liqpayRequest(params, timeoutMs);
 };
 
-const liqpayRequest = (params) => {
+const liqpayRequest = (params, timeoutMs) => {
+    const requestTimeout = Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : REQUEST_TIMEOUT_MS;
     return new Promise((resolve, reject) => {
         const { publicKey } = getKeys();
         const payload = {
@@ -146,7 +153,7 @@ const liqpayRequest = (params) => {
             }
         );
 
-        req.setTimeout(REQUEST_TIMEOUT_MS, () => {
+        req.setTimeout(requestTimeout, () => {
             req.destroy();
             finish(reject, new Error('LiqPay API timeout'));
         });
@@ -157,19 +164,24 @@ const liqpayRequest = (params) => {
     });
 };
 
-const refundPayment = (orderRef, amount) => {
+const refundPayment = (orderRef, amount, options) => {
     const ref = typeof orderRef === 'string' ? orderRef.trim() : '';
     const sum = Number(amount);
     if (!ref || !Number.isFinite(sum) || sum <= 0) {
         return Promise.resolve(null);
     }
 
-    return liqpayRequest({
-        action: 'refund',
-        order_id: ref,
-        amount: sum.toFixed(2),
-        currency: 'UAH'
-    });
+    const timeoutMs = options && options.timeoutMs ? options.timeoutMs : REQUEST_TIMEOUT_MS;
+
+    return liqpayRequest(
+        {
+            action: 'refund',
+            order_id: ref,
+            amount: sum.toFixed(2),
+            currency: 'UAH'
+        },
+        timeoutMs
+    );
 };
 
 const verifySignature = (data, signature) => {

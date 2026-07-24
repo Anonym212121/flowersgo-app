@@ -1,0 +1,35 @@
+<%
+const icon = typeof messageIcon === 'string' ? messageIcon : 'info';
+const iconMap = {
+    info: 'ℹ️',
+    warn: '⚠️',
+    error: '✕',
+    success: '✓'
+};
+const iconChar = iconMap[icon] || iconMap.info;
+const actions = Array.isArray(messageActions) ? messageActions : [];
+%>
+
+<section class="catalog-content checkout-page message-page">
+    <div class="message-card message-card--<%= icon %>">
+        <p class="message-icon" aria-hidden="true"><%= iconChar %></p>
+        <% if (typeof statusCode !== 'undefined' && statusCode && icon === 'error') { %>
+            <p class="message-code"><%= statusCode %></p>
+        <% } %>
+        <h1 class="message-title"><%= messageTitle %></h1>
+        <p class="message-text"><%= messageText %></p>
+        <% if (typeof messageHint === 'string' && messageHint.trim() !== '') { %>
+            <p class="message-hint"><%= messageHint %></p>
+        <% } %>
+        <div class="message-actions">
+            <% for (let i = 0; i < actions.length; i++) { %>
+                <% const action = actions[i]; %>
+                <a
+                    href="<%= action.href %>"
+                    class="auth-button<%= action.primary ? ' message-btn-primary' : ' message-btn-secondary' %>"
+                    data-soft-nav="<%= action.softNav === false ? 'false' : 'true' %>"
+                ><%= action.label %></a>
+            <% } %>
+        </div>
+    </div>
+</section>

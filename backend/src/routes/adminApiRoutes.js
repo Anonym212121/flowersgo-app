@@ -53,6 +53,7 @@ router.post('/orders/:id/approve', adminOrderController.approveForAdmin);
 router.post('/orders/:id/reject', adminOrderController.rejectForAdmin);
 router.post('/orders/:id/cancel/approve', adminOrderController.approveCancelForAdmin);
 router.post('/orders/:id/cancel/reject', adminOrderController.rejectCancelForAdmin);
+router.post('/orders/:id/refund/complete', adminOrderController.markRefundCompleteForAdmin);
 router.post('/orders/:id/assign-courier', adminCourierController.assignCourier);
 router.post('/orders/:id/auto-assign-courier', adminCourierController.autoAssignCourier);
 router.post('/orders/:id/unassign-courier', adminCourierController.unassignCourier);
