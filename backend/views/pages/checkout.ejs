@@ -32,6 +32,9 @@ const profileDeliveryHouse = profile && profile.saved_delivery_house ? String(pr
 const profileDeliveryApartment = profile && profile.saved_delivery_apartment ? String(profile.saved_delivery_apartment) : '';
 const bouquetNote = typeof constructorNote === 'string' ? constructorNote.trim() : '';
 const bouquetPreview = typeof constructorPreview === 'string' ? constructorPreview.trim() : '';
+const checkoutAuthNext = isCartMode
+    ? '/checkout?cart=1'
+    : ('/checkout?product_id=' + checkoutProductId);
 %>
 
 <section class="catalog-content checkout-page">
@@ -51,7 +54,7 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
 
     <% if (!currentUser) { %>
         <p class="checkout-guest-note">
-            Можна без реєстрації. <a href="/login?next=/checkout">Увійти</a> · <a href="/register?next=/checkout">Реєстрація</a>
+            Можна без реєстрації. <a href="/login?next=<%= encodeURIComponent(checkoutAuthNext) %>">Увійти</a> · <a href="/register?next=<%= encodeURIComponent(checkoutAuthNext) %>">Реєстрація</a>
         </p>
     <% } %>
 
