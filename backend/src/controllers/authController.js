@@ -322,6 +322,11 @@ const googleAuth = async (req, res) => {
             return res.status(500).json({ message: 'Не вдалося увійти через Google' });
         }
 
+        if (Number(user.email_verified) !== 1) {
+            await UserModel.markEmailVerifiedById(user.id);
+            user.email_verified = 1;
+        }
+
         if (Number(user.is_blocked) === 1) {
             return res.status(403).json({
                 message: 'Акаунт заблоковано адміністратором',

@@ -1550,6 +1550,16 @@ html.theme-light .cabinet-profile-view-row {
     border-bottom-color: rgba(15, 23, 42, 0.08);
 }
 
+html.theme-light .cabinet-email-badge--ok {
+    background: rgba(16, 185, 129, 0.14);
+    color: #047857;
+}
+
+html.theme-light .cabinet-email-badge--wait {
+    background: rgba(245, 158, 11, 0.16);
+    color: #b45309;
+}
+
 html.theme-light .cabinet-avatar-wrap {
     background: #f1f5f9;
     border-color: var(--line);

@@ -6,6 +6,7 @@ const UserModel = require('../models/User');
 const OrderModel = require('../models/Order');
 const ReviewModel = require('../models/Review');
 const PasswordEmailCodeModel = require('../models/PasswordEmailCode');
+const EmailVerifyCodeModel = require('../models/EmailVerifyCode');
 const orderCancelService = require('../services/orderCancelService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
@@ -64,10 +65,24 @@ const respond = (req, res, payload) => {
     }
 
     if (payload.ok) {
-        const suffix = payload.pw_step ? `&pw_step=${payload.pw_step}` : '';
+        const extra = [];
+        if (payload.pw_step) {
+            extra.push('pw_step=' + payload.pw_step);
+        }
+        if (payload.ev_step) {
+            extra.push('ev_step=' + payload.ev_step);
+        }
+        const suffix = extra.length ? '&' + extra.join('&') : '';
         return res.redirect(`/cabinet?ok=${payload.ok_code || 'saved'}${suffix}`);
     }
-    const suffix = payload.pw_step ? `&pw_step=${payload.pw_step}` : '';
+    const extra = [];
+    if (payload.pw_step) {
+        extra.push('pw_step=' + payload.pw_step);
+    }
+    if (payload.ev_step) {
+        extra.push('ev_step=' + payload.ev_step);
+    }
+    const suffix = extra.length ? '&' + extra.join('&') : '';
     return res.redirect(`/cabinet?err=${payload.err_code || 'server'}${suffix}`);
 };
 
@@ -143,6 +158,12 @@ const updateProfile = async (req, res) => {
             return respond(req, res, { ok: false, err_code: 'email_exists', message: 'Такий email вже використовується' });
         }
 
+        const currentProfile = await UserModel.getUserid(current.user_id);
+        const oldEmail = currentProfile && currentProfile.email
+            ? String(currentProfile.email).trim().toLowerCase()
+            : '';
+        const emailChanged = oldEmail !== email;
+
         const phone = phoneDigits.length > 0 ? rawPhone : null;
         const street = saved_delivery_street || null;
         const house = saved_delivery_house || null;
@@ -155,11 +176,16 @@ const updateProfile = async (req, res) => {
             phone,
             saved_delivery_street: street,
             saved_delivery_house: house,
-            saved_delivery_apartment: apartment
+            saved_delivery_apartment: apartment,
+            reset_email_verified: emailChanged
         });
 
         if (!updated) {
             return respond(req, res, { ok: false, err_code: 'profile_not_updated', message: 'Не вдалося оновити профіль' });
+        }
+
+        if (emailChanged) {
+            await EmailVerifyCodeModel.invalidateActiveCodes(current.user_id);
         }
 
         return respond(req, res, { ok: true, ok_code: 'profile_saved', message: 'Профіль успішно оновлено' });
@@ -353,6 +379,176 @@ const confirmPasswordByEmailCode = async (req, res) => {
         return respond(req, res, { ok: true, ok_code: 'password_changed', message: 'Пароль успішно змінено' });
     } catch (err) {
         console.error('confirmPasswordByEmailCode:', err.message);
+        return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
+    }
+};
+
+const requestEmailVerifyCode = async (req, res) => {
+    try {
+        const current = res.locals.currentUser;
+        if (!current || !current.user_id) {
+            if (isJsonRequest(req)) {
+                return res.status(401).json({ ok: false, message: 'Потрібна авторизація' });
+            }
+            return res.redirect('/login');
+        }
+
+        const profile = await UserModel.getUserid(current.user_id);
+        if (!profile || !profile.email) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'email_required_for_verify',
+                message: 'Спочатку вкажи email у профілі'
+            });
+        }
+
+        if (Number(profile.email_verified) === 1) {
+            return respond(req, res, {
+                ok: true,
+                ok_code: 'email_already_verified',
+                message: 'Пошта вже підтверджена',
+                email_verified: true
+            });
+        }
+
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const codeId = await EmailVerifyCodeModel.createCode({
+            user_id: current.user_id,
+            email: String(profile.email),
+            code,
+            expiresInMinutes: 10
+        });
+        if (!codeId) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'verify_email_code_not_saved',
+                message: 'Не вдалося створити код підтвердження'
+            });
+        }
+
+        const emailResult = await emailService.sendEmail({
+            to: String(profile.email),
+            subject: 'Підтвердження пошти FlowersGo',
+            text: `Ваш код підтвердження пошти: ${code}. Код діє 10 хвилин.`
+        });
+        if (!emailResult.ok) {
+            await EmailVerifyCodeModel.consumeCode(codeId);
+            return respond(req, res, {
+                ok: false,
+                err_code: 'email_not_sent',
+                message: emailResult.message || 'Не вдалося відправити лист'
+            });
+        }
+
+        return respond(req, res, {
+            ok: true,
+            ok_code: 'verify_email_code_sent',
+            message: 'Код підтвердження відправлено на вашу пошту',
+            ev_step: 'verify',
+            show_verify_step: true
+        });
+    } catch (err) {
+        console.error('requestEmailVerifyCode:', err.message);
+        return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
+    }
+};
+
+const confirmEmailVerifyCode = async (req, res) => {
+    try {
+        const current = res.locals.currentUser;
+        if (!current || !current.user_id) {
+            if (isJsonRequest(req)) {
+                return res.status(401).json({ ok: false, message: 'Потрібна авторизація' });
+            }
+            return res.redirect('/login');
+        }
+
+        const profile = await UserModel.getUserid(current.user_id);
+        if (!profile || !profile.email) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'email_required_for_verify',
+                message: 'Спочатку вкажи email у профілі'
+            });
+        }
+
+        if (Number(profile.email_verified) === 1) {
+            return respond(req, res, {
+                ok: true,
+                ok_code: 'email_already_verified',
+                message: 'Пошта вже підтверджена',
+                email_verified: true
+            });
+        }
+
+        const email_code = typeof req.body.email_code === 'string' ? req.body.email_code.trim() : '';
+        if (!email_code || !/^\d{6}$/.test(email_code)) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'bad_verify_email_code_format',
+                ev_step: 'verify',
+                message: 'Код з листа має містити 6 цифр',
+                show_verify_step: true
+            });
+        }
+
+        const activeCode = await EmailVerifyCodeModel.getActiveCode(current.user_id);
+        if (!activeCode) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'verify_email_code_expired',
+                message: 'Код протермінований або неактивний'
+            });
+        }
+        if (Number(activeCode.attempts_left) <= 0) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'verify_email_attempts_over',
+                message: 'Вичерпано спроби введення коду'
+            });
+        }
+
+        const emailHash = EmailVerifyCodeModel.hashCode(email_code);
+        if (emailHash !== activeCode.code_hash) {
+            await EmailVerifyCodeModel.decreaseAttempts(activeCode.id);
+            return respond(req, res, {
+                ok: false,
+                err_code: 'bad_verify_email_code',
+                ev_step: 'verify',
+                message: 'Невірний код з листа',
+                show_verify_step: true
+            });
+        }
+
+        const profileEmail = String(profile.email).trim().toLowerCase();
+        const codeEmail = String(activeCode.email || '').trim().toLowerCase();
+        if (profileEmail !== codeEmail) {
+            await EmailVerifyCodeModel.consumeCode(activeCode.id);
+            return respond(req, res, {
+                ok: false,
+                err_code: 'verify_email_mismatch',
+                message: 'Email у профілі змінився. Надішли код ще раз'
+            });
+        }
+
+        const marked = await UserModel.markEmailVerifiedById(current.user_id);
+        if (!marked) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'email_not_verified',
+                message: 'Не вдалося підтвердити пошту'
+            });
+        }
+
+        await EmailVerifyCodeModel.consumeCode(activeCode.id);
+        return respond(req, res, {
+            ok: true,
+            ok_code: 'email_verified',
+            message: 'Пошту підтверджено',
+            email_verified: true
+        });
+    } catch (err) {
+        console.error('confirmEmailVerifyCode:', err.message);
         return respond(req, res, { ok: false, err_code: 'server', message: 'Сталася помилка сервера' });
     }
 };
@@ -622,6 +818,8 @@ module.exports = {
     updateAvatar,
     requestPasswordEmailCode,
     confirmPasswordByEmailCode,
+    requestEmailVerifyCode,
+    confirmEmailVerifyCode,
     archiveOrder,
     requestOrderCancel,
     requestGuestOrderCancel,

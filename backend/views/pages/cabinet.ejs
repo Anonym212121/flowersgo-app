@@ -10,7 +10,9 @@ const savedStreet = profile && profile.saved_delivery_street ? String(profile.sa
 const savedHouse = profile && profile.saved_delivery_house ? String(profile.saved_delivery_house) : '';
 const savedApartment = profile && profile.saved_delivery_apartment ? String(profile.saved_delivery_apartment) : '';
 const passwordVerifyStep = typeof cabinetPasswordVerifyStep !== 'undefined' && !!cabinetPasswordVerifyStep;
+const emailVerifyStep = typeof cabinetEmailVerifyStep !== 'undefined' && !!cabinetEmailVerifyStep;
 const profileEmail = profile && profile.email ? String(profile.email).trim() : '';
+const emailVerified = profile && Number(profile.email_verified) === 1;
 let savedAddressText = '—';
 if (savedStreet && savedHouse) {
     savedAddressText = savedStreet + ', буд. ' + savedHouse;
@@ -248,7 +250,16 @@ if (savedStreet && savedHouse) {
                 <dl class="cabinet-profile-view-list">
                     <div class="cabinet-profile-view-row">
                         <dt>Email</dt>
-                        <dd id="cabinetProfileViewEmail"><%= profile.email %></dd>
+                        <dd id="cabinetProfileViewEmail">
+                            <span id="cabinetProfileViewEmailText"><%= profile.email %></span>
+                            <% if (profileEmail) { %>
+                                <% if (emailVerified) { %>
+                                    <span class="cabinet-email-badge cabinet-email-badge--ok" id="cabinetEmailBadge">Підтверджено</span>
+                                <% } else { %>
+                                    <span class="cabinet-email-badge cabinet-email-badge--wait" id="cabinetEmailBadge">Не підтверджено</span>
+                                <% } %>
+                            <% } %>
+                        </dd>
                     </div>
                     <div class="cabinet-profile-view-row">
                         <dt>Телефон</dt>
@@ -259,6 +270,27 @@ if (savedStreet && savedHouse) {
                         <dd id="cabinetProfileViewAddress"><%= savedAddressText %></dd>
                     </div>
                 </dl>
+                <% if (profileEmail && !emailVerified) { %>
+                    <div class="cabinet-email-verify" id="cabinetEmailVerifyBox" data-verify-step="<%= emailVerifyStep ? '1' : '0' %>">
+                        <div class="cabinet-email-verify-step" id="cabinetEmailVerifyRequest"<%= emailVerifyStep ? ' hidden' : '' %>>
+                            <p class="cabinet-password-hint">Код підтвердження надішлемо на <strong><%= profileEmail %></strong>. Після цього пошта лишиться підтвердженою.</p>
+                            <form method="post" action="/cabinet/email/request-code" class="cabinet-password-form" id="cabinetEmailVerifyRequestForm">
+                                <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary" id="cabinetEmailVerifySendBtn">Підтвердити пошту</button>
+                            </form>
+                        </div>
+                        <div class="cabinet-email-verify-step" id="cabinetEmailVerifyConfirm"<%= emailVerifyStep ? '' : ' hidden' %>>
+                            <p class="cabinet-password-hint">Введи код з листа на <strong><%= profileEmail %></strong></p>
+                            <form method="post" action="/cabinet/email/confirm-code" class="cabinet-password-form" id="cabinetEmailVerifyConfirmForm">
+                                <label class="cabinet-mini-label">
+                                    Код з листа (6 цифр)
+                                    <input class="auth-input cabinet-mini-input" type="text" name="email_code" id="cabinetEmailVerifyCodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" minlength="6" required autocomplete="one-time-code" placeholder="000000" />
+                                </label>
+                                <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary" id="cabinetEmailVerifyConfirmBtn">Підтвердити</button>
+                            </form>
+                            <button type="button" class="cabinet-password-back-btn" id="cabinetEmailVerifyBackBtn">Надіслати код ще раз</button>
+                        </div>
+                    </div>
+                <% } %>
                 <button type="button" class="cabinet-mini-btn cabinet-mini-btn--primary" id="cabinetShowEditProfileBtn">Редагувати профіль</button>
             </div>
         </div>
@@ -303,6 +335,7 @@ if (savedStreet && savedHouse) {
                         <input class="auth-input cabinet-mini-input" type="tel" name="phone" id="cabinetInputPhone" value="<%= profile.phone ? profile.phone : '' %>" />
                     </label>
                 </div>
+                <p class="cabinet-password-hint">Якщо змінити email, підтвердження пошти треба буде пройти знову.</p>
                 <div class="cabinet-profile-address-block">
                     <p class="cabinet-profile-address-hint">Моя адреса доставки (лише для вас і адміністратора)</p>
                     <label class="cabinet-mini-label">
@@ -380,6 +413,18 @@ if (savedStreet && savedHouse) {
     var passwordFeedback = document.getElementById('cabinetPasswordFeedback');
     var passwordVerifyStepActive = passwordDetails
         ? passwordDetails.getAttribute('data-password-verify-step') === '1'
+        : false;
+    var emailVerifyRequestForm = document.getElementById('cabinetEmailVerifyRequestForm');
+    var emailVerifyConfirmForm = document.getElementById('cabinetEmailVerifyConfirmForm');
+    var emailVerifyRequestStep = document.getElementById('cabinetEmailVerifyRequest');
+    var emailVerifyConfirmStep = document.getElementById('cabinetEmailVerifyConfirm');
+    var emailVerifySendBtn = document.getElementById('cabinetEmailVerifySendBtn');
+    var emailVerifyConfirmBtn = document.getElementById('cabinetEmailVerifyConfirmBtn');
+    var emailVerifyBackBtn = document.getElementById('cabinetEmailVerifyBackBtn');
+    var emailVerifyCodeInput = document.getElementById('cabinetEmailVerifyCodeInput');
+    var emailVerifyBox = document.getElementById('cabinetEmailVerifyBox');
+    var emailVerifyStepActive = emailVerifyBox
+        ? emailVerifyBox.getAttribute('data-verify-step') === '1'
         : false;
 
     function renderPasswordMessage(type, text) {
@@ -537,6 +582,7 @@ if (savedStreet && savedHouse) {
         var house = document.getElementById('cabinetInputDeliveryHouse');
         var apartment = document.getElementById('cabinetInputDeliveryApartment');
         var nameEl = document.getElementById('cabinetProfileViewName');
+        var emailTextEl = document.getElementById('cabinetProfileViewEmailText');
         var emailEl = document.getElementById('cabinetProfileViewEmail');
         var phoneEl = document.getElementById('cabinetProfileViewPhone');
         var addressEl = document.getElementById('cabinetProfileViewAddress');
@@ -558,7 +604,8 @@ if (savedStreet && savedHouse) {
         }
 
         if (nameEl) nameEl.textContent = (firstVal + ' ' + lastVal).trim();
-        if (emailEl) emailEl.textContent = emailVal || '—';
+        if (emailTextEl) emailTextEl.textContent = emailVal || '—';
+        else if (emailEl) emailEl.textContent = emailVal || '—';
         if (phoneEl) phoneEl.textContent = phoneVal || '—';
         if (addressEl) addressEl.textContent = addressText;
         if (pageSub) pageSub.textContent = (firstVal + ' ' + lastVal).trim();
@@ -681,12 +728,19 @@ if (savedStreet && savedHouse) {
             event.preventDefault();
             try {
                 var data = await submitForm(profileForm, false);
+                var emailInput = document.getElementById('cabinetInputEmail');
+                var emailTextEl = document.getElementById('cabinetProfileViewEmailText');
+                var oldEmail = emailTextEl ? String(emailTextEl.textContent || '').trim().toLowerCase() : '';
+                var newEmail = emailInput ? String(emailInput.value || '').trim().toLowerCase() : '';
                 syncProfileViewFromForm();
                 setProfileMode('view');
                 if (profileForm._formDraftHandle && profileForm._formDraftHandle.clear) {
                     profileForm._formDraftHandle.clear();
                 }
                 renderMessage('ok', data.message || 'Профіль оновлено');
+                if (oldEmail && newEmail && oldEmail !== newEmail) {
+                    window.setTimeout(function () { window.location.reload(); }, 500);
+                }
             } catch (err) {
                 renderMessage('error', err.message || 'Не вдалося оновити профіль');
             }
@@ -997,6 +1051,104 @@ if (savedStreet && savedHouse) {
     if (passwordBackBtn) {
         passwordBackBtn.addEventListener('click', function () {
             showPasswordRequestStep();
+        });
+    }
+
+    function showEmailVerifyRequestStep() {
+        if (emailVerifyRequestStep) emailVerifyRequestStep.hidden = false;
+        if (emailVerifyConfirmStep) emailVerifyConfirmStep.hidden = true;
+        if (emailVerifyConfirmForm) emailVerifyConfirmForm.reset();
+    }
+
+    function showEmailVerifyConfirmStep() {
+        if (emailVerifyRequestStep) emailVerifyRequestStep.hidden = true;
+        if (emailVerifyConfirmStep) emailVerifyConfirmStep.hidden = false;
+        if (emailVerifyCodeInput) emailVerifyCodeInput.focus();
+    }
+
+    function markEmailVerifiedInView() {
+        var badge = document.getElementById('cabinetEmailBadge');
+        if (badge) {
+            badge.className = 'cabinet-email-badge cabinet-email-badge--ok';
+            badge.textContent = 'Підтверджено';
+        }
+        if (emailVerifyBox) {
+            emailVerifyBox.remove();
+        }
+    }
+
+    var emailVerifyFlowOk = ['verify_email_code_sent', 'email_verified', 'email_already_verified'];
+    var emailVerifyFlowErr = [
+        'email_required_for_verify', 'email_not_sent', 'verify_email_code_not_saved',
+        'bad_verify_email_code', 'bad_verify_email_code_format',
+        'verify_email_code_expired', 'verify_email_attempts_over',
+        'verify_email_mismatch', 'email_not_verified'
+    ];
+    if (
+        urlParams.get('ev_step') === 'verify' ||
+        emailVerifyFlowOk.indexOf(urlOk) !== -1 ||
+        emailVerifyFlowErr.indexOf(urlErr) !== -1
+    ) {
+        activateCabinetTab('profile');
+        if (
+            emailVerifyStepActive ||
+            urlOk === 'verify_email_code_sent' ||
+            urlParams.get('ev_step') === 'verify' ||
+            urlErr === 'bad_verify_email_code' ||
+            urlErr === 'bad_verify_email_code_format'
+        ) {
+            showEmailVerifyConfirmStep();
+        } else if (urlOk === 'email_verified' || urlOk === 'email_already_verified') {
+            markEmailVerifiedInView();
+        } else {
+            showEmailVerifyRequestStep();
+        }
+    }
+
+    if (emailVerifySendBtn && emailVerifyRequestForm) {
+        emailVerifyRequestForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            setPasswordButtonLoading(emailVerifySendBtn, true, 'Надсилаємо…', 'Підтвердити пошту');
+            try {
+                var data = await submitForm(emailVerifyRequestForm, false);
+                renderMessage('ok', data.message || 'Код надіслано на пошту');
+                if (data.email_verified) {
+                    markEmailVerifiedInView();
+                } else {
+                    showEmailVerifyConfirmStep();
+                }
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            } finally {
+                setPasswordButtonLoading(emailVerifySendBtn, false, 'Надсилаємо…', 'Підтвердити пошту');
+            }
+        });
+    }
+
+    if (emailVerifyConfirmBtn && emailVerifyConfirmForm) {
+        emailVerifyConfirmForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            var code = emailVerifyCodeInput ? String(emailVerifyCodeInput.value || '').trim() : '';
+            if (!/^\d{6}$/.test(code)) {
+                renderMessage('error', 'Код з листа має містити 6 цифр');
+                return;
+            }
+            setPasswordButtonLoading(emailVerifyConfirmBtn, true, 'Перевіряємо…', 'Підтвердити');
+            try {
+                var data = await submitForm(emailVerifyConfirmForm, false);
+                renderMessage('ok', data.message || 'Пошту підтверджено');
+                markEmailVerifiedInView();
+            } catch (err) {
+                renderMessage('error', err.message || 'Помилка');
+            } finally {
+                setPasswordButtonLoading(emailVerifyConfirmBtn, false, 'Перевіряємо…', 'Підтвердити');
+            }
+        });
+    }
+
+    if (emailVerifyBackBtn) {
+        emailVerifyBackBtn.addEventListener('click', function () {
+            showEmailVerifyRequestStep();
         });
     }
 })();

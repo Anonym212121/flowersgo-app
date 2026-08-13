@@ -37,7 +37,9 @@ const createUser = async ({ role_id, first_name, last_name, email, password_hash
         const [rows] = await db.execute(
             `SELECT
                 u.id, u.role_id, r.role_name, u.first_name, u.last_name, u.email,
-                u.phone, u.avatar_url, u.loyalty_points, u.createdAt, u.updatedAt
+                u.phone, u.avatar_url, u.loyalty_points,
+                COALESCE(u.email_verified, 0) AS email_verified,
+                u.createdAt, u.updatedAt
              FROM users u
              INNER JOIN roles r ON u.role_id = r.id
              WHERE u.id = ?
@@ -61,6 +63,7 @@ const findUserByEmailWithRole = async (email) => {
             u.id, u.role_id, r.role_name,
             u.first_name, u.last_name, u.email, u.password_hash, u.google_id,
             u.phone, u.avatar_url, u.loyalty_points,
+            COALESCE(u.email_verified, 0) AS email_verified,
             COALESCE(u.is_blocked, 0) AS is_blocked,
             u.block_reason_key,
             u.block_reason_text
@@ -97,6 +100,7 @@ const findUserByPhoneWithRole = async (phone) => {
             u.id, u.role_id, r.role_name,
             u.first_name, u.last_name, u.email, u.password_hash, u.google_id,
             u.phone, u.avatar_url, u.loyalty_points,
+            COALESCE(u.email_verified, 0) AS email_verified,
             COALESCE(u.is_blocked, 0) AS is_blocked,
             u.block_reason_key,
             u.block_reason_text
@@ -128,6 +132,7 @@ const findByGoogleId = async (googleId) => {
             u.id, u.role_id, r.role_name,
             u.first_name, u.last_name, u.email, u.password_hash, u.google_id,
             u.phone, u.avatar_url, u.loyalty_points,
+            COALESCE(u.email_verified, 0) AS email_verified,
             COALESCE(u.is_blocked, 0) AS is_blocked,
             u.block_reason_key,
             u.block_reason_text
@@ -145,15 +150,17 @@ const createGoogleUser = async ({ role_id, google_id, first_name, last_name, ema
     try {
         const [result] = await db.execute(
             `INSERT INTO users
-            (role_id, first_name, last_name, email, password_hash, google_id, avatar_url, phone)
-            VALUES (?, ?, ?, ?, NULL, ?, ?, NULL)`,
+            (role_id, first_name, last_name, email, password_hash, google_id, avatar_url, phone, email_verified)
+            VALUES (?, ?, ?, ?, NULL, ?, ?, NULL, 1)`,
             [role_id, first_name, last_name, email, google_id, avatar_url || null]
         );
 
         const [rows] = await db.execute(
             `SELECT
                 u.id, u.role_id, r.role_name, u.first_name, u.last_name, u.email,
-                u.phone, u.avatar_url, u.loyalty_points, u.createdAt, u.updatedAt
+                u.phone, u.avatar_url, u.loyalty_points,
+                COALESCE(u.email_verified, 0) AS email_verified,
+                u.createdAt, u.updatedAt
              FROM users u
              INNER JOIN roles r ON u.role_id = r.id
              WHERE u.id = ?
@@ -179,7 +186,8 @@ const linkGoogleId = async (userId, googleId) => {
 
     const [result] = await db.execute(
         `UPDATE users
-         SET google_id = ?
+         SET google_id = ?,
+             email_verified = 1
          WHERE id = ?
            AND (google_id IS NULL OR google_id = '')`,
         [gid, uid]
@@ -194,6 +202,7 @@ const getUserid = async (id) => {
             u.id, u.role_id, r.role_name,
             u.first_name, u.last_name, u.email,
             u.phone, u.avatar_url, u.loyalty_points,
+            COALESCE(u.email_verified, 0) AS email_verified,
             u.courier_work_email,
             u.saved_delivery_street, u.saved_delivery_house, u.saved_delivery_apartment
          FROM users u
@@ -232,17 +241,20 @@ const updateProfileById = async ({
     phone,
     saved_delivery_street,
     saved_delivery_house,
-    saved_delivery_apartment
+    saved_delivery_apartment,
+    reset_email_verified
 }) => {
     const uid = Number(user_id);
     if (!Number.isFinite(uid) || uid <= 0) {
         return false;
     }
 
+    const verifySql = reset_email_verified ? ', email_verified = 0' : '';
     const [result] = await db.execute(
         `UPDATE users
          SET first_name = ?, last_name = ?, email = ?, phone = ?,
              saved_delivery_street = ?, saved_delivery_house = ?, saved_delivery_apartment = ?
+             ${verifySql}
          WHERE id = ?`,
         [
             first_name,
@@ -254,6 +266,20 @@ const updateProfileById = async ({
             saved_delivery_apartment || null,
             uid
         ]
+    );
+
+    return result && result.affectedRows > 0;
+};
+
+const markEmailVerifiedById = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return false;
+    }
+
+    const [result] = await db.execute(
+        'UPDATE users SET email_verified = 1 WHERE id = ?',
+        [uid]
     );
 
     return result && result.affectedRows > 0;
@@ -598,6 +624,7 @@ module.exports = {
     findUserByPhoneWithRole,
     findByEmailExceptUserId,
     updateProfileById,
+    markEmailVerifiedById,
     updateAvatarUrlById,
     updatePasswordHashById,
     listForAdmin,

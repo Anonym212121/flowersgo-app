@@ -100,6 +100,8 @@ router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfil
 router.post('/cabinet/avatar', pageRequireLogin, cabinetController.uploadAvatarMiddleware, cabinetController.updateAvatar);
 router.post('/cabinet/password/request-email', pageRequireLogin, cabinetController.requestPasswordEmailCode);
 router.post('/cabinet/password/confirm-email', pageRequireLogin, cabinetController.confirmPasswordByEmailCode);
+router.post('/cabinet/email/request-code', pageRequireLogin, cabinetController.requestEmailVerifyCode);
+router.post('/cabinet/email/confirm-code', pageRequireLogin, cabinetController.confirmEmailVerifyCode);
 router.post('/cabinet/orders/:id/archive', pageRequireLogin, cabinetController.archiveOrder);
 router.post('/cabinet/orders/:id/cancel-request', pageRequireLogin, cabinetController.requestOrderCancel);
 router.post('/cabinet/reviews/:id/edit-request', pageRequireLogin, cabinetController.requestReviewEdit);

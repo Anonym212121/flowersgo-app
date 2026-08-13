@@ -223,6 +223,9 @@ const cabinetPage = async (req, res) => {
             profile_saved: 'Профіль успішно оновлено',
             avatar_saved: 'Аватар оновлено',
             email_code_sent: 'Код підтвердження відправлено на вашу пошту',
+            verify_email_code_sent: 'Код підтвердження пошти відправлено на email',
+            email_verified: 'Пошту підтверджено',
+            email_already_verified: 'Пошта вже підтверджена',
             password_changed: 'Пароль успішно змінено',
             order_created: 'Замовлення оформлено. Очікує підтвердження адміністратора.',
             payment_paid: 'Оплату зафіксовано. Замовлення перейшло в статус «Підтверджено».',
@@ -243,14 +246,22 @@ const cabinetPage = async (req, res) => {
             avatar_not_saved: 'Не вдалося зберегти аватар',
             profile_not_updated: 'Не вдалося оновити профіль',
             email_required_for_password_reset: 'У профілі має бути вказана пошта',
+            email_required_for_verify: 'Спочатку вкажи email у профілі',
             email_not_sent: 'Не вдалося відправити лист з кодом',
             email_code_not_saved: 'Не вдалося створити код підтвердження',
+            verify_email_code_not_saved: 'Не вдалося створити код підтвердження пошти',
             bad_email_code_format: 'Код з листа має містити 6 цифр',
+            bad_verify_email_code_format: 'Код з листа має містити 6 цифр',
             bad_new_password: 'Новий пароль має бути не менше 6 символів',
             password_confirm_mismatch: 'Підтвердження пароля не збігається',
             email_code_expired: 'Код протермінований або неактивний',
+            verify_email_code_expired: 'Код протермінований або неактивний',
             email_attempts_over: 'Вичерпано спроби введення коду',
+            verify_email_attempts_over: 'Вичерпано спроби введення коду',
             bad_email_code: 'Невірний код з листа',
+            bad_verify_email_code: 'Невірний код з листа',
+            verify_email_mismatch: 'Email у профілі змінився. Надішли код ще раз',
+            email_not_verified: 'Не вдалося підтвердити пошту',
             password_not_updated: 'Не вдалося змінити пароль',
             payment_expired: 'Час на оплату вичерпано. Зверніться до підтримки.',
             payment_rejected: 'Це замовлення відхилено адміністратором — оплатити його не можна. Оформіть нове.',
@@ -278,7 +289,12 @@ const cabinetPage = async (req, res) => {
                 req.query.pw_step === 'verify' ||
                 okCode === 'email_code_sent' ||
                 errCode === 'bad_email_code' ||
-                errCode === 'bad_email_code_format'
+                errCode === 'bad_email_code_format',
+            cabinetEmailVerifyStep:
+                req.query.ev_step === 'verify' ||
+                okCode === 'verify_email_code_sent' ||
+                errCode === 'bad_verify_email_code' ||
+                errCode === 'bad_verify_email_code_format'
         });
     } catch (err) {
         console.error('cabinetPage:', err.message);

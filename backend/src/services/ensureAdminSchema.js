@@ -608,6 +608,16 @@ const ensureAdminSchema = async () => {
         console.error('ensureAdminSchema users password_hash nullable:', err.message);
     }
 
+    try {
+        await db.execute(
+            'ALTER TABLE users ADD COLUMN email_verified TINYINT NOT NULL DEFAULT 0'
+        );
+    } catch (err) {
+        if (!err || err.code !== 'ER_DUP_FIELDNAME') {
+            console.error('ensureAdminSchema users email_verified:', err.message);
+        }
+    }
+
     await dropObsoleteTables();
     await upgradeOrdersTable();
     await dropProductLegacyColorColumns();
