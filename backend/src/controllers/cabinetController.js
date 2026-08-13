@@ -11,6 +11,7 @@ const orderCancelService = require('../services/orderCancelService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const emailService = require('../services/emailService');
+const cloudinaryService = require('../services/cloudinaryService');
 const paymentToken = require('../utils/paymentToken');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
@@ -215,7 +216,20 @@ const updateAvatar = async (req, res) => {
         }
 
         const profile = await UserModel.getUserid(current.user_id);
-        const avatar_url = `/uploads/avatars/${req.file.filename}`;
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/avatars',
+            '/uploads/avatars/' + req.file.filename
+        );
+        if (!stored.ok) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'avatar_not_saved',
+                message: stored.message || 'Не вдалося зберегти аватар'
+            });
+        }
+
+        const avatar_url = stored.url;
         const updated = await UserModel.updateAvatarUrlById({
             user_id: current.user_id,
             avatar_url

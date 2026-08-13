@@ -618,6 +618,38 @@ const ensureAdminSchema = async () => {
         }
     }
 
+    try {
+        await db.execute('ALTER TABLE products MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema products image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE categories MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema categories image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE product_color_variants MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema variants image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE users MODIFY avatar_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema users avatar_url length:', err.message);
+        }
+    }
+
     await dropObsoleteTables();
     await upgradeOrdersTable();
     await dropProductLegacyColorColumns();

@@ -132,7 +132,7 @@ const savePreviewJson = async (req, res) => {
         }
 
         const image = req.body.image;
-        const saved = bouquetPreviewService.savePreviewImage(previewKey, image);
+        const saved = await bouquetPreviewService.savePreviewImage(previewKey, image);
         if (!saved.ok) {
             return res.status(400).json(saved);
         }

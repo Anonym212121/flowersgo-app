@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const Product = require('../models/Product');
+const cloudinaryService = require('../services/cloudinaryService');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'products');
 
@@ -59,7 +60,16 @@ const uploadProductImage = async (req, res) => {
             return res.status(400).json({ message: 'Невірний product_id' });
         }
 
-        const publicUrl = `/uploads/products/${req.file.filename}`;
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/products',
+            '/uploads/products/' + req.file.filename
+        );
+        if (!stored.ok) {
+            return res.status(500).json({ message: stored.message || 'Не вдалося зберегти фото' });
+        }
+
+        const publicUrl = stored.url;
         const updated = await Product.updateImageUrl(productId, publicUrl);
 
         if (!updated) {
