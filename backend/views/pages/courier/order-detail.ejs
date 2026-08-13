@@ -47,6 +47,12 @@ const shiftOn = !!onShift;
                 <span class="warehouse-order-detail-value"><%= o.recipient_note %></span>
             </div>
         <% } %>
+        <% if (o.greeting_card_text) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Листівка</span>
+                <span class="warehouse-order-detail-value">(+50 грн) <%= o.greeting_card_text %></span>
+            </div>
+        <% } %>
     </div>
 
     <div class="warehouse-detail-actions">

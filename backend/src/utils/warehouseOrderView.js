@@ -191,6 +191,7 @@ const mapOrderForWarehouse = (row) => {
         delivery_place_display: orderDeliveryFields.formatDeliveryPlaceFromRow(row),
         recipient_note: orderDeliveryFields.recipientNoteFromRow(row),
         bouquet_note: orderDeliveryFields.bouquetNoteFromRow(row),
+        greeting_card_text: orderDeliveryFields.greetingCardTextFromRow(row),
         phone_links: phoneLinks,
         courier_name: row.courier_name || '',
         needs_courier: needsCourier,

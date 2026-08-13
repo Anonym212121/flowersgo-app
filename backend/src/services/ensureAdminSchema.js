@@ -659,10 +659,10 @@ const upgradeOrdersTable = async () => {
     await addColumnIfMissing('orders', 'delivery_apartment VARCHAR(50) NULL', 'orders delivery_apartment');
     await addColumnIfMissing('orders', 'recipient_note VARCHAR(500) NULL', 'orders recipient_note');
     await addColumnIfMissing('orders', 'bouquet_note TEXT NULL', 'orders bouquet_note');
+    await addColumnIfMissing('orders', 'greeting_card_text VARCHAR(500) NULL', 'orders greeting_card_text');
 
     const deadOrderColumns = [
         'order_number',
-        'greeting_card_text',
         'ai_generated_image_url',
         'guest_email',
         'guest_phone',

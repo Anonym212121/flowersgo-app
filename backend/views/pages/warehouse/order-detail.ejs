@@ -94,6 +94,9 @@ const logWorkerName = (row) => {
             <% if (o.bouquet_note) { %>
                 <p class="warehouse-bouquet-note"><%= o.bouquet_note %></p>
             <% } %>
+            <% if (o.greeting_card_text) { %>
+                <p class="warehouse-bouquet-note"><strong>Листівка (+50 грн):</strong> <%= o.greeting_card_text %></p>
+            <% } %>
             <ul class="warehouse-items-list warehouse-items-list--stock">
                 <% for (const it of safeItems) { %>
                     <% const needQty = Number(it.quantity || 0); %>

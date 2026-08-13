@@ -130,6 +130,28 @@ const checkoutAuthNext = isCartMode
                 </div>
             </div>
 
+            <div class="checkout-step-card checkout-future-step checkout-future-step--active" id="checkoutStepGreetingCard">
+                <h2 class="checkout-step-heading">Листівка</h2>
+                <label class="checkout-radio-label">
+                    <input type="checkbox" name="want_greeting_card" value="1" id="wantGreetingCard" />
+                    Додати листівку (+<%= Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50) %> грн)
+                </label>
+                <div id="greetingCardFields" hidden>
+                    <label class="auth-label">
+                        Текст на листівці
+                        <textarea
+                            class="auth-input"
+                            name="greeting_card_text"
+                            id="greetingCardText"
+                            rows="3"
+                            maxlength="500"
+                            placeholder="Наприклад: З Днем народження!"
+                        ></textarea>
+                    </label>
+                    <p class="checkout-payment-hint">Текст покладуть у листівку до букета. До 500 символів.</p>
+                </div>
+            </div>
+
             <div class="checkout-step-card checkout-future-step checkout-future-step--active" id="deliveryCard">
                 <h2 class="checkout-step-heading">3. Доставка</h2>
 
@@ -286,6 +308,10 @@ const checkoutAuthNext = isCartMode
                         <span>Доставка</span>
                         <span class="checkout-summary-row-value" id="checkoutDeliveryFee">Безкоштовно</span>
                     </div>
+                    <div class="checkout-summary-row" id="checkoutGreetingCardRow" hidden>
+                        <span>Листівка</span>
+                        <span class="checkout-summary-row-value" id="checkoutGreetingCardFee">0 грн</span>
+                    </div>
                     <div class="checkout-summary-row checkout-summary-row--total">
                         <span>Разом до сплати</span>
                         <strong id="checkoutGrandTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
@@ -324,6 +350,7 @@ const checkoutAuthNext = isCartMode
 
 <script type="application/json" id="checkoutPageConfig"><%- JSON.stringify({
     deliveryConfig: typeof deliveryConfig !== 'undefined' ? deliveryConfig : null,
+    greetingCardFee: Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50),
     profileAddress: {
         street: profileDeliveryStreet,
         house: profileDeliveryHouse,
@@ -335,6 +362,7 @@ const checkoutAuthNext = isCartMode
 <script>
 var checkoutPageConfig = JSON.parse(document.getElementById('checkoutPageConfig').textContent);
 var DELIVERY_CONFIG = checkoutPageConfig.deliveryConfig;
+var GREETING_CARD_FEE = Number(checkoutPageConfig.greetingCardFee) || 50;
 var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
 (function () {
     var form = document.getElementById('checkoutOrderForm');
@@ -500,6 +528,11 @@ function applyProfileAddressIfNeeded() {
     var hiddenTime = document.getElementById('deliveryTimeHidden');
     var feeOut = document.getElementById('checkoutDeliveryFee');
     var grandOut = document.getElementById('checkoutGrandTotal');
+    var cardFeeOut = document.getElementById('checkoutGreetingCardFee');
+    var cardFeeRow = document.getElementById('checkoutGreetingCardRow');
+    var wantCardInput = document.getElementById('wantGreetingCard');
+    var cardFields = document.getElementById('greetingCardFields');
+    var cardTextInput = document.getElementById('greetingCardText');
     var streetInput = document.getElementById('deliveryStreet');
     var houseInput = document.getElementById('deliveryHouse');
     var itemsField = document.getElementById('checkoutItemsJson');
@@ -663,13 +696,38 @@ function applyProfileAddressIfNeeded() {
         return Number(fee) || 0;
     }
 
+    function currentCardFee() {
+        return wantCardInput && wantCardInput.checked ? GREETING_CARD_FEE : 0;
+    }
+
+    function syncGreetingCardUi(clearTextWhenOff) {
+        var on = !!(wantCardInput && wantCardInput.checked);
+        if (cardFields) {
+            cardFields.hidden = !on;
+        }
+        if (cardTextInput) {
+            cardTextInput.required = on;
+            if (!on && clearTextWhenOff) {
+                cardTextInput.value = '';
+            }
+        }
+        syncTotals();
+    }
+
     function syncTotals() {
         var fee = currentFee();
+        var cardFee = currentCardFee();
         if (feeOut) {
             feeOut.textContent = fee > 0 ? fee.toLocaleString('uk-UA') + ' грн' : 'Безкоштовно';
         }
+        if (cardFeeRow) {
+            cardFeeRow.hidden = cardFee <= 0;
+        }
+        if (cardFeeOut) {
+            cardFeeOut.textContent = cardFee.toLocaleString('uk-UA') + ' грн';
+        }
         if (grandOut) {
-            var grand = getItemsTotal() + fee;
+            var grand = getItemsTotal() + fee + cardFee;
             grandOut.textContent = grand.toLocaleString('uk-UA') + ' грн';
         }
     }
@@ -758,6 +816,12 @@ function applyProfileAddressIfNeeded() {
         syncHiddenTime();
     });
     document.addEventListener('checkout:itemschanged', syncTotals);
+    if (wantCardInput) {
+        wantCardInput.addEventListener('change', function () {
+            syncGreetingCardUi(true);
+        });
+        syncGreetingCardUi(false);
+    }
 
     syncByMethod();
 })();
@@ -860,6 +924,7 @@ function applyProfileAddressIfNeeded() {
     var textNames = [
         'customer_first_name', 'customer_last_name', 'customer_phone', 'customer_email',
         'recipient_first_name', 'recipient_last_name', 'recipient_phone', 'recipient_note',
+        'greeting_card_text',
         'delivery_street', 'delivery_house', 'delivery_apartment'
     ];
 
@@ -1075,6 +1140,8 @@ function applyProfileAddressIfNeeded() {
         data.delivery_method = getRadio('delivery_method');
         data.recipient_mode = getRadio('recipient_mode');
         data.payment_method = getRadio('payment_method');
+        var wantCard = document.getElementById('wantGreetingCard');
+        data.want_greeting_card = !!(wantCard && wantCard.checked);
         data.last_step = lastFocusedStep;
         var dateEl = document.getElementById('deliveryDate');
         if (dateEl) {
@@ -1116,6 +1183,18 @@ function applyProfileAddressIfNeeded() {
             var el = form.querySelector('[name="' + textNames[i] + '"]');
             if (el && typeof data[textNames[i]] === 'string') {
                 el.value = data[textNames[i]];
+            }
+        }
+
+        var wantCard = document.getElementById('wantGreetingCard');
+        if (wantCard) {
+            wantCard.checked = data.want_greeting_card === true || data.want_greeting_card === '1';
+            wantCard.dispatchEvent(new Event('change'));
+            if (wantCard.checked && typeof data.greeting_card_text === 'string') {
+                var cardText = document.getElementById('greetingCardText');
+                if (cardText) {
+                    cardText.value = data.greeting_card_text;
+                }
             }
         }
 

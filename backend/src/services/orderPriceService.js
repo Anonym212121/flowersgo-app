@@ -1,6 +1,8 @@
 const db = require('../config/db');
 const { mergeCartItems } = require('../utils/cartItemMerge');
 
+const GREETING_CARD_FEE = 50;
+
 const roundMoney = (value) => {
     const n = Number(value);
     if (!Number.isFinite(n)) {
@@ -11,6 +13,10 @@ const roundMoney = (value) => {
 
 const mergeOrderItems = (rawItems) => {
     return mergeCartItems(rawItems);
+};
+
+const resolveGreetingCardFee = (wantCard) => {
+    return wantCard ? GREETING_CARD_FEE : 0;
 };
 
 const resolveItemsPrices = async (rawItems) => {
@@ -83,6 +89,8 @@ const resolveItemsPrices = async (rawItems) => {
 };
 
 module.exports = {
+    GREETING_CARD_FEE,
     roundMoney,
-    resolveItemsPrices
+    resolveItemsPrices,
+    resolveGreetingCardFee
 };

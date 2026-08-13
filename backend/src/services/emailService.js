@@ -107,11 +107,11 @@ const sendViaResend = async ({ to, subject, text }) => {
         return { ok: false, message: 'RESEND_API_KEY не налаштований на сервері.' };
     }
 
-    const from = normalizeResendFrom(trimEnv('RESEND_FROM'));
+    const from = normalizeResendFrom(trimEnv('RESEND_FROM') || 'noreply@flowersgo.online');
     if (!from) {
         return {
             ok: false,
-            message: 'RESEND_FROM не налаштований. Вкажіть підтверджений email відправника у змінних Render.'
+            message: 'RESEND_FROM невалідний. Вкажіть підтверджений email відправника (напр. noreply@flowersgo.online).'
         };
     }
 

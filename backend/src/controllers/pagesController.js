@@ -10,6 +10,7 @@ const constructorService = require('../services/constructorService');
 const bouquetPreviewService = require('../services/bouquetPreviewService');
 const deliveryService = require('../services/deliveryService');
 const paymentService = require('../services/paymentService');
+const orderPriceService = require('../services/orderPriceService');
 const orderCancelService = require('../services/orderCancelService');
 const refundStatusLabel = require('../utils/refundStatusLabel');
 const formatDelivery = require('../utils/formatDelivery');
@@ -331,6 +332,7 @@ const checkoutPage = async (req, res) => {
                 constructorPreview: bouquetPreviewService.getPreviewFromRequest(req),
                 googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
                 deliveryConfig: deliveryConfig,
+                greetingCardFee: orderPriceService.GREETING_CARD_FEE,
                 checkoutProfile,
                 turboVisitControl: 'reload'
             });
@@ -379,6 +381,7 @@ const checkoutPage = async (req, res) => {
             upsells,
             googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
             deliveryConfig: deliveryConfig,
+            greetingCardFee: orderPriceService.GREETING_CARD_FEE,
             checkoutProfile,
             turboVisitControl: 'reload'
         });

@@ -1037,6 +1037,9 @@
         const bouquetNote = o.bouquet_note_display
             ? `<p><strong>Примітка до букета:</strong> ${api.escapeHtml(o.bouquet_note_display)}</p>`
             : '';
+        const greetingCard = o.greeting_card_text_display
+            ? `<p><strong>Листівка (+50 грн):</strong> ${api.escapeHtml(o.greeting_card_text_display)}</p>`
+            : '';
         const deliveryPlace = o.delivery_place || o.delivery_address || '—';
 
         content.innerHTML = `
@@ -1072,6 +1075,7 @@
                     <p><strong>Адреса:</strong><br>${api.escapeHtml(deliveryPlace)}</p>
                     ${recipientNote}
                     ${bouquetNote}
+                    ${greetingCard}
                 </section>
             </div>
             ${courierBlock}

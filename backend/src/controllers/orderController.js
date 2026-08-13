@@ -210,6 +210,21 @@ const createOrder = async (req, res) => {
         }
 
         const bouquetNote = constructorService.getNoteFromRequest(req);
+        const wantGreetingCard =
+            req.body.want_greeting_card === '1' ||
+            req.body.want_greeting_card === 'on' ||
+            req.body.want_greeting_card === true;
+        const greetingCardRaw =
+            typeof req.body.greeting_card_text === 'string' ? req.body.greeting_card_text.trim() : '';
+        let greeting_card_text = null;
+        let greeting_card_fee = 0;
+        if (wantGreetingCard) {
+            if (!greetingCardRaw) {
+                return checkoutError(req, res, 400, 'Вкажи текст для листівки');
+            }
+            greeting_card_text = greetingCardRaw.slice(0, 500);
+            greeting_card_fee = orderPriceService.resolveGreetingCardFee(true);
+        }
 
         let receiver_name = '';
         let receiver_phone = '';
@@ -222,7 +237,9 @@ const createOrder = async (req, res) => {
         }
 
         const itemsTotal = priceResult.itemsTotal;
-        const total_price = orderPriceService.roundMoney(itemsTotal + delivery_fee);
+        const total_price = orderPriceService.roundMoney(
+            itemsTotal + delivery_fee + greeting_card_fee
+        );
 
         const stockCheck = await orderStockService.validateItemsStock(items);
         if (!stockCheck.ok) {
@@ -240,6 +257,7 @@ const createOrder = async (req, res) => {
             delivery_apartment: delivery_method === 'pickup' ? null : apartment || null,
             recipient_note: recipient_mode === 'other' ? recNote || null : null,
             bouquet_note: bouquetNote || null,
+            greeting_card_text,
             delivery_method,
             delivery_datetime,
             total_price,

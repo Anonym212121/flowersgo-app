@@ -15,7 +15,8 @@ const ORDER_DELIVERY_STRUCT_SQL = `
                 o.delivery_house,
                 o.delivery_apartment,
                 o.recipient_note,
-                o.bouquet_note,`;
+                o.bouquet_note,
+                o.greeting_card_text,`;
 
 const getStatusIdByName = async (name) => {
     const [rows] = await db.execute(
@@ -162,10 +163,10 @@ const createWithTransaction = async (payload) => {
                 user_id, status_id, delivery_address,
                 customer_first_name, customer_last_name, customer_phone, customer_email,
                 delivery_street, delivery_house, delivery_apartment,
-                recipient_note, bouquet_note,
+                recipient_note, bouquet_note, greeting_card_text,
                 delivery_date, delivery_timeslot, delivery_method,
                 total_amount, receiver_name, receiver_phone, admin_approved, payment_deadline_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
             [
                 user_id,
                 status_id,
@@ -179,6 +180,7 @@ const createWithTransaction = async (payload) => {
                 deliveryMeta.delivery_apartment,
                 deliveryMeta.recipient_note,
                 deliveryMeta.bouquet_note,
+                deliveryMeta.greeting_card_text,
                 delivery_date,
                 delivery_timeslot,
                 deliveryMeta.delivery_method,
@@ -547,6 +549,11 @@ const getDetailForCourier = async (orderId, courierId) => {
                 o.payment_status,
                 o.receiver_name,
                 o.receiver_phone,
+                o.recipient_note,
+                o.greeting_card_text,
+                o.delivery_street,
+                o.delivery_house,
+                o.delivery_apartment,
                 o.cancel_request_at,
                 o.cancel_request_note,
                 o.courier_id,
@@ -1883,6 +1890,7 @@ const getRowForCustomerNotify = async (orderId) => {
                 o.delivery_apartment,
                 o.recipient_note,
                 o.bouquet_note,
+                o.greeting_card_text,
                 o.receiver_name,
                 o.receiver_phone,
                 o.payment_status,
@@ -1922,6 +1930,7 @@ const getDetailForWarehouse = async (orderId) => {
                 o.delivery_apartment,
                 o.recipient_note,
                 o.bouquet_note,
+                o.greeting_card_text,
                 o.delivery_date,
                 o.delivery_timeslot,
                 o.delivery_method,
