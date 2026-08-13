@@ -76,10 +76,36 @@ describe('Валідація логіну', () => {
         expect(result).toEqual({
             ok: true,
             data: {
+                login_type: 'email',
                 email: 'user@example.com',
                 password: '12345678'
             }
         });
+    });
+
+    test('приймає номер телефону і пароль', () => {
+        const result = loginValidator({
+            email: '+380991112233',
+            password: '12345678'
+        });
+        expect(result).toEqual({
+            ok: true,
+            data: {
+                login_type: 'phone',
+                phone: '+380991112233',
+                password: '12345678'
+            }
+        });
+    });
+
+    test('нормалізує номер без плюса', () => {
+        const result = loginValidator({
+            email: '0991112233',
+            password: '12345678'
+        });
+        expect(result.ok).toBe(true);
+        expect(result.data.login_type).toBe('phone');
+        expect(result.data.phone).toBe('+380991112233');
     });
 
     test('блокує порожній пароль', () => {
@@ -88,5 +114,14 @@ describe('Валідація логіну', () => {
             password: ''
         });
         expect(result.ok).toBe(false);
+    });
+
+    test('блокує порожній email і номер', () => {
+        const result = loginValidator({
+            email: '',
+            password: '12345678'
+        });
+        expect(result.ok).toBe(false);
+        expect(result.message).toBe('Вкажи email або номер телефону');
     });
 });

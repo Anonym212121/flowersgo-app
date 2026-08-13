@@ -74,6 +74,49 @@ const findUserByEmailWithRole = async (email) => {
     return rows[0] || null;
 };
 
+const findUserByPhoneWithRole = async (phone) => {
+    const raw = typeof phone === 'string' ? phone.trim() : '';
+    if (!raw) {
+        return null;
+    }
+
+    const digits = raw.replace(/\D/g, '');
+    if (digits.length < 9) {
+        return null;
+    }
+
+    const national = digits.slice(-9);
+    const withCountry = '380' + national;
+    const withPlus = '+380' + national;
+    const withZero = '0' + national;
+    const phoneDigitsSql =
+        "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(IFNULL(u.phone, ''), '+', ''), ' ', ''), '-', ''), '(', ''), ')', '')";
+
+    const [rows] = await db.execute(
+        `SELECT
+            u.id, u.role_id, r.role_name,
+            u.first_name, u.last_name, u.email, u.password_hash, u.google_id,
+            u.phone, u.avatar_url, u.loyalty_points,
+            COALESCE(u.is_blocked, 0) AS is_blocked,
+            u.block_reason_key,
+            u.block_reason_text
+         FROM users u
+         INNER JOIN roles r ON u.role_id = r.id
+         WHERE u.phone IS NOT NULL
+           AND TRIM(u.phone) <> ''
+           AND (
+                u.phone = ?
+                OR ${phoneDigitsSql} = ?
+                OR ${phoneDigitsSql} = ?
+                OR RIGHT(${phoneDigitsSql}, 9) = ?
+           )
+         LIMIT 1`,
+        [withPlus, withCountry, withZero, national]
+    );
+
+    return rows[0] || null;
+};
+
 const findByGoogleId = async (googleId) => {
     const gid = typeof googleId === 'string' ? googleId.trim() : '';
     if (!gid) {
@@ -552,6 +595,7 @@ module.exports = {
     createGoogleUser,
     linkGoogleId,
     findUserByEmailWithRole,
+    findUserByPhoneWithRole,
     findByEmailExceptUserId,
     updateProfileById,
     updateAvatarUrlById,

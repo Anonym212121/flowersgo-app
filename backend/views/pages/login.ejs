@@ -3,8 +3,16 @@
 <div class="auth-card">
     <form id="loginForm" class="auth-form">
         <label class="auth-label">
-            Email
-            <input class="auth-input" type="email" name="email" autocomplete="email" required />
+            Email або телефон
+            <input
+                class="auth-input"
+                type="text"
+                name="email"
+                autocomplete="username"
+                inputmode="text"
+                placeholder="name@example.com або +380XXXXXXXXX"
+                required
+            />
         </label>
 
         <label class="auth-label">
@@ -86,9 +94,14 @@
             steps: [
                 {
                     name: 'email',
-                    title: 'Email',
+                    title: 'Email або телефон',
                     check: function (val) {
-                        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(val || '').trim());
+                        var s = String(val || '').trim();
+                        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s)) {
+                            return true;
+                        }
+                        var digits = s.replace(/\D/g, '');
+                        return digits.length >= 10 && digits.length <= 13;
                     }
                 },
                 {

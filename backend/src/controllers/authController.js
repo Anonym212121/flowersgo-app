@@ -76,6 +76,22 @@ const buildPublicUser = (user) => ({
     loyalty_points: user.loyalty_points
 });
 
+const findUserForPasswordLogin = async (loginData) => {
+    if (loginData.login_type === 'phone') {
+        return {
+            user: await UserModel.findUserByPhoneWithRole(loginData.phone),
+            notFoundMessage: 'Цей номер не зареєстровано'
+        };
+    }
+
+    return {
+        user: await UserModel.findUserByEmailWithRole(loginData.email),
+        notFoundMessage: 'Цей email не зареєстровано'
+    };
+};
+
+const googleOnlyLoginMessage = 'Цей акаунт входить через Google. Скористайся кнопкою Google нижче.';
+
 const register = async (req, res) => {
     try {
         const validation = registerValidator(req.body);
@@ -124,20 +140,21 @@ const login = async (req, res) => {
             return res.status(400).json({ message: validation.message });
         }
 
-        const { email, password } = validation.data;
+        const { password } = validation.data;
+        const found = await findUserForPasswordLogin(validation.data);
+        const user = found.user;
 
-        const user = await UserModel.findUserByEmailWithRole(email);
         if (!user) {
-            return res.status(401).json({ message: 'Невірний email або пароль' });
+            return res.status(401).json({ message: found.notFoundMessage });
         }
 
         if (!user.password_hash) {
-            return res.status(401).json({ message: 'Невірний email або пароль' });
+            return res.status(401).json({ message: googleOnlyLoginMessage });
         }
 
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Невірний email або пароль' });
+            return res.status(401).json({ message: 'Невірний пароль' });
         }
 
         if (Number(user.is_blocked) === 1) {
@@ -163,23 +180,22 @@ const login = async (req, res) => {
 
 const blockedInfo = async (req, res) => {
     try {
-        const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
-        const password = typeof req.body.password === 'string' ? req.body.password : '';
-
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Вкажіть email і пароль' });
+        const validation = loginValidator(req.body);
+        if (!validation.ok) {
+            return res.status(400).json({ message: validation.message });
         }
 
-        const user = await UserModel.findUserByEmailWithRole(email);
+        const found = await findUserForPasswordLogin(validation.data);
+        const user = found.user;
         if (!user) {
-            return res.status(404).json({ message: 'Користувача не знайдено' });
+            return res.status(404).json({ message: found.notFoundMessage });
         }
 
         if (!user.password_hash) {
-            return res.status(401).json({ message: 'Невірний пароль' });
+            return res.status(401).json({ message: googleOnlyLoginMessage });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(validation.data.password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Невірний пароль' });
         }
@@ -198,28 +214,27 @@ const blockedInfo = async (req, res) => {
 
 const blockedMessage = async (req, res) => {
     try {
-        const email = typeof req.body.email === 'string' ? req.body.email.trim() : '';
-        const password = typeof req.body.password === 'string' ? req.body.password : '';
-        const message_text = typeof req.body.message === 'string' ? req.body.message.trim() : '';
-
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Вкажіть email і пароль' });
+        const validation = loginValidator(req.body);
+        if (!validation.ok) {
+            return res.status(400).json({ message: validation.message });
         }
 
+        const message_text = typeof req.body.message === 'string' ? req.body.message.trim() : '';
         if (message_text.length < 5) {
             return res.status(400).json({ message: 'Повідомлення занадто коротке' });
         }
 
-        const user = await UserModel.findUserByEmailWithRole(email);
+        const found = await findUserForPasswordLogin(validation.data);
+        const user = found.user;
         if (!user) {
-            return res.status(404).json({ message: 'Користувача не знайдено' });
+            return res.status(404).json({ message: found.notFoundMessage });
         }
 
         if (!user.password_hash) {
-            return res.status(401).json({ message: 'Невірний пароль' });
+            return res.status(401).json({ message: googleOnlyLoginMessage });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password_hash);
+        const isMatch = await bcrypt.compare(validation.data.password, user.password_hash);
         if (!isMatch) {
             return res.status(401).json({ message: 'Невірний пароль' });
         }

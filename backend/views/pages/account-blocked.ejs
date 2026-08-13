@@ -2,13 +2,21 @@
 
 <div class="auth-card blocked-account-card">
     <p class="blocked-account-lead">
-        Щоб переглянути причину блокування, підтвердіть email і пароль від акаунта.
+        Щоб переглянути причину блокування, підтвердіть email або номер телефону і пароль від акаунта.
     </p>
 
     <form id="blockedVerifyForm" class="auth-form">
         <label class="auth-label">
-            Email
-            <input class="auth-input" type="email" name="email" id="blockedEmail" autocomplete="email" required />
+            Email або телефон
+            <input
+                class="auth-input"
+                type="text"
+                name="email"
+                id="blockedEmail"
+                autocomplete="username"
+                placeholder="name@example.com або +380XXXXXXXXX"
+                required
+            />
         </label>
 
         <label class="auth-label">
