@@ -39,10 +39,10 @@ jobs:
           git remote add gitlab "https://${GITLAB_USERNAME}:${GITLAB_TOKEN}@${REPO_PATH}"
 
           BRANCH="${GITHUB_REF_NAME}"
-          echo "Дзеркалимо GitHub/${BRANCH} → GitLab/${BRANCH}"
+          echo "Дзеркалимо GitHub/${BRANCH} → GitLab/${BRANCH} (force, GitHub — джерело правди)"
 
           set +e
-          PUSH_OUT=$(git push gitlab "HEAD:refs/heads/${BRANCH}" 2>&1)
+          PUSH_OUT=$(git push --force gitlab "HEAD:refs/heads/${BRANCH}" 2>&1)
           PUSH_CODE=$?
           set -e
 
@@ -51,11 +51,12 @@ jobs:
           if [ "$PUSH_CODE" -ne 0 ]; then
             if echo "$PUSH_OUT" | grep -qiE "protected|pre-receive hook declined|not allowed to push"; then
               echo "::error::GitLab відхилив push — гілка ${BRANCH} захищена."
-              echo "GitLab → Settings → Repository → Protected branches → ${BRANCH} → Allowed to push: Maintainers + твій PAT"
+              echo "GitLab → Settings → Repository → Protected branches → ${BRANCH}:"
+              echo "Allowed to push: Maintainers; Allowed to force push: увімкни для цієї гілки."
             elif echo "$PUSH_OUT" | grep -qiE "401|403|authentication|access denied|could not read Username|invalid credentials"; then
               echo "::error::Помилка авторизації GitLab. Перевір GITLAB_USERNAME і GITLAB_TOKEN (scope: write_repository)."
             elif echo "$PUSH_OUT" | grep -qiE "non-fast-forward|rejected"; then
-              echo "::error::Історія на GitLab відрізняється від GitHub (non-fast-forward). Зроби MR або sync вручну."
+              echo "::error::GitLab все ще відхилив force-push. Перевір Protected branches (force push)."
             else
               echo "::error::git push завершився з кодом ${PUSH_CODE}"
             fi
