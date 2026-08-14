@@ -5,7 +5,7 @@ const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
 
 const WELCOME_MESSAGE =
-    'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити — оператор незабаром підключиться до чату.';
+    'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
 
 const getWelcomeMessage = () => WELCOME_MESSAGE;
 
@@ -71,12 +71,12 @@ const notifyAdminsNewChat = async (chatId, chat) => {
         await NotificationModel.insertForUsers(adminIds, {
             ntype: 'support_chat_open',
             title: 'Новий чат підтримки',
-            body: name + ' — чат №' + chatId,
+            body: name + ' - чат №' + chatId,
             link_url: '/admin?support=' + chatId
         });
         await notificationEmailService.sendForUserIds(adminIds, {
             title: 'Новий чат підтримки',
-            body: name + ' — чат №' + chatId,
+            body: name + ' - чат №' + chatId,
             link_url: '/admin?support=' + chatId
         });
     } catch (err) {
@@ -347,7 +347,7 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
         return { ok: false, message: 'Не вдалося надіслати повідомлення' };
     }
 
-    await addSystemMessage(chat.id, 'Дякуємо за звернення! Ваше повідомлення отримано — очікуйте відповіді оператора.');
+    await addSystemMessage(chat.id, 'Дякуємо за звернення! Ваше повідомлення отримано - очікуйте відповіді оператора.');
 
     const fullChat = await SupportChatModel.findById(chat.id);
     await notifyAdminsNewChat(chat.id, fullChat);
@@ -468,7 +468,7 @@ const closeChatForAdmin = async (chatId, adminId) => {
         return { ok: false, message: 'Не вдалося закрити чат' };
     }
 
-    await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову — відкрийте новий чат.');
+    await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову - відкрийте новий чат.');
 
     return { ok: true };
 };

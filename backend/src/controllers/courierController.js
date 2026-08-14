@@ -114,7 +114,7 @@ const courierOrdersPage = async (req, res) => {
             invalid_transition: 'Недопустимий перехід статусу',
             cancel_pending: 'Замовлення на скасуванні',
             waiting_warehouse: 'Замовлення ще комплектується на складі',
-            need_shipped: 'Спочатку забери замовлення на складі — «В дорозі»',
+            need_shipped: 'Спочатку забери замовлення на складі - «В дорозі»',
             off_shift: 'Увімкни зміну, щоб працювати з доставками',
             update_failed: 'Не вдалося оновити статус',
             not_delivered: 'Спочатку відміть «Доставлено»',
@@ -233,7 +233,7 @@ const courierOrderDetailPage = async (req, res) => {
             invalid_transition: 'Недопустимий перехід статусу',
             cancel_pending: 'Замовлення на скасуванні',
             waiting_warehouse: 'Замовлення ще комплектується на складі',
-            need_shipped: 'Спочатку забери замовлення на складі — «В дорозі»',
+            need_shipped: 'Спочатку забери замовлення на складі - «В дорозі»',
             off_shift: 'Увімкни зміну',
             update_failed: 'Не вдалося оновити статус',
             not_delivered: 'Спочатку відміть «Доставлено»',
@@ -287,7 +287,7 @@ const courierShiftPage = async (req, res) => {
             if (onShift && Number.isFinite(assignedRaw) && assignedRaw > 0) {
                 successMessage = 'Зміну розпочато. Авто-призначено замовлень: ' + assignedRaw;
             } else if (onShift) {
-                successMessage = 'Ти на зміні — нові доставки можуть призначатися автоматично';
+                successMessage = 'Ти на зміні - нові доставки можуть призначатися автоматично';
             } else {
                 successMessage = 'Зміну завершено';
             }
@@ -297,7 +297,7 @@ const courierShiftPage = async (req, res) => {
         if (req.query.err === 'server') {
             errorMessage = 'Помилка сервера';
         } else if (req.query.err === 'active_orders') {
-            errorMessage = 'Спочатку заверши активні доставки — без цього зміну не можна закрити';
+            errorMessage = 'Спочатку заверши активні доставки - без цього зміну не можна закрити';
         }
 
         return renderLayout(res, 'Моя зміна', 'pages/courier/shift', {

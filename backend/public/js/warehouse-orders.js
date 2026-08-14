@@ -52,7 +52,7 @@
         hintEl.hidden = false;
         if (autoReload && !userIsEditing()) {
             hintEl.innerHTML =
-                'Є нові зміни — оновлюю список… ' +
+                'Є нові зміни - оновлюю список… ' +
                 '<button type="button" class="warehouse-poll-refresh" id="warehousePollRefresh">зараз</button>';
             var btn = document.getElementById('warehousePollRefresh');
             if (btn) {

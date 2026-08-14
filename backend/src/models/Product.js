@@ -789,7 +789,7 @@ const listStockForWarehouse = async ({ search, filter, lowLimit, typeFilter } = 
         SELECT 'constructor' AS row_type,
                p.id AS product_id,
                v.id AS variant_id,
-               CONCAT(p.name, ' — ', v.flower_color) AS display_name,
+               CONCAT(p.name, ' - ', v.flower_color) AS display_name,
                v.stock_quantity,
                p.unit_type,
                c.name AS category_name,

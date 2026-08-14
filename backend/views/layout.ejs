@@ -9,9 +9,9 @@
     const shopName = 'FlowersGo';
     const pageTitle = typeof title === 'string' ? title.trim() : shopName;
     const documentTitle =
-        pageTitle === shopName || pageTitle.endsWith(' — ' + shopName) || pageTitle.endsWith(' | ' + shopName)
+        pageTitle === shopName || pageTitle.endsWith(' - ' + shopName) || pageTitle.endsWith(' | ' + shopName)
             ? pageTitle
-            : pageTitle + ' — ' + shopName;
+            : pageTitle + ' - ' + shopName;
     %>
     <title><%= documentTitle %></title>
     <script>

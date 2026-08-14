@@ -33,7 +33,7 @@
         if (pushBlocked) {
             noteHtml = '<p class="alert-toggles__note">Push заблоковано в браузері. Дозвольте сповіщення в налаштуваннях сайту.</p>';
         } else if (perm !== 'granted') {
-            noteHtml = '<p class="alert-toggles__note">Увімкніть push — браузер запитає дозвіл.</p>';
+            noteHtml = '<p class="alert-toggles__note">Увімкніть push - браузер запитає дозвіл.</p>';
         }
 
         container.innerHTML =
@@ -70,7 +70,7 @@
                         window.SiteAlerts.setPushOn(false);
                         renderAlertSettings(container);
                         if (typeof window.showToast === 'function') {
-                            window.showToast('Push не увімкнено — перевірте дозволи браузера', 'error');
+                            window.showToast('Push не увімкнено - перевірте дозволи браузера', 'error');
                         }
                         return;
                     }

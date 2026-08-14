@@ -21,7 +21,7 @@ const trimText = (raw, maxLen) => {
 
 const formatDeliveryPlaceFromRow = (row) => {
     if (!row) {
-        return '—';
+        return '-';
     }
     if (row.delivery_method === 'pickup') {
         return 'Самовивіз';
@@ -115,7 +115,7 @@ const buildDeliverySummary = (payload) => {
     }
 
     const place = formatDeliveryPlaceFromRow(payload);
-    if (place && place !== '—') {
+    if (place && place !== '-') {
         parts.push('');
         parts.push('Адреса доставки:');
         parts.push(place);
@@ -138,7 +138,7 @@ const buildDeliverySummary = (payload) => {
 
 const formatOrderDeliveryDisplay = (row) => {
     if (!row) {
-        return '—';
+        return '-';
     }
 
     const summary = typeof row.delivery_address === 'string' ? row.delivery_address.trim() : '';
@@ -146,7 +146,7 @@ const formatOrderDeliveryDisplay = (row) => {
         return summary;
     }
 
-    return buildDeliverySummary(row) || summary || '—';
+    return buildDeliverySummary(row) || summary || '-';
 };
 
 const normalizeOrderDeliveryPayload = (payload) => {

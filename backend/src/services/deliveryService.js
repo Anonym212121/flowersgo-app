@@ -135,7 +135,7 @@ const validateSelection = (payload, now, config) => {
     const todayStart = startOfDay(nowTime);
     const deliveryDayStart = startOfDay(dt);
     if (deliveryDayStart.getTime() < todayStart.getTime()) {
-        return { ok: false, message: 'Дата доставки в минулому — оберіть сьогодні або пізніше' };
+        return { ok: false, message: 'Дата доставки в минулому - оберіть сьогодні або пізніше' };
     }
 
     if (method === 'pickup') {
@@ -150,7 +150,7 @@ const validateSelection = (payload, now, config) => {
         if (isSameDay(dt, nowTime)) {
             const earliest = new Date(nowTime.getTime() + config.pickupBufferMin * 60000);
             if (dt.getTime() < earliest.getTime()) {
-                return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання' };
+                return { ok: false, message: 'Оберіть пізніший час - потрібен час на складання' };
             }
         }
         return { ok: true, fee, deliveryDatetime: formatDateTime(dt) };
@@ -167,7 +167,7 @@ const validateSelection = (payload, now, config) => {
     if (isSameDay(dt, nowTime)) {
         const earliest = new Date(nowTime.getTime() + config.standardBufferMin * 60000);
         if (dt.getTime() < earliest.getTime()) {
-            return { ok: false, message: 'Оберіть пізніший час — потрібен час на складання й доставку' };
+            return { ok: false, message: 'Оберіть пізніший час - потрібен час на складання й доставку' };
         }
     }
 

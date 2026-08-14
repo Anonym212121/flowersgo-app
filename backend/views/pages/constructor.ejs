@@ -20,7 +20,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
             <h1 class="catalog-hero__title">Конструктор букета</h1>
 
-            <p class="catalog-hero__lead">Обери квіти, колір та кількість — ми зберемо букет перед відправкою. Мінімум <%= minStemsVal %> квіток.</p>
+            <p class="catalog-hero__lead">Обери квіти, колір та кількість - ми зберемо букет перед відправкою. Мінімум <%= minStemsVal %> квіток.</p>
 
         </div>
 
@@ -37,7 +37,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
         <section class="constructor-library" id="constructorLibrary" aria-label="Готові букети">
             <div class="constructor-library__head">
                 <h2 class="checkout-step-heading">Готові ідеї</h2>
-                <p class="constructor-library__lead">Обери шаблон — редагуй у конструкторі або купуй одразу.</p>
+                <p class="constructor-library__lead">Обери шаблон - редагуй у конструкторі або купуй одразу.</p>
             </div>
             <div class="constructor-library__grid" id="constructorLibraryGrid">
                 <p class="constructor-library__loading">Завантаження шаблонів…</p>
@@ -130,7 +130,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                                             style="--swatch-color: <%= swatch %>"
 
-                                            title="<%= colorTitle %><%= inStock ? '' : ' — немає на складі' %>"
+                                            title="<%= colorTitle %><%= inStock ? '' : ' - немає на складі' %>"
 
                                             aria-label="<%= colorTitle %>"
 
@@ -291,6 +291,18 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
     <% } %>
 
 </section>
+
+<div class="constructor-confirm" id="constructorEvenConfirm" hidden aria-hidden="true">
+    <div class="constructor-confirm__backdrop" data-even-confirm-close></div>
+    <div class="constructor-confirm__dialog" role="dialog" aria-modal="true" aria-labelledby="constructorEvenConfirmTitle">
+        <h2 class="constructor-confirm__title" id="constructorEvenConfirmTitle">Парна кількість квітів</h2>
+        <p class="constructor-confirm__text" id="constructorEvenConfirmText"></p>
+        <div class="constructor-confirm__actions">
+            <button type="button" class="constructor-clear-btn" data-even-confirm-close>Скасувати</button>
+            <button type="button" class="auth-button" id="constructorEvenConfirmOk">Так, продовжити</button>
+        </div>
+    </div>
+</div>
 
 
 

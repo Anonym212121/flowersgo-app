@@ -82,7 +82,7 @@
         const house = String(user.saved_delivery_house || '').trim();
         const apartment = String(user.saved_delivery_apartment || '').trim();
         if (!street || !house) {
-            return '—';
+            return '-';
         }
         let text = `${street}, буд. ${house}`;
         if (apartment) {
@@ -113,12 +113,12 @@
 
     const formatAdminDateTime = (raw) => {
         if (!raw) {
-            return '—';
+            return '-';
         }
         try {
             return new Date(raw).toLocaleString('uk-UA', { dateStyle: 'short', timeStyle: 'short' });
         } catch (e) {
-            return '—';
+            return '-';
         }
     };
 
@@ -141,7 +141,7 @@
         if (status) {
             return String(status);
         }
-        return '—';
+        return '-';
     };
 
     const deliveryMethodLabel = (method) => {
@@ -301,7 +301,7 @@
                     low[i].id +
                     '">' +
                     api.escapeHtml(low[i].name) +
-                    ' — ' +
+                    ' - ' +
                     low[i].stock_quantity +
                     ' шт</button></li>';
             }
@@ -571,8 +571,8 @@
         const rows = sortedList
             .map((c) => {
                 const parent = list.find((x) => Number(x.id) === Number(c.parent_id));
-                const parentName = parent ? parent.name : '—';
-                let photoCell = '—';
+                const parentName = parent ? parent.name : '-';
+                let photoCell = '-';
                 if (c.image_url) {
                     photoCell = `<img src="${api.escapeHtml(c.image_url)}" alt="" class="admin-cat-thumb">`;
                 }
@@ -592,13 +592,13 @@
                 if (idx < group.length - 1) {
                     moveBtns += `<button type="button" class="admin-cat-move admin-cat-move-down" data-id="${c.id}" title="Вниз">↓</button>`;
                 }
-                return `<tr class="admin-cat-row" data-name="${api.escapeHtml(c.name)}" data-parent="${api.escapeHtml(parentName === '—' ? '' : parentName)}">
+                return `<tr class="admin-cat-row" data-name="${api.escapeHtml(c.name)}" data-parent="${api.escapeHtml(parentName === '-' ? '' : parentName)}">
                     <td>${c.id}</td>
-                    <td class="admin-cat-move-cell">${moveBtns || '—'}</td>
+                    <td class="admin-cat-move-cell">${moveBtns || '-'}</td>
                     <td>${photoCell}</td>
                     <td>${api.escapeHtml(c.name)}</td>
                     <td>${api.escapeHtml(parentName)}</td>
-                    <td>${c.parent_id == null && Number(c.is_packaging) === 1 ? 'Так' : '—'}</td>
+                    <td>${c.parent_id == null && Number(c.is_packaging) === 1 ? 'Так' : '-'}</td>
                     <td>
                         <button type="button" class="admin-edit-btn admin-cat-edit" data-id="${c.id}">Редагувати</button>
                         <button type="button" class="admin-secondary-btn admin-cat-delete" data-id="${c.id}">Видалити</button>
@@ -929,7 +929,7 @@
                 courierData = { couriers: [] };
             }
             const couriers = Array.isArray(courierData.couriers) ? courierData.couriers : [];
-            let opts = '<option value="">— обрати —</option>';
+            let opts = '<option value="">- обрати -</option>';
             for (let i = 0; i < couriers.length; i++) {
                 const c = couriers[i];
                 const name =
@@ -994,7 +994,7 @@
             Number(o.admin_approved) === 0 &&
             (o.payment_status === 'paid' || o.payment_status === 'cod')
                 ? `<div class="admin-order-alert">
-                <p><strong>Замовлення чекає модерації</strong> — підтвердіть перед відправкою на склад.</p>
+                <p><strong>Замовлення чекає модерації</strong> - підтвердіть перед відправкою на склад.</p>
                 <div class="admin-order-moderation-actions">
                 <button type="button" class="admin-primary-btn" id="admin-detail-approve">На склад</button>
                 <button type="button" class="admin-secondary-btn" id="admin-detail-reject">Відхилити</button>
@@ -1040,7 +1040,7 @@
         const greetingCard = o.greeting_card_text_display
             ? `<p><strong>Листівка (+50 грн):</strong> ${api.escapeHtml(o.greeting_card_text_display)}</p>`
             : '';
-        const deliveryPlace = o.delivery_place || o.delivery_address || '—';
+        const deliveryPlace = o.delivery_place || o.delivery_address || '-';
 
         content.innerHTML = `
             <div class="admin-order-head">
@@ -1055,7 +1055,7 @@
             <div class="admin-order-grid">
                 <section class="admin-order-card">
                     <h4>Статус і оплата</h4>
-                    <p><strong>Статус:</strong> ${api.escapeHtml(o.status_label || o.status_name || '—')}</p>
+                    <p><strong>Статус:</strong> ${api.escapeHtml(o.status_label || o.status_name || '-')}</p>
                     <p><strong>Модерація:</strong> ${api.escapeHtml(adminApprovedLabel(o.admin_approved))}</p>
                     <p><strong>Оплата:</strong> ${api.escapeHtml(paymentInfoText(o))}</p>
                     ${paymentDeadline}
@@ -1067,11 +1067,11 @@
                 <section class="admin-order-card">
                     <h4>Клієнт і доставка</h4>
                     <p><strong>Клієнт:</strong> ${api.escapeHtml(o.first_name || '')} ${api.escapeHtml(o.last_name || '')}</p>
-                    <p><strong>Email:</strong> ${api.escapeHtml(o.customer_email || '—')}</p>
-                    <p><strong>Телефон:</strong> ${api.escapeHtml(o.customer_phone || '—')}</p>
-                    <p><strong>Одержувач:</strong> ${api.escapeHtml(o.receiver_name || '—')} ${api.escapeHtml(o.receiver_phone || '')}</p>
+                    <p><strong>Email:</strong> ${api.escapeHtml(o.customer_email || '-')}</p>
+                    <p><strong>Телефон:</strong> ${api.escapeHtml(o.customer_phone || '-')}</p>
+                    <p><strong>Одержувач:</strong> ${api.escapeHtml(o.receiver_name || '-')} ${api.escapeHtml(o.receiver_phone || '')}</p>
                     <p><strong>Спосіб:</strong> ${api.escapeHtml(deliveryMethodLabel(o.delivery_method))}</p>
-                    <p><strong>Дата доставки:</strong> ${api.escapeHtml(o.delivery_display || '—')}</p>
+                    <p><strong>Дата доставки:</strong> ${api.escapeHtml(o.delivery_display || '-')}</p>
                     <p><strong>Адреса:</strong><br>${api.escapeHtml(deliveryPlace)}</p>
                     ${recipientNote}
                     ${bouquetNote}
@@ -1083,7 +1083,7 @@
             <div class="admin-table-wrap">
             <table class="admin-table">
                 <thead><tr><th>Назва</th><th>К-сть</th><th>Ціна</th><th>Сума</th></tr></thead>
-                <tbody>${itemRows || '<tr><td colspan="4">—</td></tr>'}</tbody>
+                <tbody>${itemRows || '<tr><td colspan="4">-</td></tr>'}</tbody>
             </table>
             </div>
             <h4 class="admin-section-head">Історія статусів</h4>
@@ -1263,7 +1263,7 @@
                 .map((o) => {
                     return `<tr>
                         <td>${o.id}</td>
-                        <td>${api.escapeHtml(o.status_label || o.status_name || '—')}<br><span class="warehouse-orders-email">${api.escapeHtml(adminApprovedLabel(o.admin_approved))}</span></td>
+                        <td>${api.escapeHtml(o.status_label || o.status_name || '-')}<br><span class="warehouse-orders-email">${api.escapeHtml(adminApprovedLabel(o.admin_approved))}</span></td>
                         <td>${api.escapeHtml(paymentInfoText(o))}</td>
                         <td>${api.escapeHtml(o.first_name || '')} ${api.escapeHtml(o.last_name || '')}</td>
                         <td>${Number(o.total_price || 0).toLocaleString('uk-UA')} грн</td>
@@ -1341,7 +1341,7 @@
                 return reasons[i].label;
             }
         }
-        return '—';
+        return '-';
     };
 
     const renderBlockPanel = (api, reasons, userId, userEmail, onDone) => {
@@ -1431,13 +1431,13 @@
                             <span class="admin-block-cell__label">Заблоковано</span>
                             <button type="button" class="admin-link-btn admin-user-reason" data-reason="${api.escapeHtml(reasonText)}">Причина</button>
                            </div>`
-                        : '—';
+                        : '-';
                     const savedAddress = formatUserSavedAddress(u);
                     return `<tr>
                         <td>${u.id}</td>
                         <td>${api.escapeHtml(u.first_name || '')} ${api.escapeHtml(u.last_name || '')}</td>
                         <td>${api.escapeHtml(u.email || '')}</td>
-                        <td>${api.escapeHtml(u.phone || '—')}</td>
+                        <td>${api.escapeHtml(u.phone || '-')}</td>
                         <td class="admin-user-address-cell">${api.escapeHtml(savedAddress)}</td>
                         <td>
                             <select class="admin-user-role" data-id="${u.id}">
@@ -1542,7 +1542,7 @@
                 <td class="admin-table-photo">${
                     preview
                         ? `<img class="admin-table-thumb" src="${api.escapeHtml(preview)}" alt="">`
-                        : '—'
+                        : '-'
                 }</td>
                 <td>${api.escapeHtml(p.name)}</td>
                 <td>${api.escapeHtml(p.category_name || '')}</td>
@@ -1606,7 +1606,7 @@
                 <td class="admin-table-photo">${
                     c.image_url
                         ? `<img class="admin-table-thumb" src="${api.escapeHtml(c.image_url)}" alt="">`
-                        : '—'
+                        : '-'
                 }</td>
                 <td>
                     <input type="text" class="admin-variant-input admin-variant-color-name" data-id="${c.id}" value="${api.escapeHtml(c.flower_color || '')}" maxlength="50" aria-label="Назва кольору">
@@ -1657,7 +1657,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${rows || '<tr><td colspan="5">Ще немає кольорів — додай перший вище</td></tr>'}
+                            ${rows || '<tr><td colspan="5">Ще немає кольорів - додай перший вище</td></tr>'}
                         </tbody>
                     </table>
                 </div>
@@ -1874,7 +1874,7 @@
 
             content.innerHTML = `
                 <h3>Конструктор букета</h3>
-                <p class="admin-muted-hint">Мінімум квіток і вимкнення конструктора — у <code>backend/src/config/constructor.js</code> або змінні <code>CONSTRUCTOR_MIN_STEMS</code>, <code>CONSTRUCTOR_ENABLED</code> у .env.</p>
+                <p class="admin-muted-hint">Мінімум квіток і вимкнення конструктора - у <code>backend/src/config/constructor.js</code> або змінні <code>CONSTRUCTOR_MIN_STEMS</code>, <code>CONSTRUCTOR_ENABLED</code> у .env.</p>
                 ${renderConstructorProductList(api, products)}
                 <div id="admin-bouquet-templates-root" class="admin-bouquet-templates-root"></div>
             `;
@@ -2011,7 +2011,7 @@
             let rows = '';
             for (let i = 0; i < pages.length; i++) {
                 const p = pages[i];
-                const updated = p.updatedAt ? new Date(p.updatedAt).toLocaleString('uk-UA') : '—';
+                const updated = p.updatedAt ? new Date(p.updatedAt).toLocaleString('uk-UA') : '-';
                 rows +=
                     '<tr><td>' +
                     api.escapeHtml(p.title || '') +
@@ -2073,7 +2073,7 @@
             const rows = list
                 .map((c) => {
                     const name =
-                        [c.first_name, c.last_name].filter(Boolean).join(' ').trim() || c.email || '—';
+                        [c.first_name, c.last_name].filter(Boolean).join(' ').trim() || c.email || '-';
                     const isOnShift = Number(c.courier_on_shift) === 1;
                     const shiftLabel = isOnShift ? 'На зміні' : 'Не на зміні';
                     const shiftClass = isOnShift ? 'admin-status-badge--active' : 'admin-status-badge--archived';
@@ -2132,7 +2132,7 @@
                         <tbody>${rows}<tr id="admin-couriers-empty-search" hidden><td colspan="8">Немає збігів</td></tr></tbody>
                     </table>
                 </div>
-                <p class="admin-muted-hint admin-couriers-hint">«На складі» — замовлення в комплектації/готові. «В дорозі» — статус shipped. Увімкнення зміни запускає автопризначення готових замовлень.</p>`;
+                <p class="admin-muted-hint admin-couriers-hint">«На складі» - замовлення в комплектації/готові. «В дорозі» - статус shipped. Увімкнення зміни запускає автопризначення готових замовлень.</p>`;
 
             bindTableSearch(
                 'admin-couriers-search',

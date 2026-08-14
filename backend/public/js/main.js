@@ -423,7 +423,7 @@ function updateCatalogHeroFromNav(categoryId, q) {
 
     if (isCatalogHomeMode(categoryId, searchText)) {
         titleEl.textContent = 'Обери свіжий букет';
-        leadEl.textContent = 'Свіжі квіти та букети — доставимо у зручний для тебе час';
+        leadEl.textContent = 'Свіжі квіти та букети - доставимо у зручний для тебе час';
         return;
     }
 
@@ -450,7 +450,7 @@ function updateCatalogHeroFromNav(categoryId, q) {
     let label = labelNode ? labelNode.textContent.trim() : activeLink.textContent.trim();
     label = label.replace('›', '').trim();
     titleEl.textContent = label || 'Каталог';
-    leadEl.textContent = 'Замов онлайн — зберемо букет перед відправкою';
+    leadEl.textContent = 'Замов онлайн - зберемо букет перед відправкою';
 }
 
 function applyCatalogProductsHtml(products, hitProducts, homeSections, categoryId, q) {

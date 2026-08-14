@@ -167,7 +167,7 @@
         }
         const parent = list.find((x) => Number(x.id) === Number(cat.parent_id));
         if (parent && parent.name) {
-            return `${parent.name} — ${cat.name}`;
+            return `${parent.name} - ${cat.name}`;
         }
         return cat.name;
     };
@@ -239,14 +239,14 @@
             const raw = form.querySelector('#admin-discount-custom')?.value;
             const c = Number(raw);
             if (raw === '' || !Number.isFinite(c) || c <= 0) {
-                el.textContent = 'Підсумкова ціна: введи свій відсоток (1–100)';
+                el.textContent = 'Підсумкова ціна: введи свій відсоток (1-100)';
                 return;
             }
         }
         const pct = getDiscountPercentFromForm(form);
         const sale = computeSalePrice(base, hasDisc ? pct : 0);
         if (sale == null || !Number.isFinite(base)) {
-            el.textContent = 'Підсумкова ціна: —';
+            el.textContent = 'Підсумкова ціна: -';
             return;
         }
         if (!hasDisc || !Number.isFinite(pct) || pct <= 0) {
@@ -351,7 +351,7 @@
                             <label class="admin-discount-pct-label">
                                 <input type="radio" name="discount_pct" value="custom"${customRadioChecked}> Свій %
                             </label>
-                            <input name="discount_pct_custom" id="admin-discount-custom" type="number" min="0" max="100" step="0.01" placeholder="1–100" value="${escapeHtml(discUi.customPercent)}">
+                            <input name="discount_pct_custom" id="admin-discount-custom" type="number" min="0" max="100" step="0.01" placeholder="1-100" value="${escapeHtml(discUi.customPercent)}">
                         </div>
                     </div>
                     <p class="admin-price-preview" id="admin-price-preview"></p>
@@ -914,7 +914,7 @@
                 <td class="admin-table-photo">${
                     p.image_url
                         ? `<img class="admin-table-thumb" src="${escapeHtml(p.image_url)}" alt="">`
-                        : '—'
+                        : '-'
                 }</td>
                 <td>${escapeHtml(p.name)}</td>
                 <td>${escapeHtml(p.category_name || '')}</td>
@@ -1049,18 +1049,18 @@
     const formatReviewDate = (rev) => {
         const raw = rev.createdAt || rev.createdat;
            if (!raw) {
-            return '—';
+            return '-';
         }
      try {
             return new Date(raw).toLocaleString('uk-UA');
         } catch (e) {
-            return '—';
+            return '-';
         }
     };
 const renderReviewStars = (rating) => {
         const value = Number(rating);
         if (!Number.isFinite(value) || value < 1 || value > 5) {
-            return '—';
+            return '-';
         }
         let html = '<span class="star-rating star-rating--sm">';
         for (let star = 1; star <= 5; star += 1) {
@@ -1082,22 +1082,22 @@ const renderChangeRequestsList = (requests, onlyTable) => {
         const rows = requests
             .map((row) => {
                 const author =
-                    `${escapeHtml(row.first_name || '')} ${escapeHtml(row.last_name || '')}`.trim() || '—';
+                    `${escapeHtml(row.first_name || '')} ${escapeHtml(row.last_name || '')}`.trim() || '-';
                 const typeLabel = row.request_type === 'delete' ? 'Видалення' : 'Редагування';
                 const oldRating = renderReviewStars(row.rating);
                 const newRating =
-                    row.request_type === 'edit' ? renderReviewStars(row.new_rating) : '—';
+                    row.request_type === 'edit' ? renderReviewStars(row.new_rating) : '-';
                 const oldText = escapeHtml(String(row.comment || '').slice(0, 120));
                 const newText =
                     row.request_type === 'edit'
                         ? escapeHtml(String(row.new_comment || '').slice(0, 120))
-                        : '—';
+                        : '-';
 
                 return `
             <tr class="admin-review-row" data-search="${escapeHtml(String(row.product_name || '') + ' ' + author + ' ' + String(row.comment || '') + ' ' + String(row.new_comment || '') + ' ' + row.request_id)}">
                 <td>${row.request_id}</td>
                 <td>${typeLabel}</td>
-                <td>${escapeHtml(row.product_name || '—')}</td>
+                <td>${escapeHtml(row.product_name || '-')}</td>
                 <td>${author}</td>
                 <td>${oldRating}<br />${oldText}</td>
                 <td>${newRating}<br />${newText}</td>
@@ -1219,7 +1219,7 @@ const renderPendingReviewsList = (reviews, requests) => {
             .map((r) => {
                 const author =
                     `${escapeHtml(r.first_name || '')} ${escapeHtml(r.last_name || '')}`.trim() ||
-                    '—';
+                    '-';
             const rating = renderReviewStars(r.rating);
                    const fullComment = String(r.comment || '');
                 const commentPreview = escapeHtml(fullComment.slice(0, 200));
@@ -1228,7 +1228,7 @@ const renderPendingReviewsList = (reviews, requests) => {
                 return `
             <tr class="admin-review-row" data-search="${escapeHtml(String(r.product_name || '') + ' ' + author + ' ' + fullComment + ' ' + r.id)}">
                 <td>${r.id}</td>
-                <td>${escapeHtml(r.product_name || '—')}</td>
+                <td>${escapeHtml(r.product_name || '-')}</td>
                 <td>${author}</td>
                 <td>${rating}</td>
                 <td>${escapeHtml(formatReviewDate(r))}</td>
@@ -1318,12 +1318,12 @@ const renderPendingReviewsList = (reviews, requests) => {
     const formatOrderDate = (order) => {
         const raw = order.createdAt || order.createdat;
         if (!raw) {
-            return '—';
+            return '-';
         }
         try {
             return new Date(raw).toLocaleString('uk-UA');
         } catch (e) {
-            return '—';
+            return '-';
         }
     };
 
@@ -1334,7 +1334,7 @@ const renderPendingReviewsList = (reviews, requests) => {
 
         const raw = order.delivery_date;
         if (!raw) {
-            return '—';
+            return '-';
         }
 
         const text = String(raw).trim();
@@ -1351,7 +1351,7 @@ const renderPendingReviewsList = (reviews, requests) => {
         if (dateText) {
             return dateText;
         }
-        return '—';
+        return '-';
     };
 
     const paymentLabel = (status) => {
@@ -1405,12 +1405,12 @@ const renderPendingReviewsList = (reviews, requests) => {
                     customer = escapeHtml(o.receiver_name) + ' <span class="warehouse-orders-email">(гість)</span>';
                 }
                 if (!customer) {
-                    customer = '—';
+                    customer = '-';
                 }
-                const products = escapeHtml(o.products_summary || '—');
+                const products = escapeHtml(o.products_summary || '-');
                 const address = escapeHtml(String(o.delivery_address || '').slice(0, 120));
                 const total = Number(o.total_price || 0).toLocaleString('uk-UA');
-                let methodText = '—';
+                let methodText = '-';
                 if (o.delivery_method === 'standard') {
                     methodText = 'Стандарт';
                 } else if (o.delivery_method === 'exact') {
@@ -1608,11 +1608,11 @@ const renderPendingReviewsList = (reviews, requests) => {
         const rows = orders
             .map((o) => {
                 const customer =
-                    `${escapeHtml(o.first_name || '')} ${escapeHtml(o.last_name || '')}`.trim() || '—';
+                    `${escapeHtml(o.first_name || '')} ${escapeHtml(o.last_name || '')}`.trim() || '-';
                 const total = Number(o.total_price || 0).toLocaleString('uk-UA');
                 const deadline = o.payment_deadline_at
                     ? escapeHtml(String(o.payment_deadline_at).slice(0, 16).replace('T', ' '))
-                    : '—';
+                    : '-';
                 return `
             <tr>
                 <td>${o.id}</td>

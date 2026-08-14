@@ -1812,6 +1812,19 @@ html.theme-light .constructor-library-card__warn {
 html.theme-light .constructor-hint--even {
     color: #b45309;
 }
+
+html.theme-light .constructor-confirm__dialog {
+    background: #ffffff;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+}
+
+html.theme-light .constructor-confirm__title {
+    color: #0f172a;
+}
+
+html.theme-light .constructor-confirm__text {
+    color: #475569;
+}
 html.theme-light .info-page__price {
     color: #047857 !important;
 }

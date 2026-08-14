@@ -32,11 +32,11 @@ const methodNames = {
     express: 'Експрес',
     pickup: 'Самовивіз'
 };
-const methodText = methodNames[o.delivery_method || ''] || '—';
+const methodText = methodNames[o.delivery_method || ''] || '-';
 
 const formatLogTime = (value) => {
     if (!value) {
-        return '—';
+        return '-';
     }
     const d = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(d.getTime())) {
@@ -71,13 +71,13 @@ const logWorkerName = (row) => {
         <div class="warehouse-order-top">
             <div class="warehouse-order-top-main">
                 <span class="warehouse-order-no">№<%= o.id %></span>
-                <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+                <span class="warehouse-order-when"><%= o.delivery_display || '-' %></span>
             </div>
             <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
         </div>
 
         <div class="warehouse-order-badges">
-            <span class="warehouse-badge warehouse-badge--status"><%= o.status_label || o.status_name || '—' %></span>
+            <span class="warehouse-badge warehouse-badge--status"><%= o.status_label || o.status_name || '-' %></span>
             <% if (o.payment_status === 'paid') { %>
                 <span class="warehouse-badge pay-ok">Оплачено</span>
             <% } else if (o.payment_status === 'cod') { %>
@@ -118,7 +118,7 @@ const logWorkerName = (row) => {
         <div class="warehouse-order-details">
             <div class="warehouse-order-detail">
                 <span class="warehouse-order-detail-label">Кому</span>
-                <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+                <span class="warehouse-order-detail-value"><%= o.receiver_name || '-' %></span>
             </div>
             <% if (receiverPhone) { %>
                 <div class="warehouse-order-detail">
@@ -132,7 +132,7 @@ const logWorkerName = (row) => {
             </div>
             <div class="warehouse-order-detail warehouse-order-detail--full">
                 <span class="warehouse-order-detail-label">Адреса</span>
-                <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+                <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '-' %></span>
             </div>
             <% if (o.recipient_note) { %>
                 <div class="warehouse-order-detail warehouse-order-detail--full">
@@ -172,7 +172,7 @@ const logWorkerName = (row) => {
 
     <div class="warehouse-order-foot no-print">
         <% if (hasCancel) { %>
-            <p class="warehouse-order-cancel-msg">Запит на скасування — не комплектуй, чекай адміна.</p>
+            <p class="warehouse-order-cancel-msg">Запит на скасування - не комплектуй, чекай адміна.</p>
         <% } else { %>
             <% if (canHandoff && shippedStatusId) { %>
                 <div class="warehouse-handoff-block">
@@ -183,7 +183,7 @@ const logWorkerName = (row) => {
                     <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
                         <input type="hidden" name="return_to" value="detail" />
                         <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
-                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру — в дорозі</button>
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру - в дорозі</button>
                     </form>
                 </div>
             <% } else if (canCompletePickup) { %>
@@ -199,13 +199,13 @@ const logWorkerName = (row) => {
                                 Оплату отримано на касі
                             </label>
                         <% } %>
-                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту — завершити</button>
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту - завершити</button>
                     </form>
                 </div>
             <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup' && !(o.courier_name || '').trim()) { %>
-                <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено — замовлення збережеться на складі, поки адмін або система не підбере доставщика.</p>
+                <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено - замовлення збережеться на складі, поки адмін або система не підбере доставщика.</p>
             <% } else if (o.needs_courier && o.status_name === 'processing') { %>
-                <p class="warehouse-order-hint">Йде збірка. Кур'єра можна призначити заздалегідь — після «Готове» спрацює автопризначення.</p>
+                <p class="warehouse-order-hint">Йде збірка. Кур'єра можна призначити заздалегідь - після «Готове» спрацює автопризначення.</p>
             <% } %>
             <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
                 <input type="hidden" name="return_to" value="detail" />
@@ -236,8 +236,8 @@ const logWorkerName = (row) => {
         <% } else { %>
             <ul class="warehouse-status-log-list">
                 <% for (const log of safeLogs) { %>
-                    <% const fromText = log.from_label || log.from_name || '—'; %>
-                    <% const toText = log.to_label || log.to_name || '—'; %>
+                    <% const fromText = log.from_label || log.from_name || '-'; %>
+                    <% const toText = log.to_label || log.to_name || '-'; %>
                     <li class="warehouse-status-log-item">
                         <span class="warehouse-status-log-time"><%= formatLogTime(log.createdAt) %></span>
                         <span class="warehouse-status-log-change"><%= fromText %> → <%= toText %></span>

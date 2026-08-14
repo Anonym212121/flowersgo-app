@@ -4,7 +4,7 @@ const extractDeliveryPlace = (deliveryAddress, deliveryMethod) => {
     }
 
     if (!deliveryAddress || typeof deliveryAddress !== 'string') {
-        return '—';
+        return '-';
     }
 
     const text = deliveryAddress.trim();
@@ -13,7 +13,7 @@ const extractDeliveryPlace = (deliveryAddress, deliveryMethod) => {
 
     if (idx !== -1) {
         const place = text.slice(idx + marker.length).trim();
-        return place || '—';
+        return place || '-';
     }
 
     return text;
@@ -25,8 +25,8 @@ const extractDeliveryCityShort = (deliveryAddress, deliveryMethod) => {
     }
 
     const place = extractDeliveryPlace(deliveryAddress, deliveryMethod);
-    if (!place || place === '—') {
-        return '—';
+    if (!place || place === '-') {
+        return '-';
     }
 
     const firstLine = place.split('\n')[0].trim();

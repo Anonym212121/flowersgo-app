@@ -55,7 +55,7 @@ for (const s of safeStatuses) {
 
     <% if (!shiftOn) { %>
         <p class="warehouse-feedback warehouse-feedback--error courier-shift-banner">
-            Зміна вимкнена — <a href="/courier/shift">увімкни зміну</a>, щоб оновлювати статуси.
+            Зміна вимкнена - <a href="/courier/shift">увімкни зміну</a>, щоб оновлювати статуси.
         </p>
     <% } %>
 
@@ -80,7 +80,7 @@ for (const s of safeStatuses) {
 
     <% if (ordersListView === 'active') { %>
     <p class="warehouse-poll-hint" id="courierPollHint" hidden>
-        Є зміни —
+        Є зміни -
         <button type="button" class="warehouse-poll-refresh" id="courierPollRefresh">оновити</button>
     </p>
     <% } %>
@@ -123,7 +123,7 @@ for (const s of safeStatuses) {
                     <div class="warehouse-order-top">
                         <div class="warehouse-order-top-main">
                             <a class="warehouse-order-no" href="/courier/orders/<%= o.id %>">№<%= o.id %></a>
-                            <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+                            <span class="warehouse-order-when"><%= o.delivery_display || '-' %></span>
                         </div>
                         <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
                     </div>
@@ -135,7 +135,7 @@ for (const s of safeStatuses) {
                         <% } else if (o.status_name === 'ready_for_pickup') { %>
                             <span class="warehouse-badge pay-ok">Забрати на складі</span>
                         <% } %>
-                        <% if (isCod) { %><span class="warehouse-badge pay-cod">При отриманні — <%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span><% } %>
+                        <% if (isCod) { %><span class="warehouse-badge pay-cod">При отриманні - <%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span><% } %>
                         <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
                         <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
                     </div>
@@ -143,15 +143,15 @@ for (const s of safeStatuses) {
                     <div class="warehouse-order-details">
                         <div class="warehouse-order-detail warehouse-order-detail--full">
                             <span class="warehouse-order-detail-label">Кому</span>
-                            <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+                            <span class="warehouse-order-detail-value"><%= o.receiver_name || '-' %></span>
                         </div>
                         <div class="warehouse-order-detail warehouse-order-detail--full">
                             <span class="warehouse-order-detail-label">Адреса</span>
-                            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+                            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '-' %></span>
                         </div>
                         <div class="warehouse-order-detail warehouse-order-detail--full">
                             <span class="warehouse-order-detail-label">Зібрати</span>
-                            <span class="warehouse-order-detail-value"><%= o.products_summary || '—' %></span>
+                            <span class="warehouse-order-detail-value"><%= o.products_summary || '-' %></span>
                         </div>
                     </div>
 
@@ -165,7 +165,7 @@ for (const s of safeStatuses) {
                                     <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
                                         <input type="hidden" name="return_day" value="<%= dayFilter %>" />
                                         <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
-                                        <button type="submit" class="auth-button courier-finish-btn">Забрав на складі — в дорозі</button>
+                                        <button type="submit" class="auth-button courier-finish-btn">Забрав на складі - в дорозі</button>
                                     </form>
                                 </div>
                             <% } else if (o.status_name === 'shipped' && deliveredStatusId) { %>

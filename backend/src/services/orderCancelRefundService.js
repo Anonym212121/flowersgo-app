@@ -14,7 +14,7 @@ const tryRefundPaidOrder = async (order) => {
     if (!ref || !Number.isFinite(amount) || amount <= 0) {
         return {
             refund_status: 'manual',
-            message: 'Немає даних LiqPay — повернення оформлює адмін вручну'
+            message: 'Немає даних LiqPay - повернення оформлює адмін вручну'
         };
     }
 
@@ -22,7 +22,7 @@ const tryRefundPaidOrder = async (order) => {
     if (!keys.publicKey || !keys.privateKey) {
         return {
             refund_status: 'manual',
-            message: 'LiqPay не налаштовано — повернення вручну'
+            message: 'LiqPay не налаштовано - повернення вручну'
         };
     }
 
@@ -34,7 +34,7 @@ const tryRefundPaidOrder = async (order) => {
         if (result && REFUND_PROCESSING.includes(result.status)) {
             return {
                 refund_status: 'processing',
-                message: 'Повернення ініційовано — кошти надійдуть на картку протягом 3–10 банківських днів'
+                message: 'Повернення ініційовано - кошти надійдуть на картку протягом 3-10 банківських днів'
             };
         }
 
@@ -43,12 +43,12 @@ const tryRefundPaidOrder = async (order) => {
             refund_status: 'pending',
             message:
                 errText ||
-                'Замовлення скасовано. Повернення коштів обробляється — очікуйте 3–10 банківських днів'
+                'Замовлення скасовано. Повернення коштів обробляється - очікуйте 3-10 банківських днів'
         };
     } catch (err) {
         return {
             refund_status: 'pending',
-            message: 'Замовлення скасовано. Повернення коштів обробляється — очікуйте 3–10 банківських днів'
+            message: 'Замовлення скасовано. Повернення коштів обробляється - очікуйте 3-10 банківських днів'
         };
     }
 };

@@ -26,17 +26,17 @@ const buildDeliveryTariffsHtml = (delivery) => {
         <div class="info-page__cards">
             <div class="info-page__card">
                 <h3>Стандартна</h3>
-                <p>Двогодинне вікно на обрану дату. Мінімальний час підготовки — ${standardBuffer} хв від моменту замовлення.</p>
+                <p>Двогодинне вікно на обрану дату. Мінімальний час підготовки - ${standardBuffer} хв від моменту замовлення.</p>
                 <p class="info-page__price">${priceLabel(feeStandard, false)}</p>
             </div>
             <div class="info-page__card">
                 <h3>В точний час</h3>
-                <p>Кур'єр намагається приїхати у вказаний час у межах ${workStart}:00–${workEnd}:00.</p>
+                <p>Кур'єр намагається приїхати у вказаний час у межах ${workStart}:00-${workEnd}:00.</p>
                 <p class="info-page__price">${priceLabel(feeExact, true)}</p>
             </div>
             <div class="info-page__card">
                 <h3>Експрес</h3>
-                <p>Збираємо і веземо якнайшвидше — орієнтовно протягом ${expressBuffer} хв після підтвердження.</p>
+                <p>Збираємо і веземо якнайшвидше - орієнтовно протягом ${expressBuffer} хв після підтвердження.</p>
                 <p class="info-page__price">${priceLabel(feeExpress, true)}</p>
             </div>
             <div class="info-page__card">

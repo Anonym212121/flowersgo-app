@@ -14,7 +14,7 @@ const shiftOn = !!onShift;
     <div class="warehouse-order-top">
         <div class="warehouse-order-top-main">
             <span class="warehouse-order-no">№<%= o.id %></span>
-            <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+            <span class="warehouse-order-when"><%= o.delivery_display || '-' %></span>
         </div>
         <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
     </div>
@@ -35,11 +35,11 @@ const shiftOn = !!onShift;
     <div class="warehouse-order-details">
         <div class="warehouse-order-detail warehouse-order-detail--full">
             <span class="warehouse-order-detail-label">Кому</span>
-            <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+            <span class="warehouse-order-detail-value"><%= o.receiver_name || '-' %></span>
         </div>
         <div class="warehouse-order-detail warehouse-order-detail--full">
             <span class="warehouse-order-detail-label">Адреса</span>
-            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '-' %></span>
         </div>
         <% if (o.recipient_note) { %>
             <div class="warehouse-order-detail warehouse-order-detail--full">
@@ -70,12 +70,12 @@ const shiftOn = !!onShift;
     <% if (errorText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p><% } %>
 
     <% if (!shiftOn) { %>
-        <p class="warehouse-order-cancel-msg">Зміна вимкнена — <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
+        <p class="warehouse-order-cancel-msg">Зміна вимкнена - <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
     <% } else if (o.status_name === 'accepted') { %>
         <p class="warehouse-feedback warehouse-feedback--ok">Замовлення завершено і закрито.</p>
     <% } else if (o.status_name === 'delivered') { %>
         <div class="courier-finish-block">
-            <p class="courier-finish-hint">Крок 1 виконано — статус «Доставлено». Далі підтверди оплату та закрий замовлення.</p>
+            <p class="courier-finish-hint">Крок 1 виконано - статус «Доставлено». Далі підтверди оплату та закрий замовлення.</p>
             <% if (o.payment_status === 'cod') { %>
                 <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
                     <input type="hidden" name="return_to" value="detail" />

@@ -20,7 +20,7 @@
     function formatPrice(value) {
         var n = Number(value);
         if (!Number.isFinite(n)) {
-            return '—';
+            return '-';
         }
         return n.toFixed(0) + ' грн';
     }
@@ -113,7 +113,7 @@
                         window.location.href = '/constructor?template=' + encodeURIComponent(slug);
                         return;
                     } catch (e) {
-                        throw new Error('Конструктор ще завантажується — спробуй ще раз');
+                        throw new Error('Конструктор ще завантажується - спробуй ще раз');
                     }
                 }
                 var target = document.querySelector('.constructor-flowers');
@@ -129,55 +129,49 @@
             });
     }
 
-    function confirmEvenStems(stems) {
-        var n = Number(stems);
-        if (!Number.isFinite(n) || n <= 0 || n % 2 !== 0) {
-            return true;
-        }
-        return window.confirm(
-            'У букеті парна кількість квітів (' +
-                n +
-                '). Парну кількість квітів зазвичай несуть на кладовище, тож багато хто такого букета не хотів би. Продовжити?'
-        );
-    }
-
     function onBuyClick(btn) {
         var slug = btn.getAttribute('data-slug');
         if (!slug) {
             return;
         }
-        if (!confirmEvenStems(btn.getAttribute('data-stem-total'))) {
+
+        var doBuy = function () {
+            btn.disabled = true;
+            fetch('/constructor/templates/' + encodeURIComponent(slug) + '/add', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: '{}'
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok || !data.ok) {
+                            throw new Error((data && data.message) || 'Помилка');
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    toast(data.message || 'Додано в кошик', true);
+                    if (typeof window.updateNavCartCount === 'function' && data.count != null) {
+                        window.updateNavCartCount(data.count);
+                    }
+                    window.location.href = data.redirect || '/cart';
+                })
+                .catch(function (err) {
+                    toast(err.message || 'Не вдалося додати', false);
+                    btn.disabled = false;
+                });
+        };
+
+        if (typeof window.confirmEvenStemBouquet === 'function') {
+            window.confirmEvenStemBouquet(btn.getAttribute('data-stem-total'), doBuy);
             return;
         }
-        btn.disabled = true;
-        fetch('/constructor/templates/' + encodeURIComponent(slug) + '/add', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: '{}'
-        })
-            .then(function (res) {
-                return res.json().then(function (data) {
-                    if (!res.ok || !data.ok) {
-                        throw new Error((data && data.message) || 'Помилка');
-                    }
-                    return data;
-                });
-            })
-            .then(function (data) {
-                toast(data.message || 'Додано в кошик', true);
-                if (typeof window.updateNavCartCount === 'function' && data.count != null) {
-                    window.updateNavCartCount(data.count);
-                }
-                window.location.href = data.redirect || '/cart';
-            })
-            .catch(function (err) {
-                toast(err.message || 'Не вдалося додати', false);
-                btn.disabled = false;
-            });
+        doBuy();
     }
 
     grid.addEventListener('click', function (e) {

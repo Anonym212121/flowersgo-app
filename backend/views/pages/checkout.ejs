@@ -159,7 +159,7 @@ const checkoutAuthNext = isCartMode
                     <legend class="sr-only">Спосіб доставки</legend>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="standard" checked />
-                        Стандартна — 2-годинне вікно · безкоштовно
+                        Стандартна - 2-годинне вікно · безкоштовно
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="exact" />
@@ -167,11 +167,11 @@ const checkoutAuthNext = isCartMode
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="express" />
-                        Експрес — якнайшвидше · +99 грн
+                        Експрес - якнайшвидше · +99 грн
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="pickup" />
-                        Самовивіз (9:00–19:00) · безкоштовно
+                        Самовивіз (9:00-19:00) · безкоштовно
                     </label>
                 </fieldset>
 
@@ -216,7 +216,7 @@ const checkoutAuthNext = isCartMode
                     </label>
 
                     <p id="deliveryExpressNote" class="checkout-express-note" hidden>
-                        Зберемо й доставимо якнайшвидше — протягом приблизно години.
+                        Зберемо й доставимо якнайшвидше - протягом приблизно години.
                     </p>
                 </div>
 
@@ -237,10 +237,10 @@ const checkoutAuthNext = isCartMode
                     </label>
                 </fieldset>
                 <p class="checkout-payment-hint" id="checkoutPaymentHintCard">
-                    Оплата карткою: після оформлення у вас буде <strong>10 хвилин</strong> на оплату в LiqPay. Якщо не встигнете — замовлення скасується автоматично.
+                    Оплата карткою: після оформлення у вас буде <strong>10 хвилин</strong> на оплату в LiqPay. Якщо не встигнете - замовлення скасується автоматично.
                 </p>
                 <p class="checkout-payment-hint checkout-payment-hint--cod" id="checkoutPaymentHintCod" hidden>
-                    Оплата при отриманні: замовлення потрапить на перевірку адміну після підтвердження способу оплати. Готівку або термінал — кур'єру або на касі при самовивозі.
+                    Оплата при отриманні: замовлення потрапить на перевірку адміну після підтвердження способу оплати. Готівку або термінал - кур'єру або на касі при самовивозі.
                 </p>
             </div>
 
@@ -336,7 +336,7 @@ const checkoutAuthNext = isCartMode
                                     <% if (st > 0) { %>
                                         <a class="checkout-upsell-link" href="/product/<%= u.id %>">Переглянути</a>
                                     <% } else { %>
-                                        <span class="checkout-upsell-na">—</span>
+                                        <span class="checkout-upsell-na">-</span>
                                     <% } %>
                                 </li>
                             <% } %>
@@ -563,7 +563,7 @@ function applyProfileAddressIfNeeded() {
     function addEmptyOption(sel) {
         var none = document.createElement('option');
         none.value = '';
-        none.textContent = 'На сьогодні вільного часу немає — оберіть іншу дату';
+        none.textContent = 'На сьогодні вільного часу немає - оберіть іншу дату';
         sel.appendChild(none);
     }
 
@@ -593,7 +593,7 @@ function applyProfileAddressIfNeeded() {
             }
             var opt = document.createElement('option');
             opt.value = pad(h) + ':00';
-            opt.textContent = pad(h) + ':00 – ' + pad(h + cfg.slotHours) + ':00';
+            opt.textContent = pad(h) + ':00 - ' + pad(h + cfg.slotHours) + ':00';
             slotSelect.appendChild(opt);
         }
         if (slotSelect.options.length === 0) {
@@ -655,7 +655,7 @@ function applyProfileAddressIfNeeded() {
         var chosen = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]), hh, mm, 0, 0);
         var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         if (chosen.getTime() < todayStart.getTime()) {
-            setExactMsg('Дата в минулому — оберіть сьогодні або пізніше', 'err');
+            setExactMsg('Дата в минулому - оберіть сьогодні або пізніше', 'err');
             hiddenTime.value = '';
             return false;
         }
@@ -664,13 +664,13 @@ function applyProfileAddressIfNeeded() {
             var earliest = new Date(now.getTime() + cfg.standardBufferMin * 60000);
             if (chosen.getTime() < earliest.getTime()) {
                 var human = pad(earliest.getDate()) + '.' + pad(earliest.getMonth() + 1) + ' о ' + pad(earliest.getHours()) + ':' + pad(earliest.getMinutes());
-                setExactMsg('Зарано — потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
+                setExactMsg('Зарано - потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
                 hiddenTime.value = '';
                 return false;
             }
         }
 
-        setExactMsg('Час доступний — можна замовити', 'ok');
+        setExactMsg('Час доступний - можна замовити', 'ok');
         hiddenTime.value = val;
         return true;
     }
@@ -893,7 +893,7 @@ function applyProfileAddressIfNeeded() {
             return true;
         }
         if (!pattern.test(value)) {
-            setMsg('Невірний формат — приклад: name@example.com', 'err');
+            setMsg('Невірний формат - приклад: name@example.com', 'err');
             return false;
         }
         setMsg('Email коректний', 'ok');
@@ -1249,7 +1249,7 @@ function applyProfileAddressIfNeeded() {
             }, 120);
         }
 
-        var stepMessage = 'Продовжуємо оформлення — крок ' + step + ': ' + stepNames[step - 1];
+        var stepMessage = 'Продовжуємо оформлення - крок ' + step + ': ' + stepNames[step - 1];
         var fieldSteps = buildCheckoutFieldSteps(step, data);
 
         if (fieldSteps.length && typeof window.resumeFormFields === 'function') {
@@ -1359,7 +1359,7 @@ function applyProfileAddressIfNeeded() {
             var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email.value.trim())) {
                 e.preventDefault();
-                showErr('Невірний формат email — приклад: name@example.com');
+                showErr('Невірний формат email - приклад: name@example.com');
                 email.focus();
                 return;
             }
@@ -1407,7 +1407,7 @@ function applyProfileAddressIfNeeded() {
         if (deliveryMethod === 'standard' || deliveryMethod === 'pickup') {
             if (!hiddenTime || !hiddenTime.value) {
                 e.preventDefault();
-                showErr('Оберіть період доставки. Якщо на сьогодні немає вільних слотів — оберіть завтра');
+                showErr('Оберіть період доставки. Якщо на сьогодні немає вільних слотів - оберіть завтра');
                 return;
             }
         }
@@ -1422,7 +1422,7 @@ function applyProfileAddressIfNeeded() {
             }
             if (!hiddenTime || !hiddenTime.value) {
                 e.preventDefault();
-                showErr('Обраний час недоступний — оберіть пізніший');
+                showErr('Обраний час недоступний - оберіть пізніший');
                 if (exactInput) exactInput.focus();
                 return;
             }

@@ -841,7 +841,7 @@
             '<button type="button" class="admin-primary-btn" id="admin-stats-apply">Застосувати</button>' +
             '<a class="admin-secondary-btn admin-stats-export" id="admin-stats-export" href="#" title="Завантажити таблицю по днях">Експорт CSV</a>' +
             '</div>' +
-            '<p class="admin-stats-intro">Підсумки продажів за обраний період. Наведіть на графік — побачите точні суми. Фільтри зверху застосовуються до всіх блоків нижче.</p>' +
+            '<p class="admin-stats-intro">Підсумки продажів за обраний період. Наведіть на графік - побачите точні суми. Фільтри зверху застосовуються до всіх блоків нижче.</p>' +
             '<div id="admin-stats-body"><p class="admin-panel-loading">Завантаження…</p></div>' +
             '</div>';
 
@@ -928,7 +928,7 @@
                     '<div class="admin-stats-charts">' +
                     renderChartCard(
                         'Динаміка продажів',
-                        'Зелена лінія — виручка по днях, синя — кількість замовлень',
+                        'Зелена лінія - виручка по днях, синя - кількість замовлень',
                         'adminStatsChartRevenue',
                         'admin-stats-chart-card--wide'
                     ) +

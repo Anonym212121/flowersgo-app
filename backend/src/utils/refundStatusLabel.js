@@ -25,7 +25,7 @@ const refundStatusLabel = (status) => {
     if (s === 'not_needed') {
         return 'Повернення не потрібне';
     }
-    return s || '—';
+    return s || '-';
 };
 
 const refundStatusHint = (order) => {
@@ -37,16 +37,16 @@ const refundStatusHint = (order) => {
     const pay = String(order.payment_status || '').trim();
 
     if (pay === 'refunded' || refund === 'refunded') {
-        return 'Кошти повернено на картку. Зазвичай банк зараховує їх протягом 3–10 банківських днів.';
+        return 'Кошти повернено на картку. Зазвичай банк зараховує їх протягом 3-10 банківських днів.';
     }
     if (refund === 'processing') {
-        return 'Ми ініціювали повернення через LiqPay. Кошти надійдуть на картку протягом 3–10 банківських днів.';
+        return 'Ми ініціювали повернення через LiqPay. Кошти надійдуть на картку протягом 3-10 банківських днів.';
     }
     if (refund === 'pending') {
-        return 'Замовлення скасовано. Повернення коштів обробляється — очікуйте зарахування на картку протягом 3–10 банківських днів.';
+        return 'Замовлення скасовано. Повернення коштів обробляється - очікуйте зарахування на картку протягом 3-10 банківських днів.';
     }
     if (refund === 'manual') {
-        return 'Повернення оформлює наша команда. Якщо кошти не надійдуть протягом 10 днів — зв’яжіться з підтримкою.';
+        return 'Повернення оформлює наша команда. Якщо кошти не надійдуть протягом 10 днів - зв’яжіться з підтримкою.';
     }
 
     return '';
@@ -54,7 +54,7 @@ const refundStatusHint = (order) => {
 
 const orderSummaryBadge = (order) => {
     if (!order) {
-        return '—';
+        return '-';
     }
 
     if (isOrderCancelled(order)) {
@@ -81,7 +81,7 @@ const orderSummaryBadge = (order) => {
         return 'Готовий до самовивозу';
     }
 
-    return order.status_label || order.status_name || '—';
+    return order.status_label || order.status_name || '-';
 };
 
 const paymentBadgeForCabinet = (order) => {
@@ -126,7 +126,7 @@ const refundNoteForEmail = (order) => {
     }
 
     if (pay === 'paid') {
-        return 'Оплату карткою отримано — повернення коштів буде оформлено найближчим часом.';
+        return 'Оплату карткою отримано - повернення коштів буде оформлено найближчим часом.';
     }
 
     return '';

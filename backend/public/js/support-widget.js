@@ -18,7 +18,7 @@
 
     let screen = 'menu';
     let phones = [];
-    let welcomeMessage = 'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити — оператор незабаром підключиться до чату.';
+    let welcomeMessage = 'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
     let panelInitialized = false;
     let chat = null;
     let messages = [];
@@ -410,7 +410,7 @@
                         '<li class="support-archive-list__item">' +
                         '<button type="button" class="support-archive-list__btn" data-archive-id="' + item.id + '">' +
                         '<span class="support-archive-list__title">Чат №' + item.id + '</span>' +
-                        '<span class="support-archive-list__date">' + escapeHtml(dateText || '—') + '</span>' +
+                        '<span class="support-archive-list__date">' + escapeHtml(dateText || '-') + '</span>' +
                         '<span class="support-archive-list__preview">' + escapeHtml((item.preview || '').slice(0, 80)) + '</span>' +
                         '</button></li>'
                     );

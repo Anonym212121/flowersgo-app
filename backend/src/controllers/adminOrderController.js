@@ -73,13 +73,13 @@ const approveForAdmin = async (req, res) => {
 
             if (result.code === 'no_stock') {
 
-                return res.status(400).json({ message: 'Недостатньо товару на складі — оновіть залишки або відхиліть замовлення' });
+                return res.status(400).json({ message: 'Недостатньо товару на складі - оновіть залишки або відхиліть замовлення' });
 
             }
 
             if (result.code === 'not_paid') {
 
-                return res.status(400).json({ message: 'Замовлення ще не оплачене — дочекайтеся оплати або відхиліть його' });
+                return res.status(400).json({ message: 'Замовлення ще не оплачене - дочекайтеся оплати або відхиліть його' });
 
             }
 
@@ -332,7 +332,7 @@ const rejectCancelForAdmin = async (req, res) => {
             console.error('notifyCustomerCancelRejected:', notifyErr.message);
         }
 
-        return res.status(200).json({ message: 'Запит на скасування відхилено — замовлення залишається активним' });
+        return res.status(200).json({ message: 'Запит на скасування відхилено - замовлення залишається активним' });
 
     } catch (err) {
 
@@ -371,7 +371,7 @@ const markRefundCompleteForAdmin = async (req, res) => {
         try {
             await orderWarehouseNotifyService.notifyCustomerRefundProcessed(
                 id,
-                'Кошти повернено на вашу картку. Зазвичай банк зараховує їх протягом 3–10 банківських днів.'
+                'Кошти повернено на вашу картку. Зазвичай банк зараховує їх протягом 3-10 банківських днів.'
             );
         } catch (notifyErr) {
             console.error('markRefundComplete notify:', notifyErr.message);

@@ -43,12 +43,12 @@
 
     const formatDate = (iso) => {
         if (!iso) {
-            return '—';
+            return '-';
         }
         try {
             return new Date(iso).toLocaleString('uk-UA');
         } catch (e) {
-            return '—';
+            return '-';
         }
     };
 
@@ -251,14 +251,14 @@
 
     const renderChatDetail = (api, chat, messages, canReply) => {
         const statusText = chat.status === 'open'
-            ? 'В черзі — візьміть чат, щоб відповідати'
-            : (chat.status === 'assigned' ? 'В роботі' : 'Архів — лише перегляд');
+            ? 'В черзі - візьміть чат, щоб відповідати'
+            : (chat.status === 'assigned' ? 'В роботі' : 'Архів - лише перегляд');
 
         content.innerHTML =
             '<div class="admin-support-chat-head">' +
             '<button type="button" class="admin-secondary-btn" id="support-back-list">← До списку</button>' +
             '<div class="admin-support-chat-info">' +
-            '<strong>Чат №' + chat.id + '</strong> — ' + escapeHtml(chat.client_name) +
+            '<strong>Чат №' + chat.id + '</strong> - ' + escapeHtml(chat.client_name) +
             '<br><small>' + escapeHtml(chat.guest_email || '') + ' ' + escapeHtml(chat.guest_phone || '') + '</small>' +
             '<br><small>Статус: ' + statusText + '</small>' +
             (chat.status === 'closed' && chat.closed_at

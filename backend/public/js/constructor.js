@@ -40,16 +40,53 @@
         return Number.isFinite(n) && n > 0 && n % 2 === 0;
     }
 
-    function confirmEvenStems(stems) {
-        if (!isEvenStemCount(stems)) {
-            return true;
-        }
-        return window.confirm(
-            'У букеті парна кількість квітів (' +
-                stems +
-                '). Парну кількість квітів зазвичай несуть на кладовище, тож багато хто такого букета не хотів би. Продовжити?'
-        );
+    var evenConfirmOnYes = null;
+
+    function evenStemConfirmText(stems) {
+        return 'У букеті парна кількість квітів (' + stems + '). Вас це влаштовує?';
     }
+
+    function closeEvenStemConfirm() {
+        var modal = document.getElementById('constructorEvenConfirm');
+        if (modal) {
+            modal.hidden = true;
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        document.body.classList.remove('constructor-confirm-open');
+        evenConfirmOnYes = null;
+    }
+
+    function openEvenStemConfirm(stems, onYes) {
+        var modal = document.getElementById('constructorEvenConfirm');
+        var textEl = document.getElementById('constructorEvenConfirmText');
+        var okBtn = document.getElementById('constructorEvenConfirmOk');
+        if (!modal || !textEl) {
+            if (typeof onYes === 'function') {
+                onYes();
+            }
+            return;
+        }
+        evenConfirmOnYes = onYes;
+        textEl.textContent = evenStemConfirmText(stems);
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('constructor-confirm-open');
+        if (okBtn && okBtn.focus) {
+            okBtn.focus();
+        }
+    }
+
+    function confirmEvenStems(stems, onYes) {
+        if (!isEvenStemCount(stems)) {
+            if (typeof onYes === 'function') {
+                onYes();
+            }
+            return;
+        }
+        openEvenStemConfirm(stems, onYes);
+    }
+
+    window.confirmEvenStemBouquet = confirmEvenStems;
 
     function isMultiColorCard(card) {
         if (!card) {
@@ -720,7 +757,7 @@
                 label +
                 ' ×' +
                 Number(line.quantity || 0) +
-                ' — ' +
+                ' - ' +
                 Number(line.line_total || 0).toLocaleString('uk-UA') +
                 ' грн</span>' +
                 '<button type="button" class="constructor-summary-remove" data-product-id="' +
@@ -735,7 +772,7 @@
                 '<li class="constructor-summary-item constructor-summary-item--pack">' +
                 '<span class="constructor-summary-item__text">Упаковка: ' +
                 escapeHtml(data.packagingLabel) +
-                ' — ' +
+                ' - ' +
                 Number(data.packagingPrice).toLocaleString('uk-UA') +
                 ' грн</span></li>';
         }
@@ -752,9 +789,9 @@
             lastOk = true;
             if (evenNow) {
                 hintEl.textContent =
-                    'У букеті парна кількість квітів. Такі букети зазвичай несуть на кладовище — багато хто цього не хотів би. Якщо згодні — додайте в кошик.';
+                    'У букеті парна кількість квітів. Вас це влаштовує? Якщо так - додайте в кошик.';
             } else {
-                hintEl.textContent = 'Готово — можна додати в кошик';
+                hintEl.textContent = 'Готово - можна додати в кошик';
             }
             addBtn.disabled = false;
             if (previewBtn) {
@@ -775,10 +812,9 @@
         var minHint = Number(data.minStems || cfg.minStems || 5);
         var stemNow = Number(data.stemTotal || 0);
         if (data.reason === 'min_stems' || (data.message && data.message.indexOf('мінімум') !== -1)) {
-            hintEl.textContent = 'Додано ' + stemNow + ' з ' + minHint + ' квіток — додайте ще';
+            hintEl.textContent = 'Додано ' + stemNow + ' з ' + minHint + ' квіток - додайте ще';
             if (evenNow) {
-                hintEl.textContent +=
-                    '. Кількість парна: такі букети зазвичай несуть на кладовище.';
+                hintEl.textContent += '. Кількість квітів парна. Вас це влаштовує?';
             }
         } else {
             hintEl.textContent = data.message || ('Мінімум ' + minHint + ' квіток у букеті');
@@ -1085,13 +1121,7 @@
         clearBtn.addEventListener('click', clearBouquet);
     }
 
-    addBtn.addEventListener('click', function () {
-        if (!lastOk) {
-            return;
-        }
-        if (!confirmEvenStems(lastStemTotal)) {
-            return;
-        }
+    function addBouquetToCart() {
         var items = getItems();
         var body = new URLSearchParams();
         body.set('items', JSON.stringify(items));
@@ -1138,6 +1168,41 @@
                     mobileAddBtn.disabled = !lastOk;
                 }
             });
+    }
+
+    addBtn.addEventListener('click', function () {
+        if (!lastOk) {
+            return;
+        }
+        confirmEvenStems(lastStemTotal, addBouquetToCart);
+    });
+
+    var evenModal = document.getElementById('constructorEvenConfirm');
+    var evenOkBtn = document.getElementById('constructorEvenConfirmOk');
+    if (evenModal) {
+        evenModal.addEventListener('click', function (e) {
+            if (e.target && e.target.closest && e.target.closest('[data-even-confirm-close]')) {
+                closeEvenStemConfirm();
+            }
+        });
+    }
+    if (evenOkBtn) {
+        evenOkBtn.addEventListener('click', function () {
+            var fn = evenConfirmOnYes;
+            closeEvenStemConfirm();
+            if (typeof fn === 'function') {
+                fn();
+            }
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') {
+            return;
+        }
+        var modal = document.getElementById('constructorEvenConfirm');
+        if (modal && !modal.hidden) {
+            closeEvenStemConfirm();
+        }
     });
 
     if (mobileAddBtn) {
@@ -1161,7 +1226,7 @@
             window.restoreFormProgress({
                 restored: true,
                 targetEl: document.querySelector('.constructor-aside'),
-                message: 'Букет відновлено — продовжуй збір'
+                message: 'Букет відновлено - продовжуй збір'
             });
         }
         loadPreviewStorage();
