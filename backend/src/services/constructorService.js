@@ -668,6 +668,8 @@ const calcBouquet = async (rawItems, packagingProductId) => {
 
     const total = flowersSum + Number(packaging.price || 0);
 
+    const evenStems = stemTotal > 0 && stemTotal % 2 === 0;
+
 
 
     const calcPayload = {
@@ -681,6 +683,8 @@ const calcBouquet = async (rawItems, packagingProductId) => {
         summary,
 
         stemTotal,
+
+        evenStems,
 
         flowersSum,
 

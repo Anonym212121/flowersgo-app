@@ -1808,6 +1808,10 @@ html.theme-light .constructor-preview-close {
 html.theme-light .constructor-library-card__warn {
     color: #b91c1c;
 }
+
+html.theme-light .constructor-hint--even {
+    color: #b45309;
+}
 html.theme-light .info-page__price {
     color: #047857 !important;
 }

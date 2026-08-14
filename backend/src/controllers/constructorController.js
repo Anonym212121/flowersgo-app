@@ -59,6 +59,7 @@ const calcPayloadJson = (result) => {
         total: result.total,
         flowersSum: result.flowersSum,
         stemTotal: result.stemTotal,
+        evenStems: !!result.evenStems,
         minStems: result.minStems,
         summary: result.summary,
         packagingLabel: result.packaging ? result.packaging.label : '',

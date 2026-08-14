@@ -24,6 +24,7 @@
 
     var calcTimer = null;
     var lastOk = false;
+    var lastStemTotal = 0;
     var draftStorageKey = cfg.draftStorageKey || 'flowersgo_constructor_draft';
     var previewStorageKey = cfg.previewStorageKey || draftStorageKey + '_preview';
     var savedPreviewUrl = '';
@@ -32,6 +33,22 @@
         if (typeof window.showToast === 'function') {
             window.showToast(text, ok ? 'ok' : 'error');
         }
+    }
+
+    function isEvenStemCount(stems) {
+        var n = Number(stems);
+        return Number.isFinite(n) && n > 0 && n % 2 === 0;
+    }
+
+    function confirmEvenStems(stems) {
+        if (!isEvenStemCount(stems)) {
+            return true;
+        }
+        return window.confirm(
+            'У букеті парна кількість квітів (' +
+                stems +
+                '). Парну кількість квітів зазвичай несуть на кладовище, тож багато хто такого букета не хотів би. Продовжити?'
+        );
     }
 
     function isMultiColorCard(card) {
@@ -675,11 +692,15 @@
             stemOut.textContent = '0';
             totalOut.textContent = '0 грн';
             hintEl.textContent = data && data.message ? data.message : 'Мінімум ' + cfg.minStems + ' квіток';
+            if (hintEl) {
+                hintEl.classList.remove('constructor-hint--even');
+            }
             addBtn.disabled = true;
             if (previewBtn) {
                 previewBtn.disabled = true;
             }
             lastOk = false;
+            lastStemTotal = 0;
             updateClearBtn(0);
             updateMobileBar(null);
             return;
@@ -721,10 +742,20 @@
         summaryList.innerHTML = html || '<li class="constructor-summary-empty">Поки нічого не обрано</li>';
         stemOut.textContent = String(data.stemTotal || 0);
         totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+        lastStemTotal = Number(data.stemTotal || 0);
+        var evenNow = data.evenStems === true || isEvenStemCount(lastStemTotal);
+        if (hintEl) {
+            hintEl.classList.toggle('constructor-hint--even', evenNow);
+        }
 
         if (data.ok) {
             lastOk = true;
-            hintEl.textContent = 'Готово — можна додати в кошик';
+            if (evenNow) {
+                hintEl.textContent =
+                    'У букеті парна кількість квітів. Такі букети зазвичай несуть на кладовище — багато хто цього не хотів би. Якщо згодні — додайте в кошик.';
+            } else {
+                hintEl.textContent = 'Готово — можна додати в кошик';
+            }
             addBtn.disabled = false;
             if (previewBtn) {
                 previewBtn.disabled = false;
@@ -745,6 +776,10 @@
         var stemNow = Number(data.stemTotal || 0);
         if (data.reason === 'min_stems' || (data.message && data.message.indexOf('мінімум') !== -1)) {
             hintEl.textContent = 'Додано ' + stemNow + ' з ' + minHint + ' квіток — додайте ще';
+            if (evenNow) {
+                hintEl.textContent +=
+                    '. Кількість парна: такі букети зазвичай несуть на кладовище.';
+            }
         } else {
             hintEl.textContent = data.message || ('Мінімум ' + minHint + ' квіток у букеті');
         }
@@ -1052,6 +1087,9 @@
 
     addBtn.addEventListener('click', function () {
         if (!lastOk) {
+            return;
+        }
+        if (!confirmEvenStems(lastStemTotal)) {
             return;
         }
         var items = getItems();

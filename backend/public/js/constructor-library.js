@@ -70,6 +70,7 @@
                 '<button type="button" class="auth-button auth-button--ghost constructor-library-edit" data-slug="' + escapeHtml(t.slug) + '">Редагувати</button>' +
                 '<button type="button" class="auth-button constructor-library-buy"' +
                 ' data-slug="' + escapeHtml(t.slug) + '"' +
+                ' data-stem-total="' + escapeHtml(String(t.stem_total || 0)) + '"' +
                 (t.available ? '' : ' disabled') +
                 '>Купити</button>' +
                 '</div></div></article>';
@@ -128,9 +129,24 @@
             });
     }
 
+    function confirmEvenStems(stems) {
+        var n = Number(stems);
+        if (!Number.isFinite(n) || n <= 0 || n % 2 !== 0) {
+            return true;
+        }
+        return window.confirm(
+            'У букеті парна кількість квітів (' +
+                n +
+                '). Парну кількість квітів зазвичай несуть на кладовище, тож багато хто такого букета не хотів би. Продовжити?'
+        );
+    }
+
     function onBuyClick(btn) {
         var slug = btn.getAttribute('data-slug');
         if (!slug) {
+            return;
+        }
+        if (!confirmEvenStems(btn.getAttribute('data-stem-total'))) {
             return;
         }
         btn.disabled = true;
