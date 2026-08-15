@@ -304,7 +304,18 @@
         if (window.SiteNotifyAuto && typeof window.SiteNotifyAuto.register === 'function') {
             window.SiteNotifyAuto.register('notifications', refreshNotifications);
         } else {
-            setInterval(refreshNotifications, 8000);
+            setInterval(refreshNotifications, 30000);
         }
+
+        document.addEventListener('realtime:message', (event) => {
+            const data = event.detail;
+            if (!data || data.type !== 'notification') {
+                return;
+            }
+            refreshNotifications();
+            if (typeof window.showToast === 'function' && data.title) {
+                window.showToast(data.title, 'ok');
+            }
+        });
     })();
 })();

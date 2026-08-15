@@ -123,6 +123,9 @@
 
     const refreshSupport = async () => {
         await pollUnread();
+        if (window.__realtimeLive) {
+            return;
+        }
         if (chatPollActive && chat && !isArchive && chat.status !== 'closed') {
             await pollOnce();
         }
@@ -654,6 +657,61 @@
         chatPollActive = true;
         pollOnce();
     };
+
+    const applyLiveSupport = (data) => {
+        if (!data || Number(data.chat_id) <= 0) {
+            return;
+        }
+        const chatId = Number(data.chat_id);
+        const sameChat = chat && Number(chat.id) === chatId;
+
+        if (!sameChat) {
+            if (data.event === 'started' && data.chat && data.chat.status !== 'closed') {
+                hasActiveChat = true;
+            }
+            pollUnread();
+            return;
+        }
+
+        if (data.chat) {
+            chat = data.chat;
+        }
+
+        if (data.message) {
+            const beforeCount = messages.length;
+            mergeMessages([data.message]);
+            const newOnes = messages.slice(beforeCount);
+            if (newOnes.length > 0) {
+                appendMessagesToBox(newOnes);
+                if (isViewingActiveChat()) {
+                    markChatRead();
+                } else {
+                    pollUnread();
+                }
+            }
+        }
+
+        if (chat.status === 'closed' || data.event === 'closed') {
+            isArchive = true;
+            syncActiveFlag();
+            stopPoll();
+            panelTitle.textContent = 'Архів чату №' + chat.id;
+            refreshArchiveFlag();
+            renderChatScreen();
+            return;
+        }
+
+        syncActiveFlag();
+        updateStatusLine();
+    };
+
+    document.addEventListener('realtime:message', (event) => {
+        const data = event.detail;
+        if (!data || data.type !== 'support_chat') {
+            return;
+        }
+        applyLiveSupport(data);
+    });
 
     const openPanel = () => {
         panel.hidden = false;

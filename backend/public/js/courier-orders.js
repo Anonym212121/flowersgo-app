@@ -52,7 +52,7 @@
             if (!userIsEditing() && !document.hidden) {
                 window.location.reload();
             }
-        }, 4000);
+        }, 1200);
     }
 
     function pollOnce() {
@@ -120,4 +120,12 @@
 
     pollTimer = setInterval(pollOnce, 45000);
     setTimeout(pollOnce, 6000);
+
+    document.addEventListener('realtime:message', function (event) {
+        var data = event.detail;
+        if (!data || data.type !== 'courier_order') {
+            return;
+        }
+        showRefreshHint();
+    });
 })();

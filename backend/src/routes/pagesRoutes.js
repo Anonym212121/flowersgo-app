@@ -110,7 +110,9 @@ const wrapCategoryImageUpload = (req, res, next) => {
 const router = express.Router();
 const pageNavCounts = require('../middleware/pageNavCounts');
 const pageRequireConstructorEnabled = require('../middleware/pageRequireConstructorEnabled');
+const supportGuestCookie = require('../middleware/supportGuestCookie');
 router.use(pageAuthContext);
+router.use(supportGuestCookie);
 router.use(pageNavCounts);
 
 router.get('/', pagesController.home);

@@ -89,7 +89,7 @@
             '</p></div>';
     };
 
-    const openProductEdit = async (productId) => {
+    const openProductEdit = async (productId, options = {}) => {
         const id = Number(productId);
         if (!Number.isFinite(id) || id <= 0) {
             return;
@@ -99,7 +99,7 @@
         try {
             const data = await apiFetch(`/api/admin/products/${id}`);
             setActiveMenu('create');
-            await renderForm(data.product);
+            await renderForm(data.product, options);
         } catch (err) {
             showMessage(err.message, true);
             setActiveMenu('list');
@@ -285,7 +285,8 @@
 
         saveAdminView({
             view: isEdit ? 'product-edit' : 'product-create',
-            productId: productId || ''
+            productId: productId || '',
+            returnTo: returnTo
         });
 
         const selectedCategoryId = product && product.category_id != null ? String(product.category_id) : '';
@@ -530,10 +531,9 @@
                             `${baseMsg} Фото не збережено: ${upErr.message}`,
                             true
                         );
-                        if (returnTo === 'constructor' && window.adminPanelApi.loadConstructorPage) {
-                            await window.adminPanelApi.loadConstructorPage();
-                        } else {
-                            await loadProductList();
+                        if (targetId) {
+                            const fresh = await apiFetch(`/api/admin/products/${targetId}`);
+                            await renderForm(fresh.product, { returnTo });
                         }
                         return;
                     }
@@ -550,10 +550,9 @@
                 if (form._formDraftHandle && typeof form._formDraftHandle.clear === 'function') {
                     form._formDraftHandle.clear();
                 }
-                if (returnTo === 'constructor' && window.adminPanelApi.loadConstructorPage) {
-                    await window.adminPanelApi.loadConstructorPage();
-                } else {
-                    await loadProductList();
+                if (targetId) {
+                    const fresh = await apiFetch(`/api/admin/products/${targetId}`);
+                    await renderForm(fresh.product, { returnTo });
                 }
             } catch (err) {
                 showMessage(err.message, true);
@@ -1740,13 +1739,13 @@ const renderPendingReviewsList = (reviews, requests) => {
             }
             if (state.view === 'product-create') {
                 setActiveMenu('create');
-                await renderForm(null);
+                await renderForm(null, { returnTo: state.returnTo });
                 return true;
             }
             if (state.view === 'product-edit' && state.productId) {
                 const data = await apiFetch('/api/admin/products/' + state.productId);
                 setActiveMenu('create');
-                await renderForm(data.product);
+                await renderForm(data.product, { returnTo: state.returnTo });
                 return true;
             }
         } catch (err) {

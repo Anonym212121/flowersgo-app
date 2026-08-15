@@ -161,4 +161,12 @@
 
     startPoll();
     setTimeout(pollOnce, 5000);
+
+    document.addEventListener('realtime:message', function (event) {
+        var data = event.detail;
+        if (!data || data.type !== 'warehouse_order') {
+            return;
+        }
+        showRefreshHint(true);
+    });
 })();

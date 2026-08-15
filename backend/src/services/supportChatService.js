@@ -5,6 +5,7 @@ const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
 const { looksLikeSpam } = require('../utils/spamText');
 const sanitizeUserText = require('../utils/sanitizeUserText');
+const realtimeService = require('./realtimeService');
 
 const WELCOME_MESSAGE =
     'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
@@ -199,6 +200,22 @@ const mapChatForClient = (chat) => {
     };
 };
 
+const pushChatLive = (chat, event, message) => {
+    if (!chat) {
+        return;
+    }
+    realtimeService.pushSupportChat({
+        event: event || 'message',
+        chat_id: chat.id,
+        chat: mapChatForClient(chat),
+        message: message || null,
+        user_id: chat.user_id,
+        guest_token: chat.guest_token,
+        admin_id: chat.assigned_admin_id,
+        to_admins: true
+    });
+};
+
 const mapChatForAdminList = (chat) => {
     if (!chat) {
         return null;
@@ -356,6 +373,7 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
 
     const fullChat = await SupportChatModel.findById(chat.id);
     await notifyAdminsNewChat(chat.id, fullChat);
+    pushChatLive(fullChat, 'started', mapMessageForClient(msg));
 
     return { ok: true, chat: fullChat };
 };
@@ -411,6 +429,8 @@ const sendClientMessage = async ({ chatId, userId, guestToken, body }) => {
         );
     }
 
+    pushChatLive(chat, 'message', mapMessageForClient(msg));
+
     return { ok: true, message: mapMessageForClient(msg) };
 };
 
@@ -426,7 +446,9 @@ const claimChatForAdmin = async (chatId, adminId) => {
         adminName = ((admin.first_name || '') + ' ' + (admin.last_name || '')).trim() || adminName;
     }
 
-    await addSystemMessage(chatId, 'Оператор ' + adminName + ' підключився до чату.');
+    const sys = await addSystemMessage(chatId, 'Оператор ' + adminName + ' підключився до чату.');
+    const full = await SupportChatModel.findById(chatId);
+    pushChatLive(full, 'claimed', mapMessageForClient(sys));
 
     return { ok: true, chat: result.chat };
 };
@@ -467,6 +489,9 @@ const sendAdminMessage = async (chatId, adminId, body) => {
         });
     }
 
+    const liveChat = await SupportChatModel.findById(chat.id);
+    pushChatLive(liveChat, 'message', mapMessageForClient(msg));
+
     return { ok: true, message: mapMessageForAdmin(msg) };
 };
 
@@ -476,7 +501,9 @@ const closeChatForAdmin = async (chatId, adminId) => {
         return { ok: false, message: 'Не вдалося закрити чат' };
     }
 
-    await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову - відкрийте новий чат.');
+    const sys = await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову - відкрийте новий чат.');
+    const full = await SupportChatModel.findById(chatId);
+    pushChatLive(full, 'closed', mapMessageForClient(sys));
 
     return { ok: true };
 };

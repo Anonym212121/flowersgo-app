@@ -1643,6 +1643,7 @@
                     <label>Назва кольору <input name="flower_color" type="text" maxlength="50" required placeholder="Напр. Червоний"></label>
                     <label>Відтінок <input name="color_hex" type="color" value="#e53935"></label>
                     <label>Склад <input name="stock_quantity" type="number" min="0" value="0"></label>
+                    <label>Фото кольору <input name="color_image" type="file" accept="image/jpeg,image/png,image/gif,image/webp"></label>
                     <button type="submit" class="admin-primary-btn">Додати колір</button>
                 </form>
                 <div class="admin-table-wrap">
@@ -1675,6 +1676,21 @@
             panel.innerHTML = renderConstructorColorsPanel(api, data.product || { id: productId, name: productName }, data.colors || []);
             panel.removeAttribute('hidden');
             bindConstructorColorsPanel(api, productId);
+            if (typeof saveAdminView === 'function') {
+                saveAdminView({
+                    view: 'constructor-colors',
+                    productId: Number(productId),
+                    productName: (data.product && data.product.name) || productName || ''
+                });
+            }
+            const count = Array.isArray(data.colors) ? data.colors.length : 0;
+            const row = document.querySelector('tr.admin-constructor-product-row[data-id="' + String(productId) + '"]');
+            if (row) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 4) {
+                    cells[4].textContent = String(count);
+                }
+            }
         } catch (err) {
             api.showMessage(err.message, true);
         }
@@ -1691,6 +1707,7 @@
             closeBtn.addEventListener('click', () => {
                 panel.setAttribute('hidden', '');
                 panel.innerHTML = '';
+                saveAdminView({ view: 'constructor' });
             });
         }
 
@@ -1699,19 +1716,40 @@
             addForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const fd = new FormData(addForm);
+                const photoFile = addForm.querySelector('input[name="color_image"]');
+                const file = photoFile && photoFile.files && photoFile.files[0];
                 const body = {};
                 fd.forEach((val, key) => {
+                    if (key === 'color_image') {
+                        return;
+                    }
                     body[key] = val;
                 });
                 try {
-                    await api.apiFetch(`/api/admin/constructor-products/${productId}/colors`, {
+                    const created = await api.apiFetch(`/api/admin/constructor-products/${productId}/colors`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                     });
-                    api.showMessage('Колір додано');
+                    if (file && created && created.variant_id) {
+                        const imgBody = new FormData();
+                        imgBody.append('image', file);
+                        const imgRes = await fetch('/api/admin/constructor-colors/' + created.variant_id + '/image', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            body: imgBody
+                        });
+                        const imgData = await imgRes.json().catch(() => ({}));
+                        if (!imgRes.ok) {
+                            api.showMessage(imgData.message || 'Колір додано, але фото не збережено', true);
+                            await openConstructorColorsPanel(api, productId);
+                            return;
+                        }
+                        api.showMessage('Колір і фото додано');
+                    } else {
+                        api.showMessage('Колір додано');
+                    }
                     await openConstructorColorsPanel(api, productId);
-                    await loadConstructorPage(api);
                 } catch (err) {
                     api.showMessage(err.message, true);
                 }
@@ -1728,7 +1766,6 @@
                     await api.apiFetch(`/api/admin/constructor-colors/${id}`, { method: 'DELETE' });
                     api.showMessage('Колір видалено');
                     await openConstructorColorsPanel(api, productId);
-                    await loadConstructorPage(api);
                 } catch (err) {
                     api.showMessage(err.message, true);
                 }
@@ -1765,7 +1802,6 @@
                     });
                     api.showMessage('Колір оновлено');
                     await openConstructorColorsPanel(api, productId);
-                    await loadConstructorPage(api);
                 } catch (err) {
                     api.showMessage(err.message, true);
                 } finally {
@@ -1795,7 +1831,6 @@
                     }
                     api.showMessage('Фото збережено');
                     await openConstructorColorsPanel(api, productId);
-                    await loadConstructorPage(api);
                 } catch (err) {
                     api.showMessage(err.message, true);
                 }
@@ -2337,6 +2372,12 @@
                 if (state.view === 'constructor') {
                     api.setActiveMenu('constructor');
                     await loadConstructorPage(api);
+                    return true;
+                }
+                if (state.view === 'constructor-colors' && state.productId) {
+                    api.setActiveMenu('constructor');
+                    await loadConstructorPage(api);
+                    await openConstructorColorsPanel(api, state.productId, state.productName || '');
                     return true;
                 }
                 if (state.view === 'legal') {

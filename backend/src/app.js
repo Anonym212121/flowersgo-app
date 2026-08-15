@@ -1,4 +1,5 @@
 const path = require('path');
+const http = require('http');
 const express = require('express');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('./config/db');
@@ -20,6 +21,9 @@ app.use(createRateLimit({
     skip: (req) => {
         const url = String(req.originalUrl || '');
         if (url.indexOf('/payment/liqpay/callback') !== -1) {
+            return true;
+        }
+        if (url.indexOf('/ws') === 0 || url === '/ws') {
             return true;
         }
         if (req.method === 'GET' && /\.(css|js|png|jpe?g|gif|svg|webp|ico|woff2?|map)$/i.test(String(req.path || ''))) {
@@ -123,6 +127,7 @@ const seedDefaults = require('./services/seedDefaults');
 const ensureAdminSchema = require('./services/ensureAdminSchema');
 const seedLegalPages = require('./services/seedLegalPages');
 const { startOrderExpiryJob } = require('./services/orderExpiryService');
+const realtimeService = require('./services/realtimeService');
 
 const PORT = process.env.PORT || 5000;
 const start = async () => {
@@ -135,7 +140,9 @@ const start = async () => {
         console.error('Seed error:', err && err.message ? err.message : err);
     }
 
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    realtimeService.attach(server);
+    server.listen(PORT, () => {
         console.log(`: ${PORT}`);
     });
 };
