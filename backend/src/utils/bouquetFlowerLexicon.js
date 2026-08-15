@@ -41,8 +41,10 @@ const colorMap = {
 const packagingMap = {
     'стандарт (папір)': 'simple floral wrapping paper',
     'оформлення - крафт + стрічка': 'kraft paper wrap with satin ribbon',
-    'оформлення - преміум коробка': 'premium rigid gift flower box'
+    'оформлення - преміум коробка': 'premium rigid gift flower box',
+    'без оформлення - лише квіти (без коробки та стрічки)': 'flowers only (no box or ribbon)'
 };
+
 
 const normalizeKey = (text) => {
     return String(text || '')
