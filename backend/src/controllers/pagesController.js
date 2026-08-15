@@ -252,7 +252,7 @@ const cabinetPage = async (req, res) => {
             verify_email_code_not_saved: 'Не вдалося створити код підтвердження пошти',
             bad_email_code_format: 'Код з листа має містити 6 цифр',
             bad_verify_email_code_format: 'Код з листа має містити 6 цифр',
-            bad_new_password: 'Новий пароль має бути не менше 6 символів',
+            bad_new_password: 'Новий пароль має бути не менше 8 символів',
             password_confirm_mismatch: 'Підтвердження пароля не збігається',
             email_code_expired: 'Код протермінований або неактивний',
             verify_email_code_expired: 'Код протермінований або неактивний',

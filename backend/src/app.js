@@ -4,12 +4,19 @@ const express = require('express');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('./config/db');
 const app = express();
-app.set('trust proxy', 1);
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
 const rootDir = path.join(__dirname, '..');
 const bodyLimit = '12mb';
 const createRateLimit = require('./middleware/rateLimit');
 const securityHeaders = require('./middleware/securityHeaders');
 const sameOrigin = require('./middleware/sameOrigin');
+
+const isLiqpayCallbackPath = (req) => {
+    const url = String(req.originalUrl || '');
+    return url.indexOf('/payment/liqpay/callback') !== -1;
+};
 
 app.use(securityHeaders);
 app.use(sameOrigin);
@@ -20,7 +27,7 @@ app.use(createRateLimit({
     message: 'Забагато запитів. Спробуйте трохи пізніше.',
     skip: (req) => {
         const url = String(req.originalUrl || '');
-        if (url.indexOf('/payment/liqpay/callback') !== -1) {
+        if (isLiqpayCallbackPath(req)) {
             return true;
         }
         if (url.indexOf('/ws') === 0 || url === '/ws') {
@@ -33,6 +40,40 @@ app.use(createRateLimit({
     }
 }));
 
+const jsonBodyParser = express.json({ limit: bodyLimit });
+const formBodyParser = express.urlencoded({ extended: true, limit: bodyLimit });
+const liqpayBodyParser = express.urlencoded({ extended: true, limit: '32kb' });
+const liqpayCallbackLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'liqpay-callback',
+    message: 'Забагато запитів. Спробуйте трохи пізніше.'
+});
+
+app.use((req, res, next) => {
+    if (String(req.method || '').toUpperCase() !== 'POST' || !isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return liqpayCallbackLimit(req, res, (err) => {
+        if (err) {
+            return next(err);
+        }
+        return liqpayBodyParser(req, res, next);
+    });
+});
+app.use((req, res, next) => {
+    if (isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return jsonBodyParser(req, res, next);
+});
+app.use((req, res, next) => {
+    if (isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return formBodyParser(req, res, next);
+});
+
 const wantsJson = (req) => {
     if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
         return true;
@@ -43,8 +84,6 @@ const wantsJson = (req) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(rootDir, 'views'));
-app.use(express.json({ limit: bodyLimit }));
-app.use(express.urlencoded({ extended: true, limit: bodyLimit }));
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
@@ -146,4 +185,9 @@ const start = async () => {
         console.log(`: ${PORT}`);
     });
 };
-start();
+
+module.exports = app;
+
+if (require.main === module) {
+    start();
+}

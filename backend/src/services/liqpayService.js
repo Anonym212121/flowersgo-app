@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const safeEqual = require('../utils/safeEqual');
 const https = require('https');
 const querystring = require('querystring');
 
@@ -188,7 +189,7 @@ const verifySignature = (data, signature) => {
     if (!data || !signature) {
         return false;
     }
-    return makeSignature(data) === signature;
+    return safeEqual(makeSignature(data), signature);
 };
 
 const parseData = (data) => {

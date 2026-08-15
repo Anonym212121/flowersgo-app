@@ -75,6 +75,20 @@ const wishlistWriteLimit = createRateLimit({
     message: 'Забагато змін в обраному. Зачекайте секунду.'
 });
 
+const emailCodeLimit = createRateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    scope: 'cabinet-email-code',
+    message: 'Забагато кодів на пошту. Спробуйте пізніше.'
+});
+
+const emailCodeConfirmLimit = createRateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    scope: 'cabinet-email-confirm',
+    message: 'Забагато спроб коду. Спробуйте пізніше.'
+});
+
 const wrapProductImageUpload = (req, res, next) => {
     productImageController.uploadMiddleware(req, res, (err) => {
         if (err) {
@@ -134,6 +148,7 @@ router.get('/register', pagesController.registerPage);
 router.get('/privacy', pagesController.privacyPage);
 router.get('/delivery-terms', pagesController.deliveryTermsPage);
 router.get('/logout', pagesController.logout);
+router.post('/logout', pagesController.logout);
 router.get('/cart', pagesController.cartPage);
 router.get('/constructor', constructorController.constructorPage);
 router.get('/api/constructor/templates', pageRequireConstructorEnabled, bouquetTemplateController.listJson);
@@ -151,10 +166,10 @@ router.post('/cart/clear', cartController.clear);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
 router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfile);
 router.post('/cabinet/avatar', pageRequireLogin, cabinetController.uploadAvatarMiddleware, cabinetController.updateAvatar);
-router.post('/cabinet/password/request-email', pageRequireLogin, cabinetController.requestPasswordEmailCode);
-router.post('/cabinet/password/confirm-email', pageRequireLogin, cabinetController.confirmPasswordByEmailCode);
-router.post('/cabinet/email/request-code', pageRequireLogin, cabinetController.requestEmailVerifyCode);
-router.post('/cabinet/email/confirm-code', pageRequireLogin, cabinetController.confirmEmailVerifyCode);
+router.post('/cabinet/password/request-email', pageRequireLogin, emailCodeLimit, cabinetController.requestPasswordEmailCode);
+router.post('/cabinet/password/confirm-email', pageRequireLogin, emailCodeConfirmLimit, cabinetController.confirmPasswordByEmailCode);
+router.post('/cabinet/email/request-code', pageRequireLogin, emailCodeLimit, cabinetController.requestEmailVerifyCode);
+router.post('/cabinet/email/confirm-code', pageRequireLogin, emailCodeConfirmLimit, cabinetController.confirmEmailVerifyCode);
 router.post('/cabinet/orders/:id/archive', pageRequireLogin, cabinetController.archiveOrder);
 router.post('/cabinet/orders/:id/cancel-request', pageRequireLogin, cabinetController.requestOrderCancel);
 router.post('/cabinet/reviews/:id/edit-request', pageRequireLogin, honeypot, cabinetController.requestReviewEdit);

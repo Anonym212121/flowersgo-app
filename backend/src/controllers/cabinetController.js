@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const UserModel = require('../models/User');
@@ -54,6 +55,10 @@ const upload = multer({
 });
 
 const uploadAvatarMiddleware = upload.single('avatar');
+
+const makeEmailCode = () => {
+    return String(crypto.randomInt(100000, 1000000));
+};
 
 const isJsonRequest = (req) => {
     const accept = String(req.headers.accept || '').toLowerCase();
@@ -294,14 +299,17 @@ const requestPasswordEmailCode = async (req, res) => {
         const new_password_confirm =
             typeof req.body.new_password_confirm === 'string' ? req.body.new_password_confirm : '';
 
-        if (!new_password || new_password.length < 6) {
-            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Новий пароль має бути не менше 6 символів' });
+        if (!new_password || new_password.length < 8) {
+            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Новий пароль має бути не менше 8 символів' });
+        }
+        if (new_password.length > 72) {
+            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Пароль занадто довгий' });
         }
         if (new_password !== new_password_confirm) {
             return respond(req, res, { ok: false, err_code: 'password_confirm_mismatch', message: 'Підтвердження пароля не збігається' });
         }
 
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const code = makeEmailCode();
         const new_password_hash = await bcrypt.hash(
             new_password,
             Number(process.env.BCRYPT_SALT_ROUNDS || 10)
@@ -426,7 +434,7 @@ const requestEmailVerifyCode = async (req, res) => {
             });
         }
 
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const code = makeEmailCode();
         const codeId = await EmailVerifyCodeModel.createCode({
             user_id: current.user_id,
             email: String(profile.email),

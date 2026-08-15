@@ -612,6 +612,26 @@ const isBlocked = async (userId) => {
     return !!(rows && rows[0] && Number(rows[0].is_blocked) === 1);
 };
 
+const findAuthById = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return null;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT
+            u.id, u.role_id, r.role_name,
+            COALESCE(u.is_blocked, 0) AS is_blocked
+         FROM users u
+         INNER JOIN roles r ON u.role_id = r.id
+         WHERE u.id = ?
+         LIMIT 1`,
+        [uid]
+    );
+
+    return rows[0] || null;
+};
+
 module.exports = {
     getDefaultRoleId,
     getRoleIdByName,
@@ -637,5 +657,6 @@ module.exports = {
     updateCourierWorkEmailById,
     resolveCourierNotifyEmail,
     listUserIdsByRole,
-    isBlocked
+    isBlocked,
+    findAuthById
 };

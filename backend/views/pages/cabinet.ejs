@@ -370,11 +370,11 @@ if (savedStreet && savedHouse) {
                         <form method="post" action="/cabinet/password/request-email" class="cabinet-password-form" id="cabinetPasswordRequestForm">
                             <label class="cabinet-mini-label">
                                 Новий пароль
-                                <input class="auth-input cabinet-mini-input" type="password" name="new_password" id="newPasswordInput" minlength="6" required autocomplete="new-password" />
+                                <input class="auth-input cabinet-mini-input" type="password" name="new_password" id="newPasswordInput" minlength="8" maxlength="72" required autocomplete="new-password" />
                             </label>
                             <label class="cabinet-mini-label">
                                 Підтвердження
-                                <input class="auth-input cabinet-mini-input" type="password" name="new_password_confirm" id="newPasswordConfirmInput" minlength="6" required autocomplete="new-password" />
+                                <input class="auth-input cabinet-mini-input" type="password" name="new_password_confirm" id="newPasswordConfirmInput" minlength="8" maxlength="72" required autocomplete="new-password" />
                             </label>
                             <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary" id="sendPasswordCodeBtn">Надіслати код на email</button>
                         </form>
@@ -1005,8 +1005,8 @@ if (savedStreet && savedHouse) {
             event.preventDefault();
             var p1 = newPasswordInput ? String(newPasswordInput.value || '') : '';
             var p2 = newPasswordConfirmInput ? String(newPasswordConfirmInput.value || '') : '';
-            if (p1.length < 6) {
-                renderPasswordMessage('error', 'Пароль від 6 символів');
+            if (p1.length < 8) {
+                renderPasswordMessage('error', 'Пароль від 8 символів');
                 return;
             }
             if (p1 !== p2) {

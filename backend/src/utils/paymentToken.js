@@ -1,13 +1,21 @@
 const crypto = require('crypto');
+const safeEqual = require('./safeEqual');
 
-const secret = process.env.JWT_SECRET || 'payment-token-secret';
+const getSecret = () => {
+    const value = typeof process.env.JWT_SECRET === 'string' ? process.env.JWT_SECRET.trim() : '';
+    return value;
+};
+
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const signPayload = (oid, uid, expMs) => {
-    return crypto.createHmac('sha256', secret).update(oid + ':' + uid + ':' + expMs).digest('hex').slice(0, 20);
+    return crypto.createHmac('sha256', getSecret()).update(oid + ':' + uid + ':' + expMs).digest('hex').slice(0, 20);
 };
 
 const makeForOrder = (orderId, userId) => {
+    if (!getSecret()) {
+        return '';
+    }
     const oid = Number(orderId);
     let uid = Number(userId);
     if (!uid || uid < 0) {
@@ -30,12 +38,12 @@ const verifyLegacy = (parts, oid) => {
     }
 
     const legacySig = crypto
-        .createHmac('sha256', secret)
+        .createHmac('sha256', getSecret())
         .update(tokenOrderId + ':' + tokenUserId)
         .digest('hex')
         .slice(0, 20);
 
-    if (legacySig !== parts[2]) {
+    if (!safeEqual(legacySig, parts[2])) {
         return null;
     }
 
@@ -45,7 +53,7 @@ const verifyLegacy = (parts, oid) => {
 const verify = (token, orderId) => {
     const text = typeof token === 'string' ? token.trim() : '';
     const oid = Number(orderId);
-    if (!text || !oid || oid <= 0) {
+    if (!text || !oid || oid <= 0 || !getSecret()) {
         return null;
     }
 
@@ -70,7 +78,7 @@ const verify = (token, orderId) => {
     }
 
     const expectedSig = signPayload(tokenOrderId, tokenUserId, expMs);
-    if (expectedSig !== parts[3]) {
+    if (!safeEqual(expectedSig, parts[3])) {
         return null;
     }
 

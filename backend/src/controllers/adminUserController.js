@@ -21,6 +21,14 @@ const updateRole = async (req, res) => {
             return res.status(400).json({ message: 'Невірні дані' });
         }
 
+        const target = await UserModel.findAuthById(id);
+        if (target && target.role_name === 'admin' && roleName !== 'admin') {
+            const adminIds = await UserModel.listUserIdsByRole('admin');
+            if (adminIds.length <= 1) {
+                return res.status(400).json({ message: 'Має лишитися хоча б один адміністратор' });
+            }
+        }
+
         const ok = await UserModel.updateRoleById(id, roleName);
         if (!ok) {
             return res.status(400).json({ message: 'Не вдалося змінити роль' });
@@ -44,6 +52,16 @@ const setBlocked = async (req, res) => {
         const current = res.locals.currentUser;
         if (current && Number(current.user_id) === id) {
             return res.status(400).json({ message: 'Не можна заблокувати себе' });
+        }
+
+        if (blocked) {
+            const target = await UserModel.findAuthById(id);
+            if (target && target.role_name === 'admin') {
+                const adminIds = await UserModel.listUserIdsByRole('admin');
+                if (adminIds.length <= 1) {
+                    return res.status(400).json({ message: 'Не можна заблокувати останнього адміністратора' });
+                }
+            }
         }
 
         let reasonKey = '';

@@ -338,6 +338,16 @@ a:hover { color: #bae6fd; }
     white-space: nowrap;
 }
 
+.nav__logout {
+    display: inline-flex;
+    margin: 0;
+}
+
+.nav__logout .nav__btn {
+    font-family: inherit;
+    cursor: pointer;
+}
+
 .nav__btn--ghost {
     color: #e2e8f0;
     border: 1px solid rgba(148, 163, 184, 0.3);

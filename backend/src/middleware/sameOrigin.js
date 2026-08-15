@@ -10,11 +10,26 @@ const hostFromUrl = (value) => {
     }
 };
 
-const sameOrigin = (req, res, next) => {
-    if (process.env.NODE_ENV === 'test') {
-        return next();
+const headerValue = (req, name) => {
+    if (req && typeof req.get === 'function') {
+        return String(req.get(name) || '');
     }
+    if (req && req.headers && req.headers[name]) {
+        return String(req.headers[name]);
+    }
+    return '';
+};
 
+const originMatchesHost = (req) => {
+    const host = headerValue(req, 'host');
+    const origin = headerValue(req, 'origin');
+    if (!host || !origin) {
+        return false;
+    }
+    return hostFromUrl(origin) === host;
+};
+
+const sameOrigin = (req, res, next) => {
     const method = String(req.method || '').toUpperCase();
     if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
         return next();
@@ -25,9 +40,9 @@ const sameOrigin = (req, res, next) => {
         return next();
     }
 
-    const host = String(req.get('host') || '');
-    const origin = String(req.get('origin') || '');
-    const referer = String(req.get('referer') || '');
+    const host = headerValue(req, 'host');
+    const origin = headerValue(req, 'origin');
+    const referer = headerValue(req, 'referer');
 
     if (origin && hostFromUrl(origin) === host) {
         return next();
@@ -47,4 +62,7 @@ const sameOrigin = (req, res, next) => {
     return res.status(403).send('Запит відхилено');
 };
 
+sameOrigin.originMatchesHost = originMatchesHost;
+
 module.exports = sameOrigin;
+

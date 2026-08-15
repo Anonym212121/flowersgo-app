@@ -1,5 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { WebSocketServer, WebSocket } = require('ws');
+const UserModel = require('../models/User');
+const sameOrigin = require('../middleware/sameOrigin');
 
 const clients = new Map();
 let wss = null;
@@ -31,7 +33,7 @@ const parseCookies = (cookieHeader) => {
     return result;
 };
 
-const userFromUpgrade = (req) => {
+const userFromUpgrade = async (req) => {
     const cookies = parseCookies(req.headers.cookie);
     try {
         const token = cookies.token;
@@ -40,12 +42,16 @@ const userFromUpgrade = (req) => {
             const rawId = decoded.user_id != null ? decoded.user_id : decoded.id;
             const userId = Number(rawId);
             if (Number.isFinite(userId) && userId > 0) {
+                const user = await UserModel.findAuthById(userId);
                 const guest = cookies.support_guest_token;
-                return {
-                    user_id: userId,
-                    role_name: decoded.role_name || '',
-                    guest_token: guest && guest.length >= 8 ? guest : null
-                };
+                const guestToken = guest && guest.length >= 8 ? guest : null;
+                if (user && Number(user.is_blocked) !== 1) {
+                    return {
+                        user_id: Number(user.id),
+                        role_name: user.role_name || '',
+                        guest_token: guestToken
+                    };
+                }
             }
         }
     } catch {
@@ -187,10 +193,23 @@ const attach = (httpServer) => {
 
     wss = new WebSocketServer({ server: httpServer, path: '/ws' });
 
-    wss.on('connection', (ws, req) => {
-        const user = userFromUpgrade(req);
+    wss.on('connection', async (ws, req) => {
+        if (process.env.NODE_ENV !== 'test' && !sameOrigin.originMatchesHost(req)) {
+            ws.close(4003, 'origin');
+            return;
+        }
+
+        let user = null;
+        try {
+            user = await userFromUpgrade(req);
+        } catch (err) {
+            user = null;
+        }
         if (!user) {
             ws.close(4001, 'auth');
+            return;
+        }
+        if (ws.readyState !== WebSocket.OPEN) {
             return;
         }
 

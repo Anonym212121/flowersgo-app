@@ -108,9 +108,9 @@ const pageAuthContext = async (req, res, next) => {
 
 
 
-        const blocked = await UserModel.isBlocked(userId);
+        const user = await UserModel.findAuthById(userId);
 
-        if (blocked) {
+        if (!user || Number(user.is_blocked) === 1) {
 
             return next();
 
@@ -118,27 +118,29 @@ const pageAuthContext = async (req, res, next) => {
 
 
 
+        const roleName = user.role_name || '';
+
         res.locals.currentUser = {
 
-            user_id: userId,
+            user_id: Number(user.id),
 
-            role_id: decoded.role_id,
+            role_id: user.role_id,
 
-            role_name: decoded.role_name
+            role_name: roleName
 
         };
 
 
 
-        if (decoded.role_name === 'admin') {
+        if (roleName === 'admin') {
 
             res.locals.headerType = 'admin';
 
-        } else if (decoded.role_name === 'warehouse_worker') {
+        } else if (roleName === 'warehouse_worker') {
 
             res.locals.headerType = 'warehouse_worker';
 
-        } else if (decoded.role_name === 'courier') {
+        } else if (roleName === 'courier') {
 
             res.locals.headerType = 'courier';
 

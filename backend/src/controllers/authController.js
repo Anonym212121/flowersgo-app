@@ -50,9 +50,29 @@ const buildAuthToken = (user) => {
     );
 };
 
+const cookieMaxAgeMs = () => {
+    const text = String(process.env.JWT_EXPIRES_IN || '7d').trim();
+    const match = text.match(/^(\d+)([smhd])$/i);
+    if (!match) {
+        return 7 * 24 * 60 * 60 * 1000;
+    }
+    const n = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit === 's') {
+        return n * 1000;
+    }
+    if (unit === 'm') {
+        return n * 60 * 1000;
+    }
+    if (unit === 'h') {
+        return n * 60 * 60 * 1000;
+    }
+    return n * 24 * 60 * 60 * 1000;
+};
+
 const setAuthCookie = (res, token) => {
     res.cookie('token', token, cookieBase({
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        maxAge: cookieMaxAgeMs()
     }));
 };
 
