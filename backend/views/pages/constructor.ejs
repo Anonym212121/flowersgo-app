@@ -208,13 +208,9 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                         Упаковка
 
-                        <% if (safePackaging.length === 0) { %>
-
-                            <span class="constructor-hint">Немає упаковки</span>
-
-                        <% } else { %>
-
                         <select class="auth-input" id="constructorPackaging">
+
+                            <option value="" data-price="0">Без упаковки</option>
 
                             <% for (const pack of safePackaging) { %>
 
@@ -227,8 +223,6 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
                             <% } %>
 
                         </select>
-
-                        <% } %>
 
                     </label>
 
@@ -307,9 +301,8 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
 
 <script src="https://js.puter.com/v2/"></script>
-<script>
-window.constructorConfig = {
-    minStems: <%= minStemsVal %>,
+<script type="application/json" id="constructor-config"><%- JSON.stringify({
+    minStems: minStemsVal,
     calcUrl: '/constructor/calc',
     previewUrl: '/constructor/preview',
     previewSaveUrl: '/constructor/preview-save',
@@ -318,10 +311,12 @@ window.constructorConfig = {
     puterQuality: 'medium',
     addUrl: '/constructor/add',
     templatesUrl: '/api/constructor/templates',
-    templateSlug: <%- JSON.stringify(typeof templateSlug !== 'undefined' ? templateSlug : '') %>,
+    templateSlug: typeof templateSlug !== 'undefined' ? templateSlug : '',
     draftStorageKey: 'flowersgo_constructor_draft',
     previewStorageKey: 'flowersgo_constructor_preview'
-};
+}) %></script>
+<script>
+window.constructorConfig = JSON.parse(document.getElementById('constructor-config').textContent);
 </script>
 
 <script src="/js/constructor-library.js" defer></script>

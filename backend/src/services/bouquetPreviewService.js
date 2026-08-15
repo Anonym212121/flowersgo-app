@@ -97,11 +97,15 @@ const buildImagePrompt = (rows, packagingLabel) => {
         stemTotal += row.quantity;
     }
 
-    const wrap = lexicon.packagingEnglish(packagingLabel);
     let prompt = 'Photo of one flower bouquet, light background. ';
     prompt += 'Ukrainian order: ' + ukParts.join(', ') + '. ';
     prompt += 'Flowers: ' + enParts.join(', ') + '. ';
-    prompt += 'Total ' + stemTotal + ' stems, wrap: ' + wrap + '. ';
+    prompt += 'Total ' + stemTotal + ' stems. ';
+    if (lexicon.isNoPackagingLabel(packagingLabel)) {
+        prompt += 'Bare stems only: no wrapping paper, no kraft paper, no box, no ribbon, no vase. ';
+    } else {
+        prompt += 'Wrap: ' + lexicon.packagingEnglish(packagingLabel) + '. ';
+    }
     prompt += 'Only listed flowers, no text or logo.';
 
     return prompt;

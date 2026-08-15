@@ -93,7 +93,30 @@ const colorEnglishName = (colorUk) => {
     return key;
 };
 
+const isNoPackagingLabel = (label) => {
+    const key = normalizeKey(label);
+    if (!key) {
+        return true;
+    }
+    if (key === 'без упаковки') {
+        return true;
+    }
+    if (key.indexOf('без оформлення') !== -1) {
+        return true;
+    }
+    if (key.indexOf('без упаков') !== -1) {
+        return true;
+    }
+    if (key.indexOf('лише квіти') !== -1 || key.indexOf('тільки квіти') !== -1) {
+        return true;
+    }
+    return false;
+};
+
 const packagingEnglish = (label) => {
+    if (isNoPackagingLabel(label)) {
+        return 'no wrapping';
+    }
     const key = normalizeKey(label);
     if (packagingMap[key]) {
         return packagingMap[key];
@@ -104,5 +127,6 @@ const packagingEnglish = (label) => {
 module.exports = {
     flowerEnglishName,
     colorEnglishName,
-    packagingEnglish
+    packagingEnglish,
+    isNoPackagingLabel
 };
