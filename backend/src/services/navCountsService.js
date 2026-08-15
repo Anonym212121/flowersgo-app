@@ -16,7 +16,11 @@ const parseCookies = (cookieHeader) => {
         const key = trimmed.slice(0, idx).trim();
         const val = trimmed.slice(idx + 1).trim();
         if (key) {
-            result[key] = decodeURIComponent(val);
+            try {
+                result[key] = decodeURIComponent(val);
+            } catch {
+                result[key] = val;
+            }
         }
     }
     return result;

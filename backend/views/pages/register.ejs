@@ -42,6 +42,8 @@
             <span>Погоджуюсь з <a href="/privacy" target="_blank" rel="noopener">політикою конфіденційності</a></span>
         </label>
 
+        <%- include('../partials/honeypot') %>
+
         <button class="auth-button" type="submit" id="registerSubmitBtn">Зареєструватися</button>
     </form>
 
@@ -298,7 +300,8 @@
             phone: formData.get('phone'),
             password: password,
             password_confirm: passwordConfirm,
-            accept_terms: formData.get('accept_terms') ? '1' : ''
+            accept_terms: formData.get('accept_terms') ? '1' : '',
+            website: formData.get('website') || ''
         };
 
         submitBtn.disabled = true;

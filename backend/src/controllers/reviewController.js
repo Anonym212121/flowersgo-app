@@ -1,5 +1,7 @@
 const ProductModel = require('../models/Product');
 const ReviewModel = require('../models/Review');
+const { looksLikeSpam } = require('../utils/spamText');
+const sanitizeUserText = require('../utils/sanitizeUserText');
 const {
     respondWithMessage,
     respondServerError,
@@ -28,8 +30,24 @@ const createPageReview = async (req, res) => {
 
         const user = res.locals.currentUser;
 
-        const bodyRaw = req.body.comment;
-        const comment = typeof bodyRaw === 'string' ? bodyRaw.trim() : '';
+        const comment = sanitizeUserText(req.body.comment, 2000);
+
+        if (looksLikeSpam(comment)) {
+            return respondWithMessage(req, res, 400, 'Відгук схожий на спам. Приберіть зайві посилання і спробуйте ще раз.', {
+                title: 'Відгук',
+                messageTitle: 'Відгук не прийнято',
+                actions: [{ label: 'Назад до товару', href: '/product/' + productId, primary: true }]
+            });
+        }
+
+        const recent = await ReviewModel.countRecentByUser(user.user_id, 10);
+        if (recent >= 3) {
+            return respondWithMessage(req, res, 429, 'Забагато відгуків за короткий час. Спробуйте пізніше.', {
+                title: 'Відгук',
+                messageTitle: 'Зачекайте трохи',
+                actions: [{ label: 'Назад до товару', href: '/product/' + productId, primary: true }]
+            });
+        }
 
         const ratingRaw = req.body.rating;
 

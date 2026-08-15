@@ -5,8 +5,15 @@ document.addEventListener('submit', async (e) => {
     }
 
     e.preventDefault();
+    if (form.dataset.wlBusy === '1') {
+        return;
+    }
+    form.dataset.wlBusy = '1';
 
     const btn = form.querySelector('.wishlist-star-btn');
+    if (btn) {
+        btn.disabled = true;
+    }
     const productId = form.querySelector('[name=product_id]')?.value;
     const isActive = btn && btn.classList.contains('wishlist-star-btn--active');
     const willRemove = btn ? isActive : (form.getAttribute('action') || '').includes('/wishlist/remove');
@@ -31,6 +38,12 @@ document.addEventListener('submit', async (e) => {
                 window.showToast(msg, 'error');
             }
             return;
+        }
+
+        if (Array.isArray(data.ids)) {
+            window.__wishlistProductIds = data.ids
+                .map((id) => Number(id))
+                .filter((id) => Number.isFinite(id) && id > 0);
         }
 
         if (typeof window.updateNavWishlistCount === 'function' && data.count != null) {
@@ -77,6 +90,11 @@ document.addEventListener('submit', async (e) => {
     } catch (err) {
         if (typeof window.showToast === 'function') {
             window.showToast('Помилка мережі', 'error');
+        }
+    } finally {
+        form.dataset.wlBusy = '';
+        if (btn) {
+            btn.disabled = false;
         }
     }
 });

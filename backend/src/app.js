@@ -6,6 +6,28 @@ const app = express();
 app.set('trust proxy', 1);
 const rootDir = path.join(__dirname, '..');
 const bodyLimit = '12mb';
+const createRateLimit = require('./middleware/rateLimit');
+const securityHeaders = require('./middleware/securityHeaders');
+const sameOrigin = require('./middleware/sameOrigin');
+
+app.use(securityHeaders);
+app.use(sameOrigin);
+app.use(createRateLimit({
+    windowMs: 60 * 1000,
+    max: 180,
+    scope: 'global',
+    message: 'Забагато запитів. Спробуйте трохи пізніше.',
+    skip: (req) => {
+        const url = String(req.originalUrl || '');
+        if (url.indexOf('/payment/liqpay/callback') !== -1) {
+            return true;
+        }
+        if (req.method === 'GET' && /\.(css|js|png|jpe?g|gif|svg|webp|ico|woff2?|map)$/i.test(String(req.path || ''))) {
+            return true;
+        }
+        return false;
+    }
+}));
 
 const wantsJson = (req) => {
     if (req.originalUrl && req.originalUrl.startsWith('/api/')) {

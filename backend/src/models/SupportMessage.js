@@ -1,17 +1,8 @@
 const db = require('../config/db');
+const sanitizeUserText = require('../utils/sanitizeUserText');
 
 const trimBody = (raw) => {
-    if (typeof raw !== 'string') {
-        return '';
-    }
-    const text = raw.trim();
-    if (!text) {
-        return '';
-    }
-    if (text.length > 2000) {
-        return text.slice(0, 2000);
-    }
-    return text;
+    return sanitizeUserText(raw, 2000);
 };
 
 const insertMessage = async ({ chat_id, sender_type, sender_user_id, body }) => {

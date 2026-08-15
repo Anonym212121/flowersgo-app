@@ -223,6 +223,7 @@ if (savedStreet && savedHouse) {
                                         Текст
                                         <textarea class="auth-input cabinet-review-textarea" name="comment" required minlength="2" maxlength="2000"><%= rev.comment %></textarea>
                                     </label>
+                                    <%- include('../partials/honeypot') %>
                                     <div class="cabinet-review-form-actions">
                                         <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Надіслати</button>
                                         <button type="button" class="cabinet-mini-btn cabinet-review-cancel-btn" data-review-id="<%= rev.id %>">Скасувати</button>

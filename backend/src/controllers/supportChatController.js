@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const SupportChatModel = require('../models/SupportChat');
 const SupportMessageModel = require('../models/SupportMessage');
 const supportChatService = require('../services/supportChatService');
+const cookieBase = require('../utils/cookieBase');
 
 const GUEST_COOKIE = 'support_guest_token';
 const GUEST_COOKIE_DAYS = 365;
@@ -21,7 +22,11 @@ const parseCookies = (cookieHeader) => {
         const key = trimmed.slice(0, idx).trim();
         const value = trimmed.slice(idx + 1).trim();
         if (key) {
-            result[key] = decodeURIComponent(value);
+            try {
+                result[key] = decodeURIComponent(value);
+            } catch {
+                result[key] = value;
+            }
         }
     }
     return result;
@@ -35,11 +40,9 @@ const getGuestToken = (req, res) => {
     }
 
     token = crypto.randomBytes(16).toString('hex');
-    res.cookie(GUEST_COOKIE, token, {
-        maxAge: GUEST_COOKIE_DAYS * 24 * 60 * 60 * 1000,
-        httpOnly: true,
-        sameSite: 'lax'
-    });
+    res.cookie(GUEST_COOKIE, token, cookieBase({
+        maxAge: GUEST_COOKIE_DAYS * 24 * 60 * 60 * 1000
+    }));
     return token;
 };
 

@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const ProductModel = require('./Product');
+const { looksLikeSpam } = require('../utils/spamText');
+const sanitizeUserText = require('../utils/sanitizeUserText');
 
 const listVisibleByProductId = async (productId) => {
     const id = Number(productId);
@@ -20,6 +22,22 @@ const listVisibleByProductId = async (productId) => {
     return rows;
 };
 
+const countRecentByUser = async (userId, minutes) => {
+    const uid = Number(userId);
+    const mins = Math.floor(Number(minutes));
+    if (!Number.isFinite(uid) || uid <= 0 || !Number.isFinite(mins) || mins <= 0) {
+        return 0;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT COUNT(*) AS c FROM reviews
+         WHERE user_id = ? AND \`createdAt\` >= DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+        [uid, mins]
+    );
+
+    return Number(rows[0] && rows[0].c) || 0;
+};
+
 const create = async ({ user_id, product_id, order_id, rating, comment }) => {
     const uid = Number(user_id);
     const pid = Number(product_id);
@@ -27,8 +45,11 @@ const create = async ({ user_id, product_id, order_id, rating, comment }) => {
         return false;
     }
 
-    const text = typeof comment === 'string' ? comment.trim() : '';
-    if (text.length < 2 || text.length > 2000) {
+    const text = sanitizeUserText(comment, 2000);
+    if (text.length < 2) {
+        return false;
+    }
+    if (looksLikeSpam(text)) {
         return false;
     }
 
@@ -212,8 +233,11 @@ const createChangeRequest = async (payload) => {
     let new_comment = null;
 
     if (request_type === 'edit') {
-        const text = typeof payload.new_comment === 'string' ? payload.new_comment.trim() : '';
-        if (text.length < 2 || text.length > 2000) {
+        const text = sanitizeUserText(payload.new_comment, 2000);
+        if (text.length < 2) {
+            return false;
+        }
+        if (looksLikeSpam(text)) {
             return false;
         }
         const r = Number(payload.new_rating);
@@ -332,6 +356,7 @@ const applyDeleteRequestById = async (requestId) => {
 
 module.exports = {
     listVisibleByProductId,
+    countRecentByUser,
     create,
     approveById,
     deleteById,

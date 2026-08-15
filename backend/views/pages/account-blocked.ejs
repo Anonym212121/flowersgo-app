@@ -25,6 +25,7 @@
         </label>
 
         <button class="auth-button" type="submit">Показати причину</button>
+        <%- include('../partials/honeypot') %>
     </form>
 
     <div id="blockedVerifyError" class="auth-error" aria-live="polite"></div>
@@ -38,6 +39,7 @@
                 Повідомлення адміністратору
                 <textarea class="auth-input blocked-message-input" name="message" rows="4" maxlength="2000" placeholder="Напишіть, що сталося або чому вважаєте блокування помилкою"></textarea>
             </label>
+            <%- include('../partials/honeypot') %>
             <button class="auth-button" type="submit">Надіслати</button>
         </form>
         <div id="blockedMessageStatus" class="auth-error" aria-live="polite"></div>
@@ -71,7 +73,8 @@
         const formData = new FormData(blockedVerifyForm);
         const payload = {
             email: formData.get('email'),
-            password: formData.get('password')
+            password: formData.get('password'),
+            website: formData.get('website') || ''
         };
 
         const response = await fetch('/api/auth/blocked-info', {
@@ -113,7 +116,8 @@
             body: JSON.stringify({
                 email: savedEmail,
                 password: savedPassword,
-                message
+                message,
+                website: formData.get('website') || ''
             })
         });
 

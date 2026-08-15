@@ -285,7 +285,7 @@
             try {
                 const data = await apiFetch('/api/support/message', {
                     method: 'POST',
-                    body: JSON.stringify({ chat_id: chat.id, message: text })
+                    body: JSON.stringify({ chat_id: chat.id, message: text, website: '' })
                 });
                 if (data.message) {
                     mergeMessages([data.message]);
@@ -522,7 +522,7 @@
                 return;
             }
 
-            const body = { message: text };
+            const body = { message: text, website: '' };
 
             if (!isLoggedIn) {
                 body.guest_name = (document.getElementById('support-guest-name').value || '').trim();

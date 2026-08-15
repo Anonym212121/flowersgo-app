@@ -13,6 +13,7 @@ const orderWarehouseNotifyService = require('../services/orderWarehouseNotifySer
 const emailService = require('../services/emailService');
 const cloudinaryService = require('../services/cloudinaryService');
 const paymentToken = require('../utils/paymentToken');
+const { looksLikeSpam } = require('../utils/spamText');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
 
@@ -678,6 +679,14 @@ const requestReviewEdit = async (req, res) => {
 
         const rating = Number(req.body.rating);
         const comment = typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
+
+        if (looksLikeSpam(comment)) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'review_spam',
+                message: 'Текст схожий на спам. Приберіть зайві посилання і спробуйте ще раз.'
+            });
+        }
 
         const result = await ReviewModel.createChangeRequest({
             review_id: reviewId,

@@ -49,9 +49,11 @@ const parseCookies = (cookieHeader) => {
 
 
         if (key) {
-
-            result[key] = decodeURIComponent(value);
-
+            try {
+                result[key] = decodeURIComponent(value);
+            } catch {
+                result[key] = value;
+            }
         }
 
     }

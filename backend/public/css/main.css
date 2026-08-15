@@ -985,6 +985,16 @@ a:hover {
     margin-left: 0.35rem;
 }
 
+.hp-field {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
 .blocked-account-lead {
     margin: 0 0 1rem;
     color: #cbd5e1;

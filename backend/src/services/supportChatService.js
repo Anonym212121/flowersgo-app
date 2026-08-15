@@ -3,6 +3,8 @@ const SupportMessageModel = require('../models/SupportMessage');
 const UserModel = require('../models/User');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
+const { looksLikeSpam } = require('../utils/spamText');
+const sanitizeUserText = require('../utils/sanitizeUserText');
 
 const WELCOME_MESSAGE =
     'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
@@ -312,9 +314,12 @@ const getClientArchiveChat = async (chatId, ctx) => {
 };
 
 const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone, firstMessage }) => {
-    const text = typeof firstMessage === 'string' ? firstMessage.trim() : '';
+    const text = sanitizeUserText(firstMessage, 2000);
     if (!text) {
         return { ok: false, message: 'Введіть повідомлення' };
+    }
+    if (looksLikeSpam(text) || looksLikeSpam(guestName)) {
+        return { ok: false, message: 'Повідомлення схоже на спам' };
     }
 
     let chat = await getActiveChat({ userId, guestToken });
@@ -356,9 +361,12 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
 };
 
 const sendClientMessage = async ({ chatId, userId, guestToken, body }) => {
-    const text = typeof body === 'string' ? body.trim() : '';
+    const text = sanitizeUserText(body, 2000);
     if (!text) {
         return { ok: false, message: 'Порожнє повідомлення' };
+    }
+    if (looksLikeSpam(text)) {
+        return { ok: false, message: 'Повідомлення схоже на спам' };
     }
 
     const chat = await SupportChatModel.findById(chatId);

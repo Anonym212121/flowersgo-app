@@ -44,7 +44,10 @@ const listForUser = async (userId) => {
 
 const productIdsForUser = async (userId) => {
     const [rows] = await db.execute(
-        'SELECT product_id FROM wishlist WHERE user_id = ?',
+        `SELECT w.product_id
+         FROM wishlist w
+         INNER JOIN products p ON p.id = w.product_id
+         WHERE w.user_id = ? AND p.is_active = 1`,
         [userId]
     );
     return rows.map((r) => Number(r.product_id));
