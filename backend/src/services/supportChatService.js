@@ -3,8 +3,7 @@ const SupportMessageModel = require('../models/SupportMessage');
 const UserModel = require('../models/User');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
-const { looksLikeSpam } = require('../utils/spamText');
-const sanitizeUserText = require('../utils/sanitizeUserText');
+const checkUserContent = require('../utils/userContentGuard');
 const realtimeService = require('./realtimeService');
 
 const WELCOME_MESSAGE =
@@ -331,12 +330,19 @@ const getClientArchiveChat = async (chatId, ctx) => {
 };
 
 const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone, firstMessage }) => {
-    const text = sanitizeUserText(firstMessage, 2000);
-    if (!text) {
-        return { ok: false, message: 'Введіть повідомлення' };
+    const check = checkUserContent(firstMessage, { minLen: 1, maxLen: 2000 });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
     }
-    if (looksLikeSpam(text) || looksLikeSpam(guestName)) {
-        return { ok: false, message: 'Повідомлення схоже на спам' };
+    const text = check.text;
+
+    let safeGuestName = guestName;
+    if (guestName) {
+        const nameCheck = checkUserContent(guestName, { minLen: 1, maxLen: 120 });
+        if (!nameCheck.ok) {
+            return { ok: false, message: nameCheck.message };
+        }
+        safeGuestName = nameCheck.text;
     }
 
     let chat = await getActiveChat({ userId, guestToken });
@@ -347,7 +353,7 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
     chat = await SupportChatModel.createChat({
         user_id: userId,
         guest_token: guestToken,
-        guest_name: guestName,
+        guest_name: safeGuestName,
         guest_email: guestEmail,
         guest_phone: guestPhone
     });
@@ -379,13 +385,11 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
 };
 
 const sendClientMessage = async ({ chatId, userId, guestToken, body }) => {
-    const text = sanitizeUserText(body, 2000);
-    if (!text) {
-        return { ok: false, message: 'Порожнє повідомлення' };
+    const check = checkUserContent(body, { minLen: 1, maxLen: 2000 });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
     }
-    if (looksLikeSpam(text)) {
-        return { ok: false, message: 'Повідомлення схоже на спам' };
-    }
+    const text = check.text;
 
     const chat = await SupportChatModel.findById(chatId);
     if (!chat) {
@@ -454,10 +458,16 @@ const claimChatForAdmin = async (chatId, adminId) => {
 };
 
 const sendAdminMessage = async (chatId, adminId, body) => {
-    const text = typeof body === 'string' ? body.trim() : '';
-    if (!text) {
-        return { ok: false, message: 'Порожнє повідомлення' };
+    const check = checkUserContent(body, {
+        minLen: 1,
+        maxLen: 2000,
+        skipProfanity: true,
+        skipSpam: true
+    });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
     }
+    const text = check.text;
 
     const chat = await SupportChatModel.findById(chatId);
     if (!chat) {

@@ -1,4 +1,4 @@
-const { looksLikeSpam } = require('../src/utils/spamText');
+const { looksLikeSpam, looksLikeAttack, hasProfanity } = require('../src/utils/spamText');
 
 describe('looksLikeSpam', () => {
     test('пропускає звичайний відгук', () => {
@@ -25,5 +25,33 @@ describe('looksLikeSpam', () => {
     test('відхиляє очевидні спам-слова і скорочувачі', () => {
         expect(looksLikeSpam('Buy viagra now')).toBe(true);
         expect(looksLikeSpam('click bit.ly/abc123')).toBe(true);
+    });
+});
+
+describe('looksLikeAttack', () => {
+    test('відхиляє javascript-посилання', () => {
+        expect(looksLikeAttack('javascript:alert(1)')).toBe(true);
+    });
+
+    test('відхиляє sql-фрагмент', () => {
+        expect(looksLikeAttack("union select password from users")).toBe(true);
+    });
+
+    test('пропускає звичайний текст', () => {
+        expect(looksLikeAttack('Букет сподобався, дякую')).toBe(false);
+    });
+});
+
+describe('hasProfanity', () => {
+    test('ловить нецензурне слово', () => {
+        expect(hasProfanity('це сука')).toBe(true);
+    });
+
+    test('пропускає нормальний відгук', () => {
+        expect(hasProfanity('Дуже гарний букет, квіти свіжі, дякую!')).toBe(false);
+    });
+
+    test('не чіпає Херсон і піон', () => {
+        expect(hasProfanity('Доставка в Херсон, піон гарний')).toBe(false);
     });
 });

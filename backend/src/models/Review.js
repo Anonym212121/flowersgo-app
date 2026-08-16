@@ -1,7 +1,6 @@
 const db = require('../config/db');
 const ProductModel = require('./Product');
-const { looksLikeSpam } = require('../utils/spamText');
-const sanitizeUserText = require('../utils/sanitizeUserText');
+const checkUserContent = require('../utils/userContentGuard');
 
 const listVisibleByProductId = async (productId) => {
     const id = Number(productId);
@@ -45,13 +44,11 @@ const create = async ({ user_id, product_id, order_id, rating, comment }) => {
         return false;
     }
 
-    const text = sanitizeUserText(comment, 2000);
-    if (text.length < 2) {
+    const check = checkUserContent(comment, { minLen: 2, maxLen: 2000 });
+    if (!check.ok) {
         return false;
     }
-    if (looksLikeSpam(text)) {
-        return false;
-    }
+    const text = check.text;
 
     let orderId = null;
     if (order_id != null && order_id !== '') {
@@ -233,13 +230,11 @@ const createChangeRequest = async (payload) => {
     let new_comment = null;
 
     if (request_type === 'edit') {
-        const text = sanitizeUserText(payload.new_comment, 2000);
-        if (text.length < 2) {
+        const check = checkUserContent(payload.new_comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
             return false;
         }
-        if (looksLikeSpam(text)) {
-            return false;
-        }
+        const text = check.text;
         const r = Number(payload.new_rating);
         if (!r || r < 1 || r > 5) {
             return false;

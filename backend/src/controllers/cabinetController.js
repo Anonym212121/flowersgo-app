@@ -14,7 +14,7 @@ const orderWarehouseNotifyService = require('../services/orderWarehouseNotifySer
 const emailService = require('../services/emailService');
 const cloudinaryService = require('../services/cloudinaryService');
 const paymentToken = require('../utils/paymentToken');
-const { looksLikeSpam } = require('../utils/spamText');
+const checkUserContent = require('../utils/userContentGuard');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
 
@@ -686,15 +686,15 @@ const requestReviewEdit = async (req, res) => {
         }
 
         const rating = Number(req.body.rating);
-        const comment = typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
-
-        if (looksLikeSpam(comment)) {
+        const check = checkUserContent(req.body.comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
             return respond(req, res, {
                 ok: false,
-                err_code: 'review_spam',
-                message: 'Текст схожий на спам. Приберіть зайві посилання і спробуйте ще раз.'
+                err_code: 'review_' + check.code,
+                message: check.message
             });
         }
+        const comment = check.text;
 
         const result = await ReviewModel.createChangeRequest({
             review_id: reviewId,

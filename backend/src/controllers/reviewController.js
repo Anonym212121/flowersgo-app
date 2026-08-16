@@ -1,7 +1,6 @@
 const ProductModel = require('../models/Product');
 const ReviewModel = require('../models/Review');
-const { looksLikeSpam } = require('../utils/spamText');
-const sanitizeUserText = require('../utils/sanitizeUserText');
+const checkUserContent = require('../utils/userContentGuard');
 const {
     respondWithMessage,
     respondServerError,
@@ -30,15 +29,15 @@ const createPageReview = async (req, res) => {
 
         const user = res.locals.currentUser;
 
-        const comment = sanitizeUserText(req.body.comment, 2000);
-
-        if (looksLikeSpam(comment)) {
-            return respondWithMessage(req, res, 400, 'Відгук схожий на спам. Приберіть зайві посилання і спробуйте ще раз.', {
+        const check = checkUserContent(req.body.comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
+            return respondWithMessage(req, res, 400, check.message, {
                 title: 'Відгук',
                 messageTitle: 'Відгук не прийнято',
                 actions: [{ label: 'Назад до товару', href: '/product/' + productId, primary: true }]
             });
         }
+        const comment = check.text;
 
         const recent = await ReviewModel.countRecentByUser(user.user_id, 10);
         if (recent >= 3) {

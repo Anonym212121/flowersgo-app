@@ -1,8 +1,16 @@
 const sanitizeUserText = require('../src/utils/sanitizeUserText');
 
 describe('sanitizeUserText', () => {
+    test('прибирає script разом із вмістом', () => {
+        expect(sanitizeUserText('<script>alert(1)</script>гарний букет')).toBe('гарний букет');
+    });
+
     test('прибирає html-теги', () => {
-        expect(sanitizeUserText('<script>alert(1)</script>гарний букет')).toBe('alert(1)гарний букет');
+        expect(sanitizeUserText('<b>гарний букет</b>')).toBe('гарний букет');
+    });
+
+    test('не зʼїдає звичайний знак менше', () => {
+        expect(sanitizeUserText('оцінка < 5')).toBe('оцінка < 5');
     });
 
     test('обрізає довгий текст', () => {
