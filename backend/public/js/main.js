@@ -266,9 +266,19 @@ function buildProductCardHtml(product, showHitBadge) {
         : 0;
     const nameEsc = escapeHtml(product.name);
     const unitEsc = escapeHtml(product.unit_type || 'шт');
-    const imgBlock = product.image_url
+    const imgInner = product.image_url
         ? `<img src="${escapeHtml(product.image_url)}" alt="${nameEsc}" class="product-image" />`
         : '<div class="product-image product-image--placeholder">Немає фото</div>';
+    const imgBlock =
+        `<a href="/product/${product.id}" class="product-card-image-link" tabindex="-1">${imgInner}</a>` +
+        (product.image_url
+            ? `<button type="button" class="product-preview-btn" data-preview-src="${escapeHtml(product.image_url)}" data-preview-alt="${nameEsc}" title="Переглянути фото" aria-label="Переглянути фото ${nameEsc}">
+                <svg class="product-preview-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                </svg>
+            </button>`
+            : '');
     const discountBadge =
         discountPercent > 0
             ? `<span class="discount-badge">${discountPercent}%</span>`
@@ -318,13 +328,12 @@ function buildProductCardHtml(product, showHitBadge) {
     const wishlistTitle = inWishlist ? 'Прибрати з обраного' : 'Додати в обране';
 
     return `<article class="product-card">
-                        <a href="/product/${product.id}" class="product-card-link">
                         <div class="product-image-wrap">
                             ${discountBadge}
                             ${hitBadge}
                             ${imgBlock}
                         </div>
-
+                        <a href="/product/${product.id}" class="product-card-link">
                         <h4 class="product-title">${nameEsc}</h4>
 
                         ${ratingBlock}
@@ -1027,3 +1036,53 @@ window.addEventListener('popstate', (e) => {
 
     softNavigate(window.location.pathname + window.location.search, false);
 });
+
+(function initProductPreview() {
+    const modal = document.getElementById('productPreviewModal');
+    const img = document.getElementById('productPreviewImg');
+    const closeBtn = document.getElementById('productPreviewClose');
+    if (!modal || !img) {
+        return;
+    }
+
+    const closePreview = () => {
+        modal.hidden = true;
+        img.removeAttribute('src');
+        img.alt = '';
+        document.body.style.overflow = '';
+    };
+
+    const openPreview = (src, alt) => {
+        const url = typeof src === 'string' ? src.trim() : '';
+        if (!url) {
+            return;
+        }
+        img.src = url;
+        img.alt = typeof alt === 'string' ? alt : '';
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+    };
+
+    document.addEventListener('click', (event) => {
+        const btn = event.target.closest('.product-preview-btn');
+        if (btn) {
+            event.preventDefault();
+            event.stopPropagation();
+            openPreview(btn.getAttribute('data-preview-src'), btn.getAttribute('data-preview-alt'));
+            return;
+        }
+        if (event.target === modal) {
+            closePreview();
+        }
+    });
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closePreview);
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !modal.hidden) {
+            closePreview();
+        }
+    });
+})();

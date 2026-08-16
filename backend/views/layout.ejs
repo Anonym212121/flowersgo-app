@@ -37,6 +37,12 @@
         <%- include(bodyPartial) %>
     </main>
     <% if (headerType !== 'admin' && headerType !== 'warehouse_worker' && headerType !== 'courier') { %>
+        <div id="productPreviewModal" class="product-preview" hidden>
+            <div class="product-preview__dialog">
+                <button type="button" class="product-preview__close" id="productPreviewClose" aria-label="Закрити">×</button>
+                <img id="productPreviewImg" class="product-preview__img" alt="" />
+            </div>
+        </div>
         <%- include('partials/footer') %>
         <%- include('partials/support-widget') %>
     <% } %>

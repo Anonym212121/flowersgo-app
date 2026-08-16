@@ -364,6 +364,22 @@ html.theme-light .product-card:hover {
     border-color: rgba(244, 114, 182, 0.35);
 }
 
+html.theme-light .product-preview-btn {
+    background: rgba(255, 255, 255, 0.92);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.12);
+}
+
+html.theme-light .product-preview-btn:hover,
+html.theme-light .product-preview-btn:focus-visible {
+    background: #fb7185;
+    color: #fff;
+}
+
+html.theme-light .product-preview {
+    background: rgba(15, 23, 42, 0.55);
+}
+
 html.theme-light .product-image--placeholder,
 html.theme-light .product-detail-image-wrap {
     background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
