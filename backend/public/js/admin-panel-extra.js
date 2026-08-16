@@ -6,6 +6,7 @@
     const ordersAllBtn = document.getElementById('admin-show-orders-all');
     const usersBtn = document.getElementById('admin-show-users');
     const couriersBtn = document.getElementById('admin-show-couriers');
+    const shopBtn = document.getElementById('admin-show-shop');
     const deliveryBtn = document.getElementById('admin-show-delivery');
     const constructorBtn = document.getElementById('admin-show-constructor');
     const legalBtn = document.getElementById('admin-show-legal');
@@ -372,6 +373,14 @@
                             <strong>Підтримка</strong>
                             <span>Чати з клієнтами</span>
                         </button>
+                        <button type="button" class="admin-quick-card" data-dashboard-go="users">
+                            <strong>+ Співробітник</strong>
+                            <span>Адмін, склад або кур'єр</span>
+                        </button>
+                        <button type="button" class="admin-quick-card" data-dashboard-go="shop">
+                            <strong>Магазин</strong>
+                            <span>Конструктор і телефони</span>
+                        </button>
                         <button type="button" class="admin-quick-card" data-dashboard-go="constructor">
                             <strong>Конструктор</strong>
                             <span>Квіти та шаблони букетів</span>
@@ -495,6 +504,13 @@
                         if (constructorBtn) {
                             constructorBtn.click();
                         }
+                    } else if (go === 'shop') {
+                        if (shopBtn) {
+                            shopBtn.click();
+                        }
+                    } else if (go === 'users') {
+                        api.setActiveMenu('users');
+                        loadUsers(api, '', { openCreate: true });
                     } else if (go === 'delivery') {
                         const deliveryBtn = document.getElementById('admin-show-delivery');
                         if (deliveryBtn) {
@@ -1424,8 +1440,63 @@
         });
     };
 
-    const loadUsers = async (api, search) => {
+    const renderPasswordPanel = (api, userId, userEmail, onDone) => {
+        const old = document.getElementById('admin-password-panel');
+        if (old) {
+            old.remove();
+        }
+
+        const panel = document.createElement('div');
+        panel.id = 'admin-password-panel';
+        panel.className = 'admin-block-panel';
+        panel.innerHTML = `
+            <h4>Новий пароль: ${api.escapeHtml(userEmail || '')}</h4>
+            <label class="auth-label">Пароль
+                <input type="password" id="admin-password-new" minlength="8" autocomplete="new-password">
+            </label>
+            <label class="auth-label">Ще раз
+                <input type="password" id="admin-password-confirm" minlength="8" autocomplete="new-password">
+            </label>
+            <div class="admin-filters">
+                <button type="button" class="admin-primary-btn" id="admin-password-confirm-btn">Зберегти пароль</button>
+                <button type="button" class="admin-secondary-btn" id="admin-password-cancel">Скасувати</button>
+            </div>
+        `;
+
+        const filters = content.querySelector('.admin-filters');
+        if (filters && filters.parentNode) {
+            filters.parentNode.insertBefore(panel, filters.nextSibling);
+        } else {
+            content.prepend(panel);
+        }
+
+        document.getElementById('admin-password-cancel').addEventListener('click', () => {
+            panel.remove();
+        });
+
+        document.getElementById('admin-password-confirm-btn').addEventListener('click', async () => {
+            const password = document.getElementById('admin-password-new').value;
+            const password_confirm = document.getElementById('admin-password-confirm').value;
+            try {
+                await api.apiFetch(`/api/admin/users/${userId}/password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password, password_confirm })
+                });
+                api.showMessage('Пароль оновлено');
+                panel.remove();
+                if (onDone) {
+                    onDone();
+                }
+            } catch (err) {
+                api.showMessage(err.message, true);
+            }
+        });
+    };
+
+    const loadUsers = async (api, search, options) => {
         const q = search || '';
+        const opts = options || {};
         try {
             const usersData = await api.apiFetch(`/api/admin/users?q=${encodeURIComponent(q)}`);
             const users = usersData.users || [];
@@ -1441,7 +1512,9 @@
                            </div>`
                         : '-';
                     const savedAddress = formatUserSavedAddress(u);
-                    return `<tr>
+                    const roleName = u.role_name || 'user';
+                    const isStaff = roleName !== 'user';
+                    return `<tr class="admin-user-row" data-role="${api.escapeHtml(roleName)}" data-staff="${isStaff ? '1' : '0'}">
                         <td>${u.id}</td>
                         <td>${api.escapeHtml(u.first_name || '')} ${api.escapeHtml(u.last_name || '')}</td>
                         <td>${api.escapeHtml(u.email || '')}</td>
@@ -1449,24 +1522,57 @@
                         <td class="admin-user-address-cell">${api.escapeHtml(savedAddress)}</td>
                         <td>
                             <select class="admin-user-role" data-id="${u.id}">
-                                <option value="user" ${u.role_name === 'user' ? 'selected' : ''}>Клієнт</option>
-                                <option value="warehouse_worker" ${u.role_name === 'warehouse_worker' ? 'selected' : ''}>Склад</option>
-                                <option value="courier" ${u.role_name === 'courier' ? 'selected' : ''}>Кур'єр</option>
-                                <option value="admin" ${u.role_name === 'admin' ? 'selected' : ''}>Адмін</option>
+                                <option value="user" ${roleName === 'user' ? 'selected' : ''}>Клієнт</option>
+                                <option value="warehouse_worker" ${roleName === 'warehouse_worker' ? 'selected' : ''}>Склад</option>
+                                <option value="courier" ${roleName === 'courier' ? 'selected' : ''}>Кур'єр</option>
+                                <option value="admin" ${roleName === 'admin' ? 'selected' : ''}>Адмін</option>
                             </select>
                         </td>
                         <td>${blockCell}</td>
                         <td>
                             <button type="button" class="admin-secondary-btn admin-user-block" data-id="${u.id}" data-email="${api.escapeHtml(u.email || '')}" data-blocked="${blocked ? '0' : '1'}">${blocked ? 'Розблокувати' : 'Блок'}</button>
+                            <button type="button" class="admin-secondary-btn admin-user-password" data-id="${u.id}" data-email="${api.escapeHtml(u.email || '')}">Пароль</button>
                         </td>
                     </tr>`;
                 })
                 .join('');
 
             content.innerHTML = `
-                <h3>Користувачі</h3>
+                <div class="admin-products-head">
+                    <h3>Користувачі</h3>
+                    <div class="admin-products-head__actions">
+                        <button type="button" class="admin-primary-btn" id="admin-user-create-toggle">+ Співробітник</button>
+                    </div>
+                </div>
+                <form id="admin-user-create-form" class="admin-form admin-user-create-form" hidden>
+                    <p class="admin-muted-hint">Новий обліковий запис одразу з роллю. Людина зможе увійти з цим email і паролем.</p>
+                    <label>Ім'я <input name="first_name" required minlength="2"></label>
+                    <label>Прізвище <input name="last_name" required minlength="2"></label>
+                    <label>Email <input name="email" type="email" required></label>
+                    <label>Телефон <input name="phone" required placeholder="+380..."></label>
+                    <label>Роль
+                        <select name="role_name">
+                            <option value="warehouse_worker">Склад</option>
+                            <option value="courier">Кур'єр</option>
+                            <option value="admin">Адмін</option>
+                        </select>
+                    </label>
+                    <label>Пароль <input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+                    <label>Ще раз <input name="password_confirm" type="password" required minlength="8" autocomplete="new-password"></label>
+                    <div class="admin-form-actions">
+                        <button type="submit" class="admin-primary-btn">Створити</button>
+                        <button type="button" class="admin-secondary-btn" id="admin-user-create-cancel">Скасувати</button>
+                    </div>
+                </form>
                 <div class="admin-filters">
                     <label>Пошук <input type="search" id="admin-users-search" placeholder="Email, телефон, ім'я" value="${api.escapeHtml(q)}"></label>
+                    <label>Хто
+                        <select id="admin-users-role-filter">
+                            <option value="all">Усі</option>
+                            <option value="staff">Персонал</option>
+                            <option value="user">Клієнти</option>
+                        </select>
+                    </label>
                     <span id="admin-users-search-count">${q ? `Показано: ${users.length}` : ''}</span>
                 </div>
                 <div class="admin-table-wrap">
@@ -1476,6 +1582,83 @@
                     </table>
                 </div>
             `;
+
+            const createForm = document.getElementById('admin-user-create-form');
+            const createToggle = document.getElementById('admin-user-create-toggle');
+            const createCancel = document.getElementById('admin-user-create-cancel');
+            if (opts.openCreate && createForm) {
+                createForm.hidden = false;
+            }
+            if (createToggle && createForm) {
+                createToggle.addEventListener('click', () => {
+                    createForm.hidden = !createForm.hidden;
+                });
+            }
+            if (createCancel && createForm) {
+                createCancel.addEventListener('click', () => {
+                    createForm.hidden = true;
+                });
+            }
+            if (createForm) {
+                createForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    if (createForm.dataset.busy === '1') {
+                        return;
+                    }
+                    createForm.dataset.busy = '1';
+                    const fd = new FormData(createForm);
+                    try {
+                        await api.apiFetch('/api/admin/users', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                first_name: fd.get('first_name'),
+                                last_name: fd.get('last_name'),
+                                email: fd.get('email'),
+                                phone: fd.get('phone'),
+                                role_name: fd.get('role_name'),
+                                password: fd.get('password'),
+                                password_confirm: fd.get('password_confirm')
+                            })
+                        });
+                        api.showMessage('Співробітника створено');
+                        loadUsers(api, q);
+                    } catch (err) {
+                        api.showMessage(err.message, true);
+                    } finally {
+                        createForm.dataset.busy = '0';
+                    }
+                });
+            }
+
+            const applyRoleFilter = () => {
+                const filterEl = document.getElementById('admin-users-role-filter');
+                const countEl = document.getElementById('admin-users-search-count');
+                const mode = filterEl ? filterEl.value : 'all';
+                const tableRows = content.querySelectorAll('.admin-user-row');
+                let shown = 0;
+                tableRows.forEach((row) => {
+                    const staff = row.getAttribute('data-staff') === '1';
+                    const ok =
+                        mode === 'all' ||
+                        (mode === 'staff' && staff) ||
+                        (mode === 'user' && !staff);
+                    row.hidden = !ok;
+                    if (ok) {
+                        shown += 1;
+                    }
+                });
+                if (countEl && (q || mode !== 'all')) {
+                    countEl.textContent = `Показано: ${shown}`;
+                } else if (countEl) {
+                    countEl.textContent = '';
+                }
+            };
+
+            const roleFilter = document.getElementById('admin-users-role-filter');
+            if (roleFilter) {
+                roleFilter.addEventListener('change', applyRoleFilter);
+            }
 
             document.getElementById('admin-users-search').addEventListener('input', () => {
                 clearTimeout(usersSearchTimer);
@@ -1531,6 +1714,14 @@
                     } catch (err) {
                         api.showMessage(err.message, true);
                     }
+                });
+            });
+
+            content.querySelectorAll('.admin-user-password').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    const email = btn.getAttribute('data-email') || '';
+                    renderPasswordPanel(api, id, email);
                 });
             });
         } catch (err) {
@@ -1917,16 +2108,88 @@
 
             content.innerHTML = `
                 <h3>Конструктор букета</h3>
-                <p class="admin-muted-hint">Мінімум квіток і вимкнення конструктора - у <code>backend/src/config/constructor.js</code> або змінні <code>CONSTRUCTOR_MIN_STEMS</code>, <code>CONSTRUCTOR_ENABLED</code> у .env.</p>
+                <p class="admin-muted-hint">Увімкнути конструктор і мінімум квіток можна в <button type="button" class="admin-link-btn" id="admin-constructor-to-shop">Налаштування → Магазин</button>.</p>
                 ${renderConstructorProductList(api, products)}
                 <div id="admin-bouquet-templates-root" class="admin-bouquet-templates-root"></div>
             `;
 
             bindConstructorProductTable(api);
 
+            const toShop = document.getElementById('admin-constructor-to-shop');
+            if (toShop) {
+                toShop.addEventListener('click', () => {
+                    if (shopBtn) {
+                        shopBtn.click();
+                    }
+                });
+            }
+
             if (typeof window.loadBouquetTemplatesAdminSection === 'function') {
                 window.loadBouquetTemplatesAdminSection(api, document.getElementById('admin-bouquet-templates-root'));
             }
+        } catch (err) {
+            api.showMessage(err.message, true);
+        }
+    };
+
+    const loadShopSettings = async (api) => {
+        try {
+            const data = await api.apiFetch('/api/admin/shop-settings');
+            const s = data.settings || {};
+            const enabled = Number(s.constructor_enabled) === 1;
+
+            content.innerHTML = `
+                <h3>Налаштування магазину</h3>
+                <p class="admin-muted-hint">Тут керуєш вітриною: конструктор, телефони підтримки і текст першого повідомлення в чаті.</p>
+                <form id="admin-shop-form" class="admin-form">
+                    <label class="admin-discount-check-label">
+                        <input type="checkbox" name="constructor_enabled" ${enabled ? 'checked' : ''}>
+                        Конструктор букета увімкнений на сайті
+                    </label>
+                    <label>Мінімум квіток у букеті
+                        <input name="constructor_min_stems" type="number" min="1" max="99" value="${Number(s.constructor_min_stems) || 5}">
+                    </label>
+                    <h4 class="admin-dashboard-section-title">Телефони підтримки</h4>
+                    <label>Підпис 1 <input name="support_phone_1_label" maxlength="80" value="${api.escapeHtml(s.support_phone_1_label || '')}" placeholder="Магазин"></label>
+                    <label>Телефон 1 <input name="support_phone_1" value="${api.escapeHtml(s.support_phone_1 || '')}" placeholder="+380..."></label>
+                    <label>Підпис 2 <input name="support_phone_2_label" maxlength="80" value="${api.escapeHtml(s.support_phone_2_label || '')}"></label>
+                    <label>Телефон 2 <input name="support_phone_2" value="${api.escapeHtml(s.support_phone_2 || '')}"></label>
+                    <label>Підпис 3 <input name="support_phone_3_label" maxlength="80" value="${api.escapeHtml(s.support_phone_3_label || '')}"></label>
+                    <label>Телефон 3 <input name="support_phone_3" value="${api.escapeHtml(s.support_phone_3 || '')}"></label>
+                    <label>Привітання в чаті підтримки
+                        <textarea name="support_welcome" rows="3" maxlength="1000">${api.escapeHtml(s.support_welcome || '')}</textarea>
+                    </label>
+                    <p class="admin-muted-hint">Порожнє поле — стандартний текст. Зміна не чіпає вже відкриті чати.</p>
+                    <button type="submit" class="admin-primary-btn">Зберегти</button>
+                </form>
+            `;
+
+            const form = document.getElementById('admin-shop-form');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(form);
+                const payload = {
+                    constructor_enabled: form.querySelector('[name="constructor_enabled"]').checked ? 1 : 0,
+                    constructor_min_stems: fd.get('constructor_min_stems'),
+                    support_phone_1_label: fd.get('support_phone_1_label'),
+                    support_phone_1: fd.get('support_phone_1'),
+                    support_phone_2_label: fd.get('support_phone_2_label'),
+                    support_phone_2: fd.get('support_phone_2'),
+                    support_phone_3_label: fd.get('support_phone_3_label'),
+                    support_phone_3: fd.get('support_phone_3'),
+                    support_welcome: fd.get('support_welcome')
+                };
+                try {
+                    const saved = await api.apiFetch('/api/admin/shop-settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    api.showMessage(saved.message || 'Збережено');
+                } catch (err) {
+                    api.showMessage(err.message, true);
+                }
+            });
         } catch (err) {
             api.showMessage(err.message, true);
         }
@@ -2328,6 +2591,14 @@
             });
         }
 
+        if (shopBtn) {
+            shopBtn.addEventListener('click', () => {
+                api.showMessage('');
+                api.setActiveMenu('shop');
+                loadShopSettings(api);
+            });
+        }
+
         if (deliveryBtn) {
             deliveryBtn.addEventListener('click', () => {
                 api.showMessage('');
@@ -2370,6 +2641,11 @@
                 if (state.view === 'categories') {
                     api.setActiveMenu('categories');
                     await renderCategories(api);
+                    return true;
+                }
+                if (state.view === 'shop') {
+                    api.setActiveMenu('shop');
+                    await loadShopSettings(api);
                     return true;
                 }
                 if (state.view === 'delivery') {
@@ -2496,7 +2772,9 @@
 
     window.adminPanelExtra = {
         renderOrderDetail: renderOrderDetail,
-        loadAllOrders: loadAllOrders
+        loadAllOrders: loadAllOrders,
+        loadUsers: loadUsers,
+        loadShopSettings: loadShopSettings
     };
 
     startExtra();

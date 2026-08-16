@@ -1,6 +1,7 @@
 const SupportChatModel = require('../models/SupportChat');
 const SupportMessageModel = require('../models/SupportMessage');
 const UserModel = require('../models/User');
+const ShopSettings = require('../models/ShopSettings');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
 const checkUserContent = require('../utils/userContentGuard');
@@ -9,28 +10,56 @@ const realtimeService = require('./realtimeService');
 const WELCOME_MESSAGE =
     'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
 
-const getWelcomeMessage = () => WELCOME_MESSAGE;
+const pushPhone = (phones, label, number, fallbackLabel) => {
+    if (!number || !String(number).trim()) {
+        return;
+    }
+    phones.push({
+        label: label && String(label).trim() ? String(label).trim() : fallbackLabel,
+        number: String(number).trim()
+    });
+};
+
+const phonesFromEnv = () => {
+    const phones = [];
+    for (let i = 1; i <= 5; i += 1) {
+        pushPhone(
+            phones,
+            process.env['SUPPORT_PHONE_' + i + '_LABEL'],
+            process.env['SUPPORT_PHONE_' + i],
+            'Телефон ' + i
+        );
+    }
+    return phones;
+};
+
+const getWelcomeMessage = () => {
+    const row = ShopSettings.getCached();
+    if (row && row.support_welcome && String(row.support_welcome).trim()) {
+        return String(row.support_welcome).trim();
+    }
+    return WELCOME_MESSAGE;
+};
 
 const getSupportPhones = () => {
     const phones = [];
-    for (let i = 1; i <= 5; i += 1) {
-        const label = process.env['SUPPORT_PHONE_' + i + '_LABEL'];
-        const number = process.env['SUPPORT_PHONE_' + i];
-        if (number && String(number).trim()) {
-            phones.push({
-                label: label && String(label).trim() ? String(label).trim() : 'Телефон ' + i,
-                number: String(number).trim()
-            });
-        }
+    const row = ShopSettings.getCached();
+    if (row) {
+        pushPhone(phones, row.support_phone_1_label, row.support_phone_1, 'Телефон 1');
+        pushPhone(phones, row.support_phone_2_label, row.support_phone_2, 'Телефон 2');
+        pushPhone(phones, row.support_phone_3_label, row.support_phone_3, 'Телефон 3');
+        return phones;
     }
 
-    if (phones.length === 0) {
-        phones.push({
-            label: 'Магазин FlowersGo',
-            number: '+380671234567'
-        });
+    const fromEnv = phonesFromEnv();
+    if (fromEnv.length > 0) {
+        return fromEnv;
     }
 
+    phones.push({
+        label: 'Магазин FlowersGo',
+        number: '+380671234567'
+    });
     return phones;
 };
 

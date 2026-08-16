@@ -604,6 +604,15 @@ const allForAdmin = async (options = {}) => {
     return rows || [];
 };
 
+const searchForAdmin = async (search) => {
+    const q = typeof search === 'string' ? search.trim() : '';
+    if (q === '') {
+        return [];
+    }
+    const rows = await allForAdmin({ q });
+    return (rows || []).slice(0, 8);
+};
+
 const setActiveById = async (productId, isActive) => {
     const id = Number(productId);
     if (!Number.isFinite(id) || id <= 0) {
@@ -1150,6 +1159,7 @@ module.exports = {
     updateById,
     create,
     allForAdmin,
+    searchForAdmin,
     updateAverageRating,
     deleteById,
     setActiveById,

@@ -1,3 +1,5 @@
+const constructorConfig = require('../config/constructor');
+
 const buildPageLayoutLocals = (res, extraLocals = {}) => {
     return {
         headerType: res.locals.headerType || 'guest',
@@ -8,6 +10,7 @@ const buildPageLayoutLocals = (res, extraLocals = {}) => {
         wishlistProductIds: Array.isArray(res.locals.wishlistProductIds)
             ? res.locals.wishlistProductIds
             : [],
+        constructorEnabled: constructorConfig.isEnabled(),
         ...extraLocals
     };
 };

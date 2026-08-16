@@ -11,6 +11,7 @@ const navCountLabel = (value) => {
 };
 const navCartBadgeLabel = navCountLabel(navCartCountNum);
 const navWishlistBadgeLabel = navCountLabel(navWishlistCountNum);
+const showConstructorNav = typeof constructorEnabled === 'undefined' || constructorEnabled;
 
 const isNavActive = (href) => {
     if (!href || href === '#') {
@@ -57,7 +58,9 @@ const navBtnClass = (href, baseClass) => {
             <div class="nav__links">
                 <% if (headerType === 'guest') { %>
                     <a class="<%= navLinkClass('/') %>" href="/">Каталог</a>
+                    <% if (showConstructorNav) { %>
                     <a class="<%= navLinkClass('/constructor') %>" href="/constructor">Конструктор</a>
+                    <% } %>
                     <a class="<%= navLinkClass('/cart') %> nav__link--with-badge" href="/cart">
                         Кошик
                         <span class="nav__count-badge" id="navCartBadge" <%= navCartBadgeLabel ? '' : 'hidden' %>><%= navCartBadgeLabel %></span>
@@ -79,7 +82,9 @@ const navBtnClass = (href, baseClass) => {
                     <a class="<%= navLinkClass('/courier/shift') %>" href="/courier/shift">Зміна</a>
                 <% } else { %>
                     <a class="<%= navLinkClass('/') %>" href="/">Каталог</a>
+                    <% if (showConstructorNav) { %>
                     <a class="<%= navLinkClass('/constructor') %>" href="/constructor">Конструктор</a>
+                    <% } %>
                     <a class="<%= navLinkClass('/cart') %> nav__link--with-badge" href="/cart">
                         Кошик
                         <span class="nav__count-badge" id="navCartBadge" <%= navCartBadgeLabel ? '' : 'hidden' %>><%= navCartBadgeLabel %></span>

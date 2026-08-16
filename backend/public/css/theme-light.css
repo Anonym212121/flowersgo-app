@@ -722,6 +722,33 @@ html.theme-light .admin-panel-workspace__crumb {
     color: #64748b;
 }
 
+html.theme-light .admin-global-search__input {
+    color: var(--text);
+    background: #ffffff;
+    border-color: var(--border-strong);
+}
+
+html.theme-light .admin-global-search__hint {
+    color: #64748b;
+    border-color: var(--line);
+}
+
+html.theme-light .admin-global-search__results {
+    background: #ffffff;
+    border-color: var(--line);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+}
+
+html.theme-light .admin-global-search__item:hover,
+html.theme-light .admin-global-search__item:focus {
+    background: #f1f5f9;
+}
+
+html.theme-light .admin-user-create-form {
+    background: #ffffff;
+    border-color: var(--line);
+}
+
 html.theme-light .admin-stat {
     background: #ffffff;
     border-color: var(--line);

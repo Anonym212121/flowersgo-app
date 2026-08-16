@@ -1286,6 +1286,15 @@ const listForAdminAll = async ({ filter, search }) => {
     return rows;
 };
 
+const searchForAdmin = async (search) => {
+    const q = typeof search === 'string' ? search.trim() : '';
+    if (q === '') {
+        return [];
+    }
+    const rows = await listForAdminAll({ filter: 'all', search: q });
+    return (rows || []).slice(0, 8);
+};
+
 const countUnassignedCourier = async () => {
     const [rows] = await db.execute(
         `SELECT COUNT(*) AS c FROM orders o
@@ -2122,6 +2131,7 @@ module.exports = {
     updatePaymentStatus,
     archiveByUserId,
     listForAdminAll,
+    searchForAdmin,
     countUnassignedCourier,
     getDetailForAdmin,
     getRowForCustomerNotify,

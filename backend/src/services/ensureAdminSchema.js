@@ -57,6 +57,48 @@ const ensureAdminSchema = async () => {
 
     try {
         await db.execute(
+            `CREATE TABLE IF NOT EXISTS shop_settings (
+                id INT NOT NULL PRIMARY KEY DEFAULT 1,
+                constructor_enabled TINYINT NOT NULL DEFAULT 1,
+                constructor_min_stems INT NOT NULL DEFAULT 5,
+                support_phone_1 VARCHAR(32) NULL,
+                support_phone_1_label VARCHAR(80) NULL,
+                support_phone_2 VARCHAR(32) NULL,
+                support_phone_2_label VARCHAR(80) NULL,
+                support_phone_3 VARCHAR(32) NULL,
+                support_phone_3_label VARCHAR(80) NULL,
+                support_welcome VARCHAR(1000) NULL,
+                updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )`
+        );
+        const ShopSettings = require('../models/ShopSettings');
+        const seed = ShopSettings.emptyRow();
+        await db.execute(
+            `INSERT IGNORE INTO shop_settings (
+                id, constructor_enabled, constructor_min_stems,
+                support_phone_1, support_phone_1_label,
+                support_phone_2, support_phone_2_label,
+                support_phone_3, support_phone_3_label,
+                support_welcome
+            ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+            [
+                seed.constructor_enabled,
+                seed.constructor_min_stems,
+                seed.support_phone_1 || null,
+                seed.support_phone_1_label || null,
+                seed.support_phone_2 || null,
+                seed.support_phone_2_label || null,
+                seed.support_phone_3 || null,
+                seed.support_phone_3_label || null
+            ]
+        );
+        await ShopSettings.warmCache();
+    } catch (err) {
+        console.error('ensureAdminSchema shop_settings:', err.message);
+    }
+
+    try {
+        await db.execute(
             `CREATE TABLE IF NOT EXISTS legal_pages (
                 id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                 slug VARCHAR(50) NOT NULL UNIQUE,

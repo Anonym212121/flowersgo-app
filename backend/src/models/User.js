@@ -362,14 +362,29 @@ const listForAdmin = async (search) => {
     const q = typeof search === 'string' ? search.trim() : '';
     if (q !== '') {
         const like = `%${q}%`;
-        sql += ` WHERE u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
-        params.push(like, like, like, like);
+        const asId = Number(q);
+        if (Number.isFinite(asId) && asId > 0 && String(asId) === q) {
+            sql += ` WHERE u.id = ? OR u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
+            params.push(asId, like, like, like, like);
+        } else {
+            sql += ` WHERE u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
+            params.push(like, like, like, like);
+        }
     }
 
     sql += ' ORDER BY u.id DESC LIMIT 200';
 
     const [rows] = await db.execute(sql, params);
     return rows;
+};
+
+const searchForAdmin = async (search) => {
+    const q = typeof search === 'string' ? search.trim() : '';
+    if (q === '') {
+        return [];
+    }
+    const rows = await listForAdmin(q);
+    return (rows || []).slice(0, 8);
 };
 
 const updateRoleById = async (userId, roleName) => {
@@ -648,6 +663,7 @@ module.exports = {
     updateAvatarUrlById,
     updatePasswordHashById,
     listForAdmin,
+    searchForAdmin,
     updateRoleById,
     setBlockedById,
     setCourierOnShift,

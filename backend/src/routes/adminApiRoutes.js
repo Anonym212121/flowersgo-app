@@ -13,10 +13,13 @@ const adminLegalController = require('../controllers/adminLegalController');
 const adminCourierController = require('../controllers/adminCourierController');
 const adminSupportChatController = require('../controllers/adminSupportChatController');
 const adminAnalyticsController = require('../controllers/adminAnalyticsController');
+const adminShopSettingsController = require('../controllers/adminShopSettingsController');
+const adminSearchController = require('../controllers/adminSearchController');
 const router = express.Router();
 
 router.get('/dashboard', adminDashboardController.getStats);
 router.get('/dashboard/revenue', adminDashboardController.getRevenue);
+router.get('/search', adminSearchController.search);
 
 router.get('/stats/options', adminAnalyticsController.getFilterOptions);
 router.get('/stats/report', adminAnalyticsController.getReport);
@@ -64,8 +67,13 @@ router.post('/couriers/:id/shift', adminCourierController.setShift);
 router.post('/couriers/auto-assign-ready', adminCourierController.autoAssignAllReady);
 
 router.get('/users', adminUserController.listForAdmin);
+router.post('/users', adminUserController.createStaff);
 router.post('/users/:id/role', adminUserController.updateRole);
 router.post('/users/:id/block', adminUserController.setBlocked);
+router.post('/users/:id/password', adminUserController.resetPassword);
+
+router.get('/shop-settings', adminShopSettingsController.getSettings);
+router.post('/shop-settings', adminShopSettingsController.saveSettings);
 
 router.get('/delivery-settings', adminDeliveryController.getSettings);
 router.post('/delivery-settings', adminDeliveryController.saveSettings);

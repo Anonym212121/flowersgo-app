@@ -32,6 +32,7 @@
         ordersAll: { view: 'orders-all' },
         users: { view: 'users' },
         couriers: { view: 'couriers' },
+        shop: { view: 'shop' },
         delivery: { view: 'delivery' },
         constructor: { view: 'constructor' },
         legal: { view: 'legal' },

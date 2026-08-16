@@ -88,7 +88,7 @@ if (safeSelectedCategoryId) {
             </div>
         <% } %>
 
-        <% if (isCatalogHome) { %>
+        <% if (isCatalogHome && (typeof constructorEnabled === 'undefined' || constructorEnabled)) { %>
             <div class="catalog-sidebar-constructor">
                 <a href="/constructor" class="catalog-sidebar-constructor__link" aria-label="Перейти до конструктора букетів">
                     <img
@@ -164,7 +164,7 @@ if (safeSelectedCategoryId) {
                             <% } %>
                         <% } %>
 
-                        <% if (isCatalogHome) { %>
+                        <% if (isCatalogHome && (typeof constructorEnabled === 'undefined' || constructorEnabled)) { %>
                             <a href="/constructor" class="catalog-sidebar-constructor__link catalog-categories-phone-constructor" aria-label="Перейти до конструктора букетів">
                                 <img
                                     class="catalog-sidebar-constructor__image"

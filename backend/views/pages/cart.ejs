@@ -11,10 +11,12 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
     <% if (lines.length === 0) { %>
         <div class="catalog-empty">
             <p class="catalog-empty__title">Кошик порожній</p>
-            <p class="catalog-empty__text">Додай букет з каталогу або зібери свій у конструкторі.</p>
+            <p class="catalog-empty__text">Додай букет з каталогу<% if (typeof constructorEnabled === 'undefined' || constructorEnabled) { %> або зібери свій у конструкторі<% } %>.</p>
             <div class="catalog-empty__actions">
                 <a href="/" class="catalog-empty__btn catalog-empty__btn--primary">До каталогу</a>
+                <% if (typeof constructorEnabled === 'undefined' || constructorEnabled) { %>
                 <a href="/constructor" class="catalog-empty__btn catalog-empty__btn--constructor">Конструктор</a>
+                <% } %>
             </div>
         </div>
     <% } else { %>
