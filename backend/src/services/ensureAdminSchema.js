@@ -14,6 +14,16 @@ const ensureAdminSchema = async () => {
 
     try {
         await db.execute(
+            'ALTER TABLE users ADD COLUMN is_public_profile TINYINT NOT NULL DEFAULT 0'
+        );
+    } catch (err) {
+        if (!err || err.code !== 'ER_DUP_FIELDNAME') {
+            console.error('ensureAdminSchema is_public_profile:', err.message);
+        }
+    }
+
+    try {
+        await db.execute(
             'ALTER TABLE users ADD COLUMN block_reason_key VARCHAR(50) NULL'
         );
     } catch (err) {

@@ -233,7 +233,9 @@ const cabinetPage = async (req, res) => {
             order_archived: 'Замовлення переміщено в архів',
             review_edit_sent: 'Запит на редагування відгуку надіслано адміну',
             review_delete_sent: 'Запит на видалення відгуку надіслано адміну',
-            cancel_request_sent: 'Запит на скасування надіслано адміну'
+            cancel_request_sent: 'Запит на скасування надіслано адміну',
+            profile_public_on: 'Профіль відкрито для інших користувачів',
+            profile_public_off: 'Профіль приховано. Інші його не бачать'
         };
 
         const errMap = {
@@ -264,6 +266,7 @@ const cabinetPage = async (req, res) => {
             verify_email_mismatch: 'Email у профілі змінився. Надішли код ще раз',
             email_not_verified: 'Не вдалося підтвердити пошту',
             password_not_updated: 'Не вдалося змінити пароль',
+            public_profile_failed: 'Не вдалося оновити видимість профілю',
             payment_expired: 'Час на оплату вичерпано. Зверніться до підтримки.',
             payment_rejected: 'Це замовлення відхилено адміністратором - оплатити його не можна. Оформіть нове.',
             payment_not_needed: 'Це замовлення не потребує онлайн-оплати.',
@@ -301,6 +304,60 @@ const cabinetPage = async (req, res) => {
     } catch (err) {
         console.error('cabinetPage:', err.message);
         return pageServerError(req, res, 'Особистий кабінет');
+    }
+};
+
+const isCustomerRole = (roleName) => {
+    return roleName === 'user' || roleName === 'client' || roleName === 'customer';
+};
+
+const publicProfilePage = async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+        const row = await UserModel.findPublicProfileById(userId);
+        const current = res.locals.currentUser || null;
+        const isOwner = current && Number(current.user_id) === userId;
+
+        const closed = () => {
+            return renderLayout(res, 'Профіль закритий', 'pages/public-profile', {
+                publicProfile: null,
+                publicReviews: [],
+                publicProfileClosed: true,
+                isOwnPublicProfile: isOwner
+            });
+        };
+
+        if (!row || Number(row.is_blocked) === 1 || !isCustomerRole(row.role_name)) {
+            return closed();
+        }
+        if (Number(row.is_public_profile) !== 1) {
+            return closed();
+        }
+
+        const publicReviews = await ReviewModel.listVisiblePublicByUserId(row.id);
+        const joinedAt = row.createdAt
+            ? new Date(row.createdAt).toLocaleDateString('uk-UA', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            })
+            : '';
+
+        return renderLayout(res, row.first_name + ' ' + row.last_name, 'pages/public-profile', {
+            publicProfile: {
+                id: row.id,
+                first_name: row.first_name,
+                last_name: row.last_name,
+                avatar_url: row.avatar_url,
+                joined_label: joinedAt
+            },
+            publicReviews,
+            publicProfileClosed: false,
+            isOwnPublicProfile: isOwner
+        });
+    } catch (err) {
+        console.error('publicProfilePage:', err.message);
+        return pageServerError(req, res, 'Профіль користувача');
     }
 };
 
@@ -800,6 +857,7 @@ module.exports = {
     deliveryTermsPage,
     logout,
     cabinetPage,
+    publicProfilePage,
     cartPage,
     checkoutPage,
     orderSuccessPage,

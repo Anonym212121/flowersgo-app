@@ -203,8 +203,10 @@ const getUserid = async (id) => {
             u.first_name, u.last_name, u.email,
             u.phone, u.avatar_url, u.loyalty_points,
             COALESCE(u.email_verified, 0) AS email_verified,
+            COALESCE(u.is_public_profile, 0) AS is_public_profile,
             u.courier_work_email,
-            u.saved_delivery_street, u.saved_delivery_house, u.saved_delivery_apartment
+            u.saved_delivery_street, u.saved_delivery_house, u.saved_delivery_apartment,
+            u.createdAt
          FROM users u
          INNER JOIN roles r ON u.role_id = r.id
          WHERE u.id = ?
@@ -213,6 +215,47 @@ const getUserid = async (id) => {
     );
 
     return rows[0] || null;
+};
+
+const findPublicProfileById = async (id) => {
+    const uid = Number(id);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return null;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.avatar_url,
+            u.createdAt,
+            r.role_name,
+            COALESCE(u.is_public_profile, 0) AS is_public_profile,
+            COALESCE(u.is_blocked, 0) AS is_blocked
+         FROM users u
+         INNER JOIN roles r ON u.role_id = r.id
+         WHERE u.id = ?
+         LIMIT 1`,
+        [uid]
+    );
+
+    return rows[0] || null;
+};
+
+const setPublicProfileById = async (userId, isPublic) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return false;
+    }
+
+    const flag = isPublic ? 1 : 0;
+    await db.execute(
+        'UPDATE users SET is_public_profile = ? WHERE id = ?',
+        [flag, uid]
+    );
+
+    return true;
 };
 
 const findByEmailExceptUserId = async (email, excludeUserId) => {
@@ -651,6 +694,8 @@ module.exports = {
     getDefaultRoleId,
     getRoleIdByName,
     getUserid,
+    findPublicProfileById,
+    setPublicProfileById,
     createUser,
     findByGoogleId,
     createGoogleUser,

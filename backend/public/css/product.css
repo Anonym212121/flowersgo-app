@@ -894,11 +894,18 @@ a.product-order-btn {
     min-height: 48px;
 }
 
-.category-parent--flyout:hover .category-flyout,
-.category-parent--flyout:focus-within .category-flyout {
+.category-parent--flyout:hover .category-flyout {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+}
+
+@media (hover: none) {
+    .category-parent--flyout:hover .category-flyout {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
 }
 
 .category-flyout::before {

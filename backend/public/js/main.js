@@ -1216,6 +1216,45 @@ function removePuterLeftovers() {
     });
 }
 
+function stripUnknownFullOverlays() {
+    const keepIds = {
+        'page-main': true,
+        'site-header': true,
+        'toastStack': true,
+        'scroll-to-top': true,
+        'productPreviewModal': true,
+        'support-widget': true,
+        'navSettings': true,
+        'navNotify': true
+    };
+    const kids = document.body.children;
+    for (let i = kids.length - 1; i >= 0; i -= 1) {
+        const el = kids[i];
+        if (!(el instanceof HTMLElement)) {
+            continue;
+        }
+        if (el.tagName === 'HEADER' || el.tagName === 'MAIN' || el.tagName === 'FOOTER' || el.tagName === 'SCRIPT') {
+            continue;
+        }
+        if (el.id && keepIds[el.id]) {
+            continue;
+        }
+        if (el.classList.contains('skip-link')) {
+            continue;
+        }
+        const style = window.getComputedStyle(el);
+        if (style.position !== 'fixed' && style.position !== 'absolute') {
+            continue;
+        }
+        const wide = el.offsetWidth >= window.innerWidth - 24;
+        const tall = el.offsetHeight >= window.innerHeight - 24;
+        if (!wide || !tall) {
+            continue;
+        }
+        el.remove();
+    }
+}
+
 function unlockPageUi() {
     document.body.classList.remove(
         'reviews-modal-open',
@@ -1223,10 +1262,29 @@ function unlockPageUi() {
         'constructor-confirm-open'
     );
     document.body.style.overflow = '';
+    document.body.style.pointerEvents = '';
     closeProductPreview();
     closePhoneCategoriesPanel();
     blurCategoryFlyout();
     removePuterLeftovers();
+    stripUnknownFullOverlays();
+
+    const settingsPanel = document.getElementById('navSettingsPanel');
+    const settingsBtn = document.getElementById('navSettingsBtn');
+    if (settingsPanel) {
+        settingsPanel.hidden = true;
+    }
+    if (settingsBtn) {
+        settingsBtn.setAttribute('aria-expanded', 'false');
+    }
+    const notifyPanel = document.getElementById('navNotifyPanel');
+    const notifyBtn = document.getElementById('navNotifyBtn');
+    if (notifyPanel) {
+        notifyPanel.hidden = true;
+    }
+    if (notifyBtn) {
+        notifyBtn.setAttribute('aria-expanded', 'false');
+    }
 
     const reviews = document.getElementById('reviews-modal');
     if (reviews) {
@@ -1339,12 +1397,11 @@ function executeScripts(root) {
 }
 
 let softNavBusy = false;
-let softNavQueued = null;
 let softNavAbort = null;
 
 async function softNavigate(url, pushState) {
     if (softNavBusy) {
-        softNavQueued = { url: url, pushState: pushState };
+        window.location.href = url;
         return;
     }
     const main = document.getElementById('page-main');
@@ -1365,7 +1422,8 @@ async function softNavigate(url, pushState) {
 
     const navTimeout = window.setTimeout(() => {
         thisAbort.abort();
-    }, 12000);
+        unlockPageUi();
+    }, 8000);
 
     try {
         const res = await fetch(url, {
@@ -1402,6 +1460,7 @@ async function softNavigate(url, pushState) {
         window.scrollTo(0, 0);
     } catch (err) {
         if (err && err.name === 'AbortError') {
+            window.location.href = url;
             return;
         }
         window.location.href = url;
@@ -1412,11 +1471,6 @@ async function softNavigate(url, pushState) {
         }
         softNavBusy = false;
         main.classList.remove('page-main--loading');
-        if (softNavQueued) {
-            const next = softNavQueued;
-            softNavQueued = null;
-            softNavigate(next.url, next.pushState);
-        }
     }
 }
 
@@ -1572,7 +1626,7 @@ window.addEventListener('popstate', (e) => {
             openPreview(btn.getAttribute('data-preview-src'), btn.getAttribute('data-preview-alt'));
             return;
         }
-        if (event.target === modal) {
+        if (event.target === modal || (event.target.closest && event.target.closest('#productPreviewModal'))) {
             closeProductPreview();
         }
     });

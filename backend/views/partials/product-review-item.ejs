@@ -18,7 +18,11 @@ const avatarUrl = rev.avatar_url && String(rev.avatar_url).trim() !== '' ? Strin
             <span class="product-review-avatar" aria-hidden="true"><%= initials %></span>
         <% } %>
         <div class="product-review-item-meta">
-            <p class="product-review-author"><%= fullName %></p>
+            <% if (Number(rev.is_public_profile) === 1 && Number(rev.user_id) > 0) { %>
+                <p class="product-review-author"><a class="product-review-author-link" href="/u/<%= Number(rev.user_id) %>"><%= fullName %></a></p>
+            <% } else { %>
+                <p class="product-review-author"><%= fullName %></p>
+            <% } %>
             <div class="product-review-item-sub">
                 <% if (hasStars) { %>
                     <span class="star-rating star-rating--sm" title="Оцінка <%= revRating %> з 5">

@@ -2981,6 +2981,112 @@ a:hover {
     font-weight: 700;
 }
 
+.cabinet-public-card {
+    margin-top: 1.25rem;
+    padding: 1rem 1.05rem 1.1rem;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(23, 36, 58, 0.92), rgba(17, 26, 43, 0.92));
+}
+
+.cabinet-public-card__title {
+    margin: 0 0 0.4rem;
+    font-size: 1.05rem;
+}
+
+.cabinet-public-card__lead {
+    margin: 0 0 0.75rem;
+    font-size: 0.86rem;
+    color: var(--muted);
+    line-height: 1.45;
+}
+
+.cabinet-public-details {
+    margin: 0 0 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 12px;
+    background: rgba(11, 18, 32, 0.4);
+    padding: 0.55rem 0.75rem;
+}
+
+.cabinet-public-details summary {
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #93c5fd;
+}
+
+.cabinet-public-details__body {
+    margin-top: 0.55rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.84rem;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+
+.cabinet-public-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.cabinet-public-card__link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.public-profile-page {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.public-profile-card,
+.public-profile-closed {
+    text-align: center;
+    padding: 1.2rem 1rem 1.4rem;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(23, 36, 58, 0.95), rgba(17, 26, 43, 0.95));
+    box-shadow: var(--shadow);
+}
+
+.public-profile-name {
+    margin: 0.35rem 0 0.35rem;
+    font-size: 1.6rem;
+}
+
+.public-profile-meta,
+.public-profile-own,
+.public-profile-closed__text {
+    margin: 0.35rem 0 0.7rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.45;
+}
+
+.public-profile-reviews {
+    margin-top: 1.25rem;
+}
+
+.public-profile-reviews__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.2rem;
+}
+
+.product-review-author-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.product-review-author-link:hover {
+    color: #bae6fd;
+    text-decoration: underline;
+}
+
 .cabinet-profile-view-list {
     width: 100%;
     margin: 0 0 0.85rem;

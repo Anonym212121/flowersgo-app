@@ -843,6 +843,44 @@ const requestGuestOrderCancel = async (req, res) => {
     }
 };
 
+const setPublicProfile = async (req, res) => {
+    try {
+        const current = res.locals.currentUser;
+        const raw = req.body && req.body.is_public_profile;
+        let on = false;
+        if (Array.isArray(raw)) {
+            on = raw.indexOf('1') !== -1;
+        } else {
+            on = raw === '1' || raw === 'on' || raw === 'true';
+        }
+
+        const ok = await UserModel.setPublicProfileById(current.user_id, on);
+        if (!ok) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'public_profile_failed',
+                message: 'Не вдалося оновити видимість профілю'
+            });
+        }
+
+        return respond(req, res, {
+            ok: true,
+            ok_code: on ? 'profile_public_on' : 'profile_public_off',
+            is_public_profile: on ? 1 : 0,
+            message: on
+                ? 'Профіль відкрито для інших користувачів'
+                : 'Профіль приховано. Інші його не бачать'
+        });
+    } catch (err) {
+        console.error('setPublicProfile:', err.message);
+        return respond(req, res, {
+            ok: false,
+            err_code: 'server',
+            message: 'Сталася помилка сервера'
+        });
+    }
+};
+
 module.exports = {
     uploadAvatarMiddleware,
     updateProfile,
@@ -855,5 +893,6 @@ module.exports = {
     requestOrderCancel,
     requestGuestOrderCancel,
     requestReviewEdit,
-    requestReviewDelete
+    requestReviewDelete,
+    setPublicProfile
 };

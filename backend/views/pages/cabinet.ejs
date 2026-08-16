@@ -13,6 +13,7 @@ const passwordVerifyStep = typeof cabinetPasswordVerifyStep !== 'undefined' && !
 const emailVerifyStep = typeof cabinetEmailVerifyStep !== 'undefined' && !!cabinetEmailVerifyStep;
 const profileEmail = profile && profile.email ? String(profile.email).trim() : '';
 const emailVerified = profile && Number(profile.email_verified) === 1;
+const isPublicProfile = profile && Number(profile.is_public_profile) === 1;
 let savedAddressText = '-';
 if (savedStreet && savedHouse) {
     savedAddressText = savedStreet + ', буд. ' + savedHouse;
@@ -401,6 +402,32 @@ if (savedStreet && savedHouse) {
                     </div>
                 <% } %>
             </details>
+        </div>
+
+        <div class="cabinet-public-card">
+            <h3 class="cabinet-public-card__title">Публічний профіль</h3>
+            <p class="cabinet-public-card__lead">За замовчуванням профіль закритий. Інші користувачі побачать його лише якщо ви самі відкриєте.</p>
+            <details class="cabinet-public-details">
+                <summary>Яку інформацію побачать інші</summary>
+                <div class="cabinet-public-details__body">
+                    <p><strong>Відкриємо:</strong> ім'я, прізвище, фото профілю, дату реєстрації та опубліковані відгуки про товари.</p>
+                    <p><strong>Не покажемо:</strong> email, телефон, адресу доставки, замовлення, бонуси та інші особисті дані.</p>
+                </div>
+            </details>
+            <form method="post" action="/cabinet/public-profile" class="cabinet-public-form">
+                <label class="alert-toggle" for="cabinetPublicProfile">
+                    <span class="alert-toggle__text">
+                        <span class="alert-toggle__title">Зробити мій профіль публічним</span>
+                        <span class="alert-toggle__hint"><%= isPublicProfile ? 'Зараз профіль відкритий' : 'Зараз профіль прихований' %></span>
+                    </span>
+                    <input type="checkbox" class="alert-toggle__input" id="cabinetPublicProfile" name="is_public_profile" value="1"<%= isPublicProfile ? ' checked' : '' %> />
+                    <span class="alert-toggle__ui" aria-hidden="true"></span>
+                </label>
+                <button type="submit" class="cabinet-mini-btn cabinet-mini-btn--primary">Зберегти видимість</button>
+            </form>
+            <% if (isPublicProfile) { %>
+                <a class="cabinet-public-card__link" href="/u/<%= profile.id %>">Переглянути, як бачать інші</a>
+            <% } %>
         </div>
     </section>
 </div>

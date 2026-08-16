@@ -148,6 +148,7 @@ router.post('/api/support/message', supportWriteLimit, honeypot, supportChatCont
 router.get('/api/support/unread-count', supportChatController.getUnreadCount);
 router.post('/api/support/read', supportChatController.markRead);
 router.get('/product/:id', pagesController.productPage);
+router.get('/u/:id', pagesController.publicProfilePage);
 router.post('/product/:id/reviews', pageRequireLogin, reviewLimit, honeypot, reviewController.createPageReview);
 router.get('/login', pagesController.loginPage);
 router.get('/account-blocked', pagesController.accountBlockedPage);
@@ -171,6 +172,7 @@ router.post('/cart/update', cartWriteLimit, cartController.update);
 router.post('/cart/remove', cartWriteLimit, cartController.remove);
 router.post('/cart/clear', cartController.clear);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
+router.post('/cabinet/public-profile', pageRequireLogin, cabinetController.setPublicProfile);
 router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfile);
 router.post('/cabinet/avatar', pageRequireLogin, cabinetController.uploadAvatarMiddleware, cabinetController.updateAvatar);
 router.post('/cabinet/password/request-email', pageRequireLogin, emailCodeLimit, cabinetController.requestPasswordEmailCode);

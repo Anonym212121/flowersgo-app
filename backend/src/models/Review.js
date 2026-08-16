@@ -10,7 +10,8 @@ const listVisibleByProductId = async (productId) => {
 
     const [rows] = await db.execute(
         `SELECT r.id, r.rating, r.comment, r.\`createdAt\`,
-                u.first_name, u.last_name, u.avatar_url
+                u.id AS user_id, u.first_name, u.last_name, u.avatar_url,
+                COALESCE(u.is_public_profile, 0) AS is_public_profile
          FROM reviews r
          INNER JOIN users u ON r.user_id = u.id
          WHERE r.product_id = ? AND r.is_visible = 1
@@ -172,6 +173,26 @@ const listByUserId = async (userId) => {
          LEFT JOIN review_requests rr ON rr.review_id = r.id
          WHERE r.user_id = ?
          ORDER BY r.id DESC`,
+        [uid]
+    );
+
+    return rows;
+};
+
+const listVisiblePublicByUserId = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return [];
+    }
+
+    const [rows] = await db.execute(
+        `SELECT r.id, r.product_id, r.rating, r.comment, r.\`createdAt\`,
+                p.name AS product_name
+         FROM reviews r
+         INNER JOIN products p ON r.product_id = p.id
+         WHERE r.user_id = ? AND r.is_visible = 1
+         ORDER BY r.id DESC
+         LIMIT 50`,
         [uid]
     );
 
@@ -359,6 +380,7 @@ module.exports = {
     syncAverageForProduct,
     listPendingForAdmin,
     listByUserId,
+    listVisiblePublicByUserId,
     belongsToUser,
     createChangeRequest,
     listChangeRequestsForAdmin,
