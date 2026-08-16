@@ -3078,13 +3078,33 @@ a:hover {
 }
 
 .product-review-author-link {
-    color: inherit;
-    text-decoration: none;
+    display: inline;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #7dd3fc;
+    font: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
 }
 
 .product-review-author-link:hover {
     color: #bae6fd;
-    text-decoration: underline;
+}
+
+.product-review-author-link--closed {
+    color: #e2e8f0;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+}
+
+.product-review-author-link--closed:hover {
+    color: #fbbf24;
 }
 
 .cabinet-profile-view-list {

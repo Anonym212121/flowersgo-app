@@ -1643,6 +1643,18 @@ window.addEventListener('popstate', (e) => {
 })();
 
 document.addEventListener('click', (event) => {
+    const closedBtn = event.target.closest('[data-profile-closed="1"]');
+    if (!closedBtn) {
+        return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof window.showToast === 'function') {
+        window.showToast('Акаунт закритий. Користувач не відкрив профіль для перегляду', 'info');
+    }
+});
+
+document.addEventListener('click', (event) => {
     if (event.target.closest('.category-parent--flyout')) {
         return;
     }

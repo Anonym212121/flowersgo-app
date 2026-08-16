@@ -627,11 +627,22 @@ html.theme-light .product-price strong {
     color: #047857;
 }
 
-html.theme-light .product-reviews-all-btn,
-html.theme-light .product-reviews-more-link {
-    color: #0369a1;
-    border-color: rgba(2, 132, 199, 0.35);
+html.theme-light .product-review-author-link {
+    color: #0284c7;
 }
+
+html.theme-light .product-review-author-link:hover {
+    color: #0369a1;
+}
+
+html.theme-light .product-review-author-link--closed {
+    color: #334155;
+}
+
+html.theme-light .product-review-author-link--closed:hover {
+    color: #b45309;
+}
+
 
 html.theme-light .nav-notify__btn,
 html.theme-light .nav-settings__btn {
