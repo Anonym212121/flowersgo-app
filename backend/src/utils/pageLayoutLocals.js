@@ -10,6 +10,9 @@ const buildPageLayoutLocals = (res, extraLocals = {}) => {
         wishlistProductIds: Array.isArray(res.locals.wishlistProductIds)
             ? res.locals.wishlistProductIds
             : [],
+        cartProductIds: Array.isArray(res.locals.cartProductIds)
+            ? res.locals.cartProductIds
+            : [],
         constructorEnabled: constructorConfig.isEnabled(),
         ...extraLocals
     };

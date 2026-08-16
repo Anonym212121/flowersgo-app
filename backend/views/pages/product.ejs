@@ -208,10 +208,16 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                 <div class="product-detail-order">
                     <% if (inStock) { %>
+                        <%
+                        const detailProductId = Number(product.id);
+                        const inCart = (typeof cartProductIds !== 'undefined' && Array.isArray(cartProductIds))
+                            ? cartProductIds.some((id) => Number(id) === detailProductId)
+                            : false;
+                        %>
                         <form method="post" action="/cart/add" class="cart-form cart-ajax product-detail-cart-form">
                             <input type="hidden" name="product_id" value="<%= product.id %>" />
                             <input type="hidden" name="quantity" value="1" />
-                            <button class="cart-icon-btn cart-icon-btn--large" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                            <button class="cart-icon-btn cart-icon-btn--large<%= inCart ? ' cart-icon-btn--in-cart' : '' %>" type="submit" title="<%= inCart ? 'Уже в кошику' : 'Додати в кошик' %>" aria-label="<%= inCart ? 'Уже в кошику' : 'Додати в кошик' %>">🛒</button>
                         </form>
                         <a class="product-order-btn product-order-btn--primary" href="/checkout?product_id=<%= product.id %>">Замовити зараз</a>
                     <% } else { %>
@@ -478,9 +484,8 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
                                 <span class="reviews-modal-breakdown-star"><%= row.star %> ★</span>
 
                                 <span class="reviews-modal-breakdown-bar">
-
-                                    <span class="reviews-modal-breakdown-fill" style="width: <%= row.percent %>%"></span>
-
+                                    <% const fillPct = Math.max(0, Math.min(100, Number(row.percent) || 0)); %>
+                                    <span class="reviews-modal-breakdown-fill" <%= 'style="width:' + fillPct + '%"' %>></span>
                                 </span>
 
                                 <span class="reviews-modal-breakdown-count"><%= row.count %></span>

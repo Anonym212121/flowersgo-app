@@ -72,10 +72,13 @@ const cardRating = Number(product.average_rating);
             <button class="wishlist-star-btn<%= inWishlist ? ' wishlist-star-btn--active' : '' %>" type="submit" title="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>" aria-label="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>"><%= inWishlist ? '★' : '☆' %></button>
         </form>
         <% if (Number(product.stock_quantity) > 0) { %>
+            <% const inCart = (typeof cartProductIds !== 'undefined' && Array.isArray(cartProductIds))
+                ? cartProductIds.some((id) => Number(id) === cardProductId)
+                : false; %>
             <form method="post" action="/cart/add" class="cart-form cart-ajax">
                 <input type="hidden" name="product_id" value="<%= product.id %>" />
                 <input type="hidden" name="quantity" value="1" />
-                <button class="cart-icon-btn" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                <button class="cart-icon-btn<%= inCart ? ' cart-icon-btn--in-cart' : '' %>" type="submit" title="<%= inCart ? 'Уже в кошику' : 'Додати в кошик' %>" aria-label="<%= inCart ? 'Уже в кошику' : 'Додати в кошик' %>">🛒</button>
             </form>
         <% } else { %>
             <button class="cart-icon-btn" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>

@@ -4693,6 +4693,11 @@ a.warehouse-order-no:hover {
     transform: scale(1.08);
 }
 
+.cart-icon-btn--in-cart {
+    border-color: rgba(16, 185, 129, 0.75);
+    background: rgba(16, 185, 129, 0.18);
+}
+
 .cart-summary {
     margin-top: 1rem;
 }

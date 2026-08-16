@@ -18,6 +18,7 @@ const skipHeavyCounts = (req) => {
 const pageNavCounts = async (req, res, next) => {
     if (skipHeavyCounts(req)) {
         res.locals.navCartCount = navCountsService.getCartCount(req);
+        res.locals.cartProductIds = navCountsService.getCartProductIds(req);
         res.locals.navWishlistCount = 0;
         res.locals.wishlistProductIds = [];
         return next();
@@ -25,11 +26,13 @@ const pageNavCounts = async (req, res, next) => {
 
     try {
         res.locals.navCartCount = navCountsService.getCartCount(req);
+        res.locals.cartProductIds = navCountsService.getCartProductIds(req);
         const ids = await navCountsService.getWishlistProductIds(req, res);
         res.locals.wishlistProductIds = ids;
         res.locals.navWishlistCount = ids.length;
     } catch (err) {
         res.locals.navCartCount = 0;
+        res.locals.cartProductIds = [];
         res.locals.navWishlistCount = 0;
         res.locals.wishlistProductIds = [];
     }

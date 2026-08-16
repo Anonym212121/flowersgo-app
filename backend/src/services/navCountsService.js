@@ -45,6 +45,10 @@ const readGuestWishlistIds = (cookieHeader) => {
     }
 };
 
+const getCartProductIds = (req) => {
+    return cartService.listProductIds(cartService.getCartFromRequest(req));
+};
+
 const getCartCount = (req) => {
     const items = cartService.getCartFromRequest(req);
     return items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -70,6 +74,7 @@ const getWishlistProductIds = async (req, res) => {
 
 module.exports = {
     getCartCount,
+    getCartProductIds,
     getWishlistCount,
     getWishlistProductIds,
     readGuestWishlistIds

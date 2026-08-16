@@ -450,6 +450,34 @@ const countItems = (items) => {
     }, 0);
 };
 
+const hasProduct = (items, productId) => {
+    const pid = Number(productId);
+    if (!Number.isFinite(pid) || pid <= 0) {
+        return false;
+    }
+    const rows = normalizeCartItems(items);
+    for (let i = 0; i < rows.length; i += 1) {
+        if (Number(rows[i].product_id) === pid) {
+            return true;
+        }
+    }
+    return false;
+};
+
+const listProductIds = (items) => {
+    const ids = [];
+    const seen = {};
+    const rows = normalizeCartItems(items);
+    for (let i = 0; i < rows.length; i += 1) {
+        const pid = Number(rows[i].product_id);
+        if (!seen[pid]) {
+            seen[pid] = true;
+            ids.push(pid);
+        }
+    }
+    return ids;
+};
+
 const buildCartDetails = async (items) => {
 
     const normalized = normalizeCartItems(items);
@@ -627,6 +655,10 @@ module.exports = {
     removeFromCart,
 
     countItems,
+
+    hasProduct,
+
+    listProductIds,
 
     buildCartDetails,
 

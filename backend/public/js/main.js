@@ -13,10 +13,16 @@ function setWishlistStarState(form, active) {
 
 function localWishlistHas(productId) {
     const id = Number(productId);
-    if (!Array.isArray(window.__wishlistProductIds)) {
+    if (!Number.isFinite(id) || id <= 0 || !Array.isArray(window.__wishlistProductIds)) {
         return false;
     }
-    return window.__wishlistProductIds.indexOf(id) !== -1;
+    const ids = window.__wishlistProductIds;
+    for (let i = 0; i < ids.length; i += 1) {
+        if (Number(ids[i]) === id) {
+            return true;
+        }
+    }
+    return false;
 }
 
 async function flushWishlistForm(form) {
@@ -30,7 +36,9 @@ async function flushWishlistForm(form) {
     const btn = form.querySelector('.wishlist-star-btn');
 
     try {
-        while (true) {
+        let guard = 0;
+        while (guard < 6) {
+            guard += 1;
             const wanted = btn ? form.dataset.wlWanted === '1' : false;
             const targetAction = wanted ? '/wishlist/add' : '/wishlist/remove';
             const body = new URLSearchParams(new FormData(form));
@@ -229,26 +237,98 @@ function setNavCartCount(count) {
     }
 }
 
-const catalogCartPending = new Map();
+const catalogCartPending = new Set();
 let catalogCartTimer = null;
 let catalogCartBusy = false;
+let alreadyInCartToastAt = 0;
+
+function cartProductIds() {
+    if (!Array.isArray(window.__cartProductIds)) {
+        window.__cartProductIds = [];
+    }
+    return window.__cartProductIds;
+}
+
+function cartHasProduct(productId) {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return false;
+    }
+    const ids = cartProductIds();
+    for (let i = 0; i < ids.length; i += 1) {
+        if (Number(ids[i]) === id) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function syncCartProductId(productId, add) {
+    const id = Number(productId);
+    if (!Number.isFinite(id) || id <= 0) {
+        return;
+    }
+    const ids = cartProductIds();
+    let idx = -1;
+    for (let i = 0; i < ids.length; i += 1) {
+        if (Number(ids[i]) === id) {
+            idx = i;
+            break;
+        }
+    }
+    if (add && idx === -1) {
+        ids.push(id);
+    } else if (!add && idx !== -1) {
+        ids.splice(idx, 1);
+    }
+}
+
+function applyCartButtons() {
+    document.querySelectorAll('.cart-form.cart-ajax').forEach((form) => {
+        const input = form.querySelector('[name="product_id"]');
+        const btn = form.querySelector('.cart-icon-btn');
+        if (!input || !btn) {
+            return;
+        }
+        const inCart = cartHasProduct(input.value);
+        btn.classList.toggle('cart-icon-btn--in-cart', inCart);
+        const title = inCart ? 'Уже в кошику' : 'Додати в кошик';
+        btn.setAttribute('title', title);
+        btn.setAttribute('aria-label', title);
+    });
+}
+
+function toastAlreadyInCart() {
+    const now = Date.now();
+    if (now - alreadyInCartToastAt < 1600) {
+        return;
+    }
+    alreadyInCartToastAt = now;
+    if (typeof window.showToast === 'function') {
+        window.showToast('Товар уже в кошику. Кількість можна змінити в кошику', 'info');
+    }
+}
 
 function queueCatalogCartAdd(form) {
     const pidInput = form.querySelector('[name="product_id"]');
-    const qtyInput = form.querySelector('[name="quantity"]');
     const pid = Number(pidInput && pidInput.value);
-    const qty = Math.max(1, Math.floor(Number(qtyInput && qtyInput.value) || 1));
     if (!Number.isFinite(pid) || pid <= 0) {
         return;
     }
 
-    const prev = catalogCartPending.get(pid) || { qty: 0 };
-    prev.qty += qty;
-    catalogCartPending.set(pid, prev);
-    setNavCartCount(readNavCartCount() + qty);
+    if (cartHasProduct(pid) || catalogCartPending.has(pid)) {
+        applyCartButtons();
+        toastAlreadyInCart();
+        return;
+    }
 
-    const cartBtn = form.querySelector('.cart-icon-btn, button[type="submit"]');
-    if (cartBtn && cartBtn.classList.contains('cart-icon-btn')) {
+    catalogCartPending.add(pid);
+    syncCartProductId(pid, true);
+    applyCartButtons();
+    setNavCartCount(readNavCartCount() + 1);
+
+    const cartBtn = form.querySelector('.cart-icon-btn');
+    if (cartBtn) {
         cartBtn.classList.add('cart-icon-btn--added');
         window.setTimeout(function () {
             cartBtn.classList.remove('cart-icon-btn--added');
@@ -269,17 +349,12 @@ async function flushCatalogCartAdds() {
     catalogCartBusy = true;
     try {
         while (catalogCartPending.size > 0) {
-            const pid = catalogCartPending.keys().next().value;
-            const rec = catalogCartPending.get(pid);
+            const pid = catalogCartPending.values().next().value;
             catalogCartPending.delete(pid);
-            const qty = rec && rec.qty ? rec.qty : 0;
-            if (qty < 1) {
-                continue;
-            }
 
             const body = new URLSearchParams();
             body.set('product_id', String(pid));
-            body.set('quantity', String(qty));
+            body.set('quantity', '1');
             try {
                 const res = await fetch('/cart/add', {
                     method: 'POST',
@@ -289,18 +364,31 @@ async function flushCatalogCartAdds() {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || !data.ok) {
-                    setNavCartCount(readNavCartCount() - qty);
+                    syncCartProductId(pid, false);
+                    applyCartButtons();
+                    setNavCartCount(readNavCartCount() - 1);
                     const msg = data && data.message ? data.message : 'Не вдалося оновити кошик';
                     if (typeof window.showToast === 'function') {
                         window.showToast(msg, 'error');
                     }
                     continue;
                 }
+                if (Array.isArray(data.product_ids)) {
+                    window.__cartProductIds = data.product_ids
+                        .map((id) => Number(id))
+                        .filter((id) => Number.isFinite(id) && id > 0);
+                    applyCartButtons();
+                }
                 if (data.count != null) {
                     setNavCartCount(data.count);
                 }
+                if (data.already) {
+                    toastAlreadyInCart();
+                }
             } catch (err) {
-                setNavCartCount(readNavCartCount() - qty);
+                syncCartProductId(pid, false);
+                applyCartButtons();
+                setNavCartCount(readNavCartCount() - 1);
                 if (typeof window.showToast === 'function') {
                     window.showToast('Помилка мережі', 'error');
                 }
@@ -413,6 +501,10 @@ document.addEventListener('click', (e) => {
         try {
             const data = await cartPagePost('/cart/remove', body);
             row.remove();
+            const leftover = table.querySelector('tbody tr[data-product-id="' + pid + '"]');
+            if (!leftover) {
+                syncCartProductId(pid, false);
+            }
             if (data.count != null) {
                 setNavCartCount(data.count);
             }
@@ -597,17 +689,18 @@ function buildProductCardHtml(product, showHitBadge) {
         stockQty > 0
             ? `<a class="product-order-btn" href="/checkout?product_id=${product.id}">Замовити</a>`
             : `<button class="product-order-btn" type="button" disabled>Замовити</button>`;
+    const wlIds = Array.isArray(window.__wishlistProductIds) ? window.__wishlistProductIds : [];
+    const cardProductId = Number(product.id);
+    const inCart = cartHasProduct(cardProductId);
+    const cartTitle = inCart ? 'Уже в кошику' : 'Додати в кошик';
     const cartBtn =
         stockQty > 0
             ? `<form method="post" action="/cart/add" class="cart-form cart-ajax">
                         <input type="hidden" name="product_id" value="${product.id}" />
                         <input type="hidden" name="quantity" value="1" />
-                        <button class="cart-icon-btn" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                        <button class="cart-icon-btn${inCart ? ' cart-icon-btn--in-cart' : ''}" type="submit" title="${cartTitle}" aria-label="${cartTitle}">🛒</button>
                    </form>`
             : `<button class="cart-icon-btn" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>`;
-
-    const wlIds = Array.isArray(window.__wishlistProductIds) ? window.__wishlistProductIds : [];
-    const cardProductId = Number(product.id);
     const inWishlist = wlIds.some((id) => Number(id) === cardProductId);
     const wishlistAction = inWishlist ? '/wishlist/remove' : '/wishlist/add';
     const wishlistStarClass = inWishlist ? ' wishlist-star-btn--active' : '';
@@ -871,6 +964,10 @@ function initPhoneCategoriesPanel() {
     if (!btn || !panel) {
         return;
     }
+    if (btn.dataset.bound === '1') {
+        return;
+    }
+    btn.dataset.bound = '1';
 
     btn.addEventListener('click', function () {
         const open = panel.hidden;
@@ -975,6 +1072,7 @@ async function loadCatalogProducts(categoryId, q) {
         syncSearchFormCategory(categoryId);
         updateCategoryNavActive(categoryId);
         applyWishlistStars(window.__wishlistProductIds);
+        applyCartButtons();
         return true;
     } catch (err) {
         if (err && err.name === 'AbortError') {
@@ -1009,6 +1107,9 @@ document.addEventListener('click', (e) => {
     }
 
     e.preventDefault();
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+    }
 
     const raw = a.getAttribute('data-category-id');
     const categoryId = raw === null || raw === '' ? null : Number(raw);
@@ -1077,6 +1178,73 @@ function syncCatalogPageFromUrl() {
     updateCategoryNavActive(categoryId);
 }
 
+function closeProductPreview() {
+    const modal = document.getElementById('productPreviewModal');
+    const img = document.getElementById('productPreviewImg');
+    if (modal) {
+        modal.hidden = true;
+    }
+    if (img) {
+        img.removeAttribute('src');
+        img.alt = '';
+    }
+    document.body.style.overflow = '';
+}
+
+function blurCategoryFlyout() {
+    const focused = document.activeElement;
+    if (
+        focused &&
+        typeof focused.blur === 'function' &&
+        focused.closest &&
+        focused.closest('.category-parent--flyout')
+    ) {
+        focused.blur();
+    }
+}
+
+function removePuterLeftovers() {
+    const path = window.location.pathname || '';
+    if (path.indexOf('/constructor') === 0) {
+        return;
+    }
+    document.querySelectorAll('iframe').forEach((el) => {
+        const src = String(el.getAttribute('src') || el.src || '');
+        if (src.indexOf('puter.com') !== -1 || src.indexOf('puter.site') !== -1) {
+            el.remove();
+        }
+    });
+}
+
+function unlockPageUi() {
+    document.body.classList.remove(
+        'reviews-modal-open',
+        'catalog-categories-phone-open',
+        'constructor-confirm-open'
+    );
+    document.body.style.overflow = '';
+    closeProductPreview();
+    closePhoneCategoriesPanel();
+    blurCategoryFlyout();
+    removePuterLeftovers();
+
+    const reviews = document.getElementById('reviews-modal');
+    if (reviews) {
+        reviews.hidden = true;
+        reviews.setAttribute('aria-hidden', 'true');
+    }
+    const evenModal = document.getElementById('constructorEvenConfirm');
+    if (evenModal) {
+        evenModal.hidden = true;
+        evenModal.setAttribute('aria-hidden', 'true');
+    }
+
+    const main = document.getElementById('page-main');
+    if (main) {
+        main.classList.remove('page-main--loading');
+    }
+}
+
 function initScrollToTop() {
     const btn = document.getElementById('scroll-to-top');
     if (!btn || btn.dataset.bound === '1') {
@@ -1114,11 +1282,13 @@ function initScrollToTop() {
 }
 
 function onPageReady() {
+    unlockPageUi();
     updateHeaderNavActive(window.location.pathname);
     syncCatalogPageFromUrl();
     initPhoneCategoriesPanel();
     initScrollToTop();
     refreshWishlistStarsOnPage();
+    applyCartButtons();
 
     const nav = document.getElementById('headerNav');
     if (nav) {
@@ -1154,6 +1324,11 @@ function executeScripts(root) {
     }
     const scripts = root.querySelectorAll('script');
     scripts.forEach((oldScript) => {
+        const src = oldScript.getAttribute('src') || '';
+        if (src.indexOf('js.puter.com') !== -1 && typeof window.puter !== 'undefined') {
+            oldScript.remove();
+            return;
+        }
         const newScript = document.createElement('script');
         for (const attr of oldScript.attributes) {
             newScript.setAttribute(attr.name, attr.value);
@@ -1165,6 +1340,7 @@ function executeScripts(root) {
 
 let softNavBusy = false;
 let softNavQueued = null;
+let softNavAbort = null;
 
 async function softNavigate(url, pushState) {
     if (softNavBusy) {
@@ -1178,17 +1354,24 @@ async function softNavigate(url, pushState) {
     }
 
     softNavBusy = true;
+    unlockPageUi();
     main.classList.add('page-main--loading');
 
+    if (softNavAbort) {
+        softNavAbort.abort();
+    }
+    softNavAbort = new AbortController();
+    const thisAbort = softNavAbort;
+
     const navTimeout = window.setTimeout(() => {
-        softNavBusy = false;
-        main.classList.remove('page-main--loading');
+        thisAbort.abort();
     }, 12000);
 
     try {
         const res = await fetch(url, {
             credentials: 'same-origin',
-            headers: { Accept: 'text/html' }
+            headers: { Accept: 'text/html' },
+            signal: thisAbort.signal
         });
         if (!res.ok) {
             window.location.href = url;
@@ -1218,9 +1401,15 @@ async function softNavigate(url, pushState) {
         onPageReady();
         window.scrollTo(0, 0);
     } catch (err) {
+        if (err && err.name === 'AbortError') {
+            return;
+        }
         window.location.href = url;
     } finally {
         window.clearTimeout(navTimeout);
+        if (softNavAbort === thisAbort) {
+            softNavAbort = null;
+        }
         softNavBusy = false;
         main.classList.remove('page-main--loading');
         if (softNavQueued) {
@@ -1364,13 +1553,6 @@ window.addEventListener('popstate', (e) => {
         return;
     }
 
-    const closePreview = () => {
-        modal.hidden = true;
-        img.removeAttribute('src');
-        img.alt = '';
-        document.body.style.overflow = '';
-    };
-
     const openPreview = (src, alt) => {
         const url = typeof src === 'string' ? src.trim() : '';
         if (!url) {
@@ -1391,17 +1573,24 @@ window.addEventListener('popstate', (e) => {
             return;
         }
         if (event.target === modal) {
-            closePreview();
+            closeProductPreview();
         }
     });
 
     if (closeBtn) {
-        closeBtn.addEventListener('click', closePreview);
+        closeBtn.addEventListener('click', closeProductPreview);
     }
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !modal.hidden) {
-            closePreview();
+            closeProductPreview();
         }
     });
 })();
+
+document.addEventListener('click', (event) => {
+    if (event.target.closest('.category-parent--flyout')) {
+        return;
+    }
+    blurCategoryFlyout();
+});

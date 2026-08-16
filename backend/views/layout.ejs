@@ -61,10 +61,15 @@
     <% } %>
     <script src="/js/list-pager.js" defer></script>
     <script type="application/json" id="layoutPageConfig"><%- JSON.stringify({
-        wishlistProductIds: typeof wishlistProductIds !== 'undefined' && Array.isArray(wishlistProductIds) ? wishlistProductIds : []
+        wishlistProductIds: typeof wishlistProductIds !== 'undefined' && Array.isArray(wishlistProductIds) ? wishlistProductIds : [],
+        cartProductIds: typeof cartProductIds !== 'undefined' && Array.isArray(cartProductIds) ? cartProductIds : []
     }) %></script>
     <script>
-        window.__wishlistProductIds = JSON.parse(document.getElementById('layoutPageConfig').textContent).wishlistProductIds;
+        (function () {
+            var cfg = JSON.parse(document.getElementById('layoutPageConfig').textContent);
+            window.__wishlistProductIds = cfg.wishlistProductIds;
+            window.__cartProductIds = cfg.cartProductIds;
+        })();
     </script>
     <script src="/js/main.js" defer></script>
 </body>

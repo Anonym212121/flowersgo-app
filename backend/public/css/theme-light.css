@@ -235,6 +235,12 @@ html.theme-light .cart-icon-btn {
     color: #1e293b;
 }
 
+html.theme-light .cart-icon-btn--in-cart,
+html.theme-light .cart-icon-btn--added {
+    background: rgba(16, 185, 129, 0.16);
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
 html.theme-light .product-reviews-all-btn:hover,
 html.theme-light .product-reviews-more-link:hover {
     background: rgba(14, 165, 233, 0.08);
