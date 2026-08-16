@@ -15,9 +15,15 @@ describe('HTTP захист', () => {
         const res = await request(app)
             .post('/cart/add')
             .set('Origin', 'https://evil.example')
+            .set('Sec-Fetch-Site', 'cross-site')
             .send({ product_id: 1 });
 
         expect(res.status).toBe(403);
+    });
+
+    test('POST logout без Origin не блокується', async () => {
+        const res = await request(app).post('/logout');
+        expect(res.status).not.toBe(403);
     });
 
     test('/api/admin без входу дає 401', async () => {

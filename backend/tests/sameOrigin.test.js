@@ -52,4 +52,14 @@ describe('sameOrigin.originMatchesHost', () => {
             }
         })).toBe(true);
     });
+
+    test('пускає Sec-Fetch-Site same-origin', () => {
+        expect(sameOrigin.originMatchesHost({
+            headers: {
+                host: 'flowersgo.onrender.com',
+                origin: 'https://flowersgo.online',
+                'sec-fetch-site': 'same-origin'
+            }
+        })).toBe(true);
+    });
 });

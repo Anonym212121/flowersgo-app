@@ -125,9 +125,7 @@ const navBtnClass = (href, baseClass) => {
                     <a class="<%= navBtnClass('/login', 'nav__btn nav__btn--ghost') %>" href="/login">Увійти</a>
                     <a class="<%= navBtnClass('/register', 'nav__btn nav__btn--primary') %>" href="/register">Реєстрація</a>
                 <% } else { %>
-                    <form class="nav__logout" action="/logout" method="post">
-                        <button type="submit" class="nav__btn nav__btn--ghost">Вийти</button>
-                    </form>
+                    <a class="nav__btn nav__btn--ghost" href="/logout" data-soft-nav="false">Вийти</a>
                 <% } %>
             </div>
         </nav>

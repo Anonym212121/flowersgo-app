@@ -3,7 +3,8 @@ const helmet = require('helmet');
 const helmetMw = helmet({
     contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
-    hsts: false
+    hsts: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 });
 
 const securityHeaders = (req, res, next) => {

@@ -18,6 +18,7 @@ const orderDeliveryFields = require('../utils/orderDeliveryFields');
 const { mapOrderForWarehouse, buildWarehouseStats, filterWarehouseOrdersByTab, LOW_STOCK_LIMIT } = require('../utils/warehouseOrderView');
 const OrderStatusLogModel = require('../models/OrderStatusLog');
 const paymentToken = require('../utils/paymentToken');
+const cookieBase = require('../utils/cookieBase');
 const paymentSyncService = require('../services/paymentSyncService');
 const DeliverySettings = require('../models/DeliverySettings');
 const LegalPageModel = require('../models/LegalPage');
@@ -169,7 +170,7 @@ const deliveryTermsPage = async (req, res) => {
 };
 
 const logout = (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', cookieBase());
     return res.redirect('/');
 };
 

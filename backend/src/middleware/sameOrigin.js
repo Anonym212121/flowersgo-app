@@ -3,8 +3,7 @@ const hostFromUrl = (value) => {
         return '';
     }
     try {
-        const url = new URL(value);
-        return url.host;
+        return new URL(value).hostname.toLowerCase();
     } catch {
         return '';
     }
@@ -12,9 +11,10 @@ const hostFromUrl = (value) => {
 
 const normalizeHost = (raw) => {
     let text = String(raw || '').trim().toLowerCase();
-    if (!text) {
+    if (!text || text === 'null') {
         return '';
     }
+    text = text.replace(/^["']+|["']+$/g, '');
 
     if (text.indexOf(',') !== -1) {
         text = text.split(',')[0].trim();
@@ -35,11 +35,8 @@ const normalizeHost = (raw) => {
         }
     } else {
         const colon = text.lastIndexOf(':');
-        if (colon !== -1) {
-            const port = text.slice(colon + 1);
-            if (port === '80' || port === '443') {
-                text = text.slice(0, colon);
-            }
+        if (colon !== -1 && /^\d+$/.test(text.slice(colon + 1))) {
+            text = text.slice(0, colon);
         }
     }
 
@@ -54,10 +51,25 @@ const headerValue = (req, name) => {
     if (req && typeof req.get === 'function') {
         return String(req.get(name) || '');
     }
-    if (req && req.headers && req.headers[name]) {
-        return String(req.headers[name]);
+    if (req && req.headers) {
+        const direct = req.headers[name];
+        if (direct) {
+            return String(direct);
+        }
     }
     return '';
+};
+
+const forwardedHost = (req) => {
+    const raw = headerValue(req, 'forwarded');
+    if (!raw) {
+        return '';
+    }
+    const match = raw.match(/host=\"?([^;,\"]+)/i);
+    if (!match) {
+        return '';
+    }
+    return match[1];
 };
 
 const allowedHosts = (req) => {
@@ -71,6 +83,7 @@ const allowedHosts = (req) => {
 
     add(headerValue(req, 'host'));
     add(headerValue(req, 'x-forwarded-host'));
+    add(forwardedHost(req));
     if (req && typeof req.hostname === 'string') {
         add(req.hostname);
     }
@@ -93,9 +106,17 @@ const hostIsAllowed = (req, originOrUrl) => {
     return false;
 };
 
+const isBrowserSameSite = (req) => {
+    const site = headerValue(req, 'sec-fetch-site').toLowerCase();
+    return site === 'same-origin' || site === 'same-site';
+};
+
 const originMatchesHost = (req) => {
+    if (isBrowserSameSite(req)) {
+        return true;
+    }
     const origin = headerValue(req, 'origin');
-    if (!origin) {
+    if (!origin || origin === 'null') {
         return false;
     }
     return hostIsAllowed(req, origin);
@@ -111,14 +132,20 @@ const sameOrigin = (req, res, next) => {
     if (url.indexOf('/payment/liqpay/callback') !== -1) {
         return next();
     }
+    if (String(req.path || '') === '/logout') {
+        return next();
+    }
+
+    if (isBrowserSameSite(req)) {
+        return next();
+    }
 
     const origin = headerValue(req, 'origin');
     const referer = headerValue(req, 'referer');
+    const originOk = origin && origin !== 'null' && hostIsAllowed(req, origin);
+    const refererOk = (!origin || origin === 'null') && referer && hostIsAllowed(req, referer);
 
-    if (origin && hostIsAllowed(req, origin)) {
-        return next();
-    }
-    if (!origin && referer && hostIsAllowed(req, referer)) {
+    if (originOk || refererOk) {
         return next();
     }
 
