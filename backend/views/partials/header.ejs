@@ -103,6 +103,21 @@ const navBtnClass = (href, baseClass) => {
                     <span class="theme-switch__ui" aria-hidden="true"></span>
                     <span class="theme-switch__text">Тема</span>
                 </label>
+                <div class="nav-settings" id="navSettings">
+                    <button type="button" class="nav-settings__btn" id="navSettingsBtn" aria-label="Налаштування" aria-expanded="false" aria-controls="navSettingsPanel" title="Налаштування">
+                        <span class="nav-settings__icon" aria-hidden="true">⚙</span>
+                        <span class="nav-settings__btn-text">Налаштування</span>
+                    </button>
+                    <div class="nav-settings__panel" id="navSettingsPanel" hidden>
+                        <div class="nav-settings__head">
+                            <strong>Налаштування</strong>
+                        </div>
+                        <section class="nav-settings__section" aria-labelledby="navSettingsAlertsTitle">
+                            <h3 class="nav-settings__section-title" id="navSettingsAlertsTitle">Сповіщення</h3>
+                            <div id="navAlertSettings"></div>
+                        </section>
+                    </div>
+                </div>
                 <% if (headerType === 'admin' || headerType === 'warehouse_worker' || headerType === 'courier' || headerType === 'user') { %>
                     <div class="nav-notify" id="navNotify">
                         <button type="button" class="nav-notify__btn" id="navNotifyBtn" aria-label="Сповіщення" aria-expanded="false">
@@ -114,7 +129,6 @@ const navBtnClass = (href, baseClass) => {
                                 <strong>Сповіщення</strong>
                                 <button type="button" class="nav-notify__read-all" id="navNotifyReadAll">Прочитати всі</button>
                             </div>
-                            <div class="nav-notify__settings" id="navNotifySettings"></div>
                             <ul class="nav-notify__list" id="navNotifyList"></ul>
                             <p class="nav-notify__empty" id="navNotifyEmpty" hidden>Немає сповіщень</p>
                             <div class="nav-notify__pager list-pager-controls" id="navNotifyPager" hidden>

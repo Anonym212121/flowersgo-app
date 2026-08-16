@@ -5,7 +5,6 @@
     const listEl = document.getElementById('navNotifyList');
     const emptyEl = document.getElementById('navNotifyEmpty');
     const readAllBtn = document.getElementById('navNotifyReadAll');
-    const settingsEl = document.getElementById('navNotifySettings');
     const pagerEl = document.getElementById('navNotifyPager');
     const pagerInfoEl = document.getElementById('navNotifyPagerInfo');
     const pagerMoreBtn = document.getElementById('navNotifyMore');
@@ -214,18 +213,20 @@
 
     btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        const settingsPanel = document.getElementById('navSettingsPanel');
+        const settingsBtn = document.getElementById('navSettingsBtn');
+        if (settingsPanel) {
+            settingsPanel.hidden = true;
+        }
+        if (settingsBtn) {
+            settingsBtn.setAttribute('aria-expanded', 'false');
+        }
         const open = panel.hidden;
         panel.hidden = !open;
         panelOpen = open;
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
-            if (settingsEl && typeof window.renderAlertSettingsBtn === 'function') {
-                window.renderAlertSettingsBtn(settingsEl);
-            }
             await loadList(true);
-            if (window.SiteAlerts && typeof window.SiteAlerts.requestPushPermission === 'function') {
-                await window.SiteAlerts.requestPushPermission();
-            }
         }
     });
 

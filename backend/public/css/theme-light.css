@@ -137,7 +137,8 @@ html.theme-light .nav__btn--ghost {
     background: rgba(255, 255, 255, 0.9);
 }
 
-html.theme-light .nav-notify__panel {
+html.theme-light .nav-notify__panel,
+html.theme-light .nav-settings__panel {
     background: #ffffff;
     border-color: var(--line);
 }
@@ -552,6 +553,7 @@ html.theme-light .cabinet-review-product,
 html.theme-light .cabinet-profile-view-row dd,
 html.theme-light .nav-notify__link,
 html.theme-light .nav-notify__head strong,
+html.theme-light .nav-settings__head strong,
 html.theme-light .product-review-item,
 html.theme-light .product-detail-desc,
 html.theme-light .auth-label,
@@ -628,13 +630,15 @@ html.theme-light .product-reviews-more-link {
     border-color: rgba(2, 132, 199, 0.35);
 }
 
-html.theme-light .nav-notify__btn {
+html.theme-light .nav-notify__btn,
+html.theme-light .nav-settings__btn {
     background: #ffffff;
     border-color: rgba(15, 23, 42, 0.14);
     color: #334155;
 }
 
-html.theme-light .nav-notify__panel {
+html.theme-light .nav-notify__panel,
+html.theme-light .nav-settings__panel {
     background: #ffffff;
     border-color: var(--line);
     box-shadow: var(--shadow);

@@ -375,12 +375,8 @@
             menuHtml += '<button type="button" class="support-menu__btn support-menu__btn--archive" id="support-go-archive">Архів чатів</button>';
         }
 
-        menuHtml += '<div id="support-alert-settings" class="support-alert-settings"></div></div>';
+        menuHtml += '</div>';
         panelBody.innerHTML = menuHtml;
-
-        if (typeof window.renderAlertSettingsBtn === 'function') {
-            window.renderAlertSettingsBtn(document.getElementById('support-alert-settings'));
-        }
 
         document.getElementById('support-go-chat').addEventListener('click', () => {
             openChatFlow();
