@@ -4436,6 +4436,10 @@ a.warehouse-order-no:hover {
 
 .cart-table-wrap {
     margin-bottom: 1rem;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .cart-actions {
@@ -5119,7 +5123,11 @@ html.theme-light .message-btn-secondary {
 
 .checkout-address-search {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     margin-top: 6px;
+    overflow: hidden;
+    contain: inline-size;
 }
 
 .checkout-address-row {
@@ -6488,11 +6496,228 @@ textarea.auth-input {
 html {
     scroll-padding-top: calc(5.25rem + env(safe-area-inset-top, 0px));
     color-scheme: dark;
+    overflow-x: clip;
 }
 
 html.theme-light {
     color-scheme: light;
 }
+
+body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+}
+
+.main,
+.catalog-content,
+.checkout-page,
+.cart-page,
+.cabinet-page,
+.public-profile-page,
+.product-detail-section {
+    min-width: 0;
+    max-width: 100%;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+    max-width: 100%;
+}
+
+.auth-input,
+.auth-label,
+.checkout-step-card,
+.checkout-summary-card,
+.checkout-main,
+.checkout-aside,
+.checkout-layout,
+fieldset {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.auth-input {
+    width: 100%;
+    max-width: 100%;
+}
+
+.checkout-address-search {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    contain: inline-size;
+}
+
+.checkout-address-search gmp-place-autocomplete {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: block;
+    box-sizing: border-box;
+}
+
+/* Випадайка Google Places не роздуває сторінку вбік */
+.pac-container {
+    z-index: 300 !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    box-sizing: border-box;
+}
+
+@media (hover: none) {
+    .checkout-step-card:hover,
+    .checkout-summary-card:hover,
+    .product-review-item:hover,
+    .product-card:hover {
+        transform: none;
+    }
+}
+
+@media (max-width: 980px) {
+    .main {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .checkout-page-title,
+    .catalog-title {
+        font-size: clamp(1.35rem, 5.5vw, 1.75rem);
+        line-height: 1.2;
+        word-break: break-word;
+    }
+
+    .checkout-layout {
+        gap: 0.85rem;
+    }
+
+    .checkout-step-card,
+    .checkout-summary-card {
+        padding: 1rem 0.9rem;
+        border-radius: 14px;
+    }
+
+    .checkout-step-card:hover,
+    .checkout-summary-card:hover {
+        transform: none;
+    }
+
+    .checkout-address-row {
+        flex-direction: column;
+        gap: 0.55rem;
+    }
+
+    .checkout-summary-img {
+        width: 72px;
+        height: 72px;
+    }
+
+    .checkout-radio-label {
+        align-items: flex-start;
+        gap: 0.55rem;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .checkout-payment-hint,
+    .checkout-guest-note,
+    .checkout-express-note {
+        font-size: 0.86rem;
+        line-height: 1.45;
+    }
+
+    .checkout-submit-btn {
+        width: 100%;
+        margin-top: 0.35rem;
+        border-radius: 12px;
+    }
+
+    .checkout-qty-stepper {
+        max-width: 100%;
+    }
+
+    .checkout-upsell-item {
+        flex-wrap: wrap;
+        gap: 0.45rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .main {
+        padding-top: 1.15rem;
+        padding-bottom: calc(1.6rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .header__inner {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .checkout-summary-line {
+        gap: 0.55rem;
+    }
+
+    .checkout-summary-head {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .auth-card {
+        padding: 1rem 0.9rem;
+        border-radius: 14px;
+    }
+
+    .cabinet-tabs {
+        gap: 0.35rem;
+    }
+
+    .cabinet-tab {
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: center;
+        font-size: 0.86rem;
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
+    }
+
+    .cart-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .cart-actions .auth-button,
+    .cart-actions .admin-secondary-btn,
+    .cart-actions a {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .toast-stack {
+        left: 0.75rem;
+        right: 0.75rem;
+        width: auto;
+        top: calc(4.5rem + env(safe-area-inset-top, 0px));
+    }
+
+    .nav-notify__panel,
+    .nav-settings__panel {
+        width: min(100%, calc(100vw - 2rem));
+        right: 0;
+        left: auto;
+    }
+}
+
+@media (max-width: 420px) {
+    .checkout-summary-img {
+        width: 64px;
+        height: 64px;
+    }
+}
+
 
 .skip-link {
     position: absolute;

@@ -1499,6 +1499,10 @@ async function initAddressAutocomplete() {
     var autocomplete = new places.PlaceAutocompleteElement({
         includedRegionCodes: ['ua']
     });
+    autocomplete.style.width = '100%';
+    autocomplete.style.maxWidth = '100%';
+    autocomplete.style.minWidth = '0';
+    autocomplete.style.boxSizing = 'border-box';
     box.appendChild(autocomplete);
 
     autocomplete.addEventListener('gmp-select', async function (event) {
