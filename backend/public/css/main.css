@@ -86,7 +86,7 @@ a:hover { color: #bae6fd; }
     position: relative;
     max-width: 1240px;
     margin: 0 auto;
-    padding: 0.72rem 1.1rem;
+    padding: 0.72rem 1rem;
     min-height: 4rem;
     display: flex;
     align-items: center;
@@ -183,7 +183,11 @@ a:hover { color: #bae6fd; }
 .nav {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 0.65rem;
+    margin-left: auto;
 }
 
 .nav__links,
@@ -191,6 +195,7 @@ a:hover { color: #bae6fd; }
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    flex-shrink: 0;
 }
 
 .nav__actions {
@@ -389,6 +394,7 @@ a:hover { color: #bae6fd; }
 @media (max-width: 860px) {
     .header__burger {
         display: inline-flex;
+        margin-left: auto;
     }
 
     .nav {
@@ -397,8 +403,11 @@ a:hover { color: #bae6fd; }
         left: 1rem;
         right: 1rem;
         display: none;
+        flex: none;
+        margin-left: 0;
         flex-direction: column;
         align-items: stretch;
+        justify-content: flex-start;
         gap: 0.75rem;
         padding: 0.85rem;
         border-radius: 16px;
@@ -4858,6 +4867,7 @@ a.warehouse-order-no:hover {
 .product-card-actions .cart-form,
 .product-detail-order .cart-form {
     margin: 0;
+    flex: 0 0 auto;
 }
 
 .checkout-page {
@@ -6546,6 +6556,26 @@ fieldset {
     max-width: 100%;
 }
 
+#deliveryDateBlock {
+    min-width: 0;
+    max-width: 100%;
+}
+
+#deliveryDateBlock .auth-input[type='date'],
+#deliveryDateBlock .auth-input[type='time'] {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+#deliveryDateBlock .auth-input[type='date']::-webkit-calendar-picker-indicator,
+#deliveryDateBlock .auth-input[type='time']::-webkit-calendar-picker-indicator {
+    margin-left: 0;
+    flex-shrink: 0;
+}
+
 .checkout-address-search {
     width: 100%;
     max-width: 100%;
@@ -6609,6 +6639,15 @@ fieldset {
     .checkout-address-row {
         flex-direction: column;
         gap: 0.55rem;
+    }
+
+    #deliveryDateBlock .auth-input[type='date'],
+    #deliveryDateBlock .auth-input[type='time'] {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        padding-right: 0.55rem;
+        font-size: 16px;
     }
 
     .checkout-summary-img {
