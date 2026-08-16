@@ -6,6 +6,10 @@ const safeTransitions = typeof statusTransitions !== 'undefined' && statusTransi
 const phoneLinks = o.phone_links && o.phone_links.ok ? o.phone_links : null;
 const mapsHref = typeof mapsUrl === 'string' ? mapsUrl : '';
 const shiftOn = !!onShift;
+const surprise = !!o.do_not_call_recipient;
+const callLinks = surprise
+    ? (o.buyer_phone_links && o.buyer_phone_links.ok ? o.buyer_phone_links : null)
+    : phoneLinks;
 %>
 
 <div class="warehouse-page courier-page">
@@ -24,6 +28,8 @@ const shiftOn = !!onShift;
         <% if (o.payment_status === 'cod') { %><span class="warehouse-badge pay-cod">При отриманні</span><% } %>
         <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
         <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
+        <% if (surprise) { %><span class="warehouse-badge warehouse-badge--surprise">Сюрприз — не дзвонити</span><% } %>
+        <% if (o.assembled_photo_url) { %><span class="warehouse-badge warehouse-badge--photo">Є фото букета</span><% } %>
     </div>
 
     <ul class="warehouse-items-list">
@@ -47,17 +53,34 @@ const shiftOn = !!onShift;
                 <span class="warehouse-order-detail-value"><%= o.recipient_note %></span>
             </div>
         <% } %>
+        <% if (surprise) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Сюрприз</span>
+                <span class="warehouse-order-detail-value">Не телефонуй одержувачу. Подзвони замовнику, якщо треба уточнити адресу. На місці — дзвінок у двері.</span>
+            </div>
+        <% } %>
         <% if (o.greeting_card_text) { %>
             <div class="warehouse-order-detail warehouse-order-detail--full">
                 <span class="warehouse-order-detail-label">Листівка</span>
                 <span class="warehouse-order-detail-value">(+50 грн) <%= o.greeting_card_text %></span>
             </div>
         <% } %>
+        <% if (o.assembled_photo_url) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Букет</span>
+                <span class="warehouse-order-detail-value">
+                    <img src="<%= o.assembled_photo_url %>" alt="Зібраний букет №<%= o.id %>" class="warehouse-assembled-img warehouse-assembled-img--courier" />
+                </span>
+            </div>
+        <% } %>
     </div>
 
     <div class="warehouse-detail-actions">
-        <% if (phoneLinks) { %>
-            <%- include('../../partials/warehouse-phone-actions', { phoneLinks: phoneLinks }) %>
+        <% if (callLinks) { %>
+            <%- include('../../partials/warehouse-phone-actions', {
+                phoneLinks: callLinks,
+                phoneActionsHint: surprise ? 'Дзвонити замовнику, не одержувачу' : ''
+            }) %>
         <% } %>
         <% if (mapsHref) { %>
             <a class="warehouse-phone-btn warehouse-phone-btn--tg" href="<%= mapsHref %>" target="_blank" rel="noopener noreferrer" data-soft-nav="false">Маршрут</a>

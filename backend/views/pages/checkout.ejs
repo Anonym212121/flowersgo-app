@@ -127,6 +127,11 @@ const checkoutAuthNext = isCartMode
                         Коментар до доставки (необов'язково)
                         <textarea class="auth-input" name="recipient_note" rows="2"></textarea>
                     </label>
+                    <label class="checkout-radio-label">
+                        <input type="checkbox" name="do_not_call_recipient" value="1" id="doNotCallRecipient" />
+                        Не дзвонити одержувачу (сюрприз)
+                    </label>
+                    <p class="checkout-payment-hint">Кур'єр не телефонуватиме заздалегідь, щоб не зіпсувати сюрприз. Якщо треба уточнити дорогу — подзвонить вам.</p>
                 </div>
             </div>
 
@@ -1143,6 +1148,8 @@ function applyProfileAddressIfNeeded() {
         data.payment_method = getRadio('payment_method');
         var wantCard = document.getElementById('wantGreetingCard');
         data.want_greeting_card = !!(wantCard && wantCard.checked);
+        var doNotCall = document.getElementById('doNotCallRecipient');
+        data.do_not_call_recipient = !!(doNotCall && doNotCall.checked);
         data.last_step = lastFocusedStep;
         var dateEl = document.getElementById('deliveryDate');
         if (dateEl) {
@@ -1197,6 +1204,11 @@ function applyProfileAddressIfNeeded() {
                     cardText.value = data.greeting_card_text;
                 }
             }
+        }
+
+        var doNotCall = document.getElementById('doNotCallRecipient');
+        if (doNotCall) {
+            doNotCall.checked = data.do_not_call_recipient === true || data.do_not_call_recipient === '1';
         }
 
         var dateEl = document.getElementById('deliveryDate');

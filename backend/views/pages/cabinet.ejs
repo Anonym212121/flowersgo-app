@@ -117,6 +117,14 @@ if (savedStreet && savedHouse) {
                                 <span class="cabinet-order-label">Доставка</span>
                                 <span class="cabinet-order-value"><%= o.delivery_display || '-' %></span>
                             </div>
+                            <% if (o.assembled_photo_url) { %>
+                                <div class="cabinet-order-row cabinet-order-row--stack">
+                                    <span class="cabinet-order-label">Ваш букет</span>
+                                    <span class="cabinet-order-value">
+                                        <img src="<%= o.assembled_photo_url %>" alt="Зібраний букет №<%= o.id %>" class="cabinet-assembled-img" />
+                                    </span>
+                                </div>
+                            <% } %>
                             <% if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup') { %>
                                 <p class="cabinet-cancel-hint cabinet-status-hint">Букет зібрано. Кур'єр скоро забере замовлення.</p>
                             <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method === 'pickup') { %>

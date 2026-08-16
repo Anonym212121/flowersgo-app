@@ -700,6 +700,12 @@ const warehouseOrderDetailPage = async (req, res) => {
             pickup_not_paid: 'Замовлення не оплачене',
             use_pickup_complete: 'Для самовивозу скористайтеся кнопкою «Видано клієнту - завершити»',
             update_failed: 'Не вдалося оновити статус',
+            photo_empty: 'Оберіть фото букета',
+            photo_big: 'Файл завеликий (до 8 МБ)',
+            photo_type: 'Потрібне зображення: jpeg, png, gif або webp',
+            photo_save: 'Не вдалося зберегти фото',
+            photo_order: 'Замовлення недоступне для фото',
+            photo_closed: 'Це замовлення вже закрите',
             server: 'Помилка сервера'
         };
 
@@ -708,6 +714,8 @@ const warehouseOrderDetailPage = async (req, res) => {
             successMessage = 'Статус оновлено';
         } else if (req.query.ok === 'pickup_done') {
             successMessage = 'Самовивіз завершено';
+        } else if (req.query.ok === 'photo') {
+            successMessage = 'Фото букета збережено. Клієнт побачить його в кабінеті.';
         }
 
         return renderLayout(res, 'Замовлення №' + orderId, 'pages/warehouse/order-detail', {

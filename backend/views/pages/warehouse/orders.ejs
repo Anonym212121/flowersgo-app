@@ -213,6 +213,12 @@ for (const s of safeStatuses) {
                         <span class="warehouse-badge <%= statusBadgeClass(o.status_name) %>"><%= statusText %></span>
                         <span class="warehouse-badge <%= pay.cls %>"><%= pay.text %></span>
                         <span class="warehouse-badge warehouse-badge--method <%= isExpress ? 'warehouse-badge--express' : '' %>"><%= methodText %></span>
+                        <% if (o.do_not_call_recipient) { %>
+                            <span class="warehouse-badge warehouse-badge--surprise">Сюрприз — не дзвонити</span>
+                        <% } %>
+                        <% if (o.assembled_photo_url) { %>
+                            <span class="warehouse-badge warehouse-badge--photo">Є фото букета</span>
+                        <% } %>
                         <% if (o.is_soon) { %>
                             <span class="warehouse-badge warehouse-badge--soon">Скоро</span>
                         <% } %>

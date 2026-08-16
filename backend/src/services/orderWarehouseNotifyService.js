@@ -126,6 +126,10 @@ const notifyCustomerRefundProcessed = async (orderId, note) => {
     await notifyCustomerEvent(orderId, orderNotifyMessages.customer.refundProcessed, note || '');
 };
 
+const notifyCustomerAssembledPhoto = async (orderId) => {
+    await notifyCustomerEvent(orderId, orderNotifyMessages.customer.assembledPhoto);
+};
+
 module.exports = {
     notifyCustomerOnStatus,
     notifyCustomerOrderPlaced,
@@ -136,5 +140,6 @@ module.exports = {
     notifyCustomerCancelApproved,
     notifyCustomerCancelRejected,
     notifyCustomerOrderExpired,
-    notifyCustomerRefundProcessed
+    notifyCustomerRefundProcessed,
+    notifyCustomerAssembledPhoto
 };

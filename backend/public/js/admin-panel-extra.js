@@ -1040,6 +1040,12 @@
         const greetingCard = o.greeting_card_text_display
             ? `<p><strong>Листівка (+50 грн):</strong> ${api.escapeHtml(o.greeting_card_text_display)}</p>`
             : '';
+        const surpriseNote = o.do_not_call_recipient
+            ? `<p><strong>Сюрприз:</strong> не дзвонити одержувачу. Уточнення — лише замовнику.</p>`
+            : '';
+        const assembledPhoto = o.assembled_photo_url
+            ? `<p><strong>Фото букета:</strong></p><p><img class="admin-assembled-img" src="${api.escapeHtml(o.assembled_photo_url)}" alt="Зібраний букет" /></p>`
+            : '';
         const deliveryPlace = o.delivery_place || o.delivery_address || '-';
 
         content.innerHTML = `
@@ -1076,6 +1082,8 @@
                     ${recipientNote}
                     ${bouquetNote}
                     ${greetingCard}
+                    ${surpriseNote}
+                    ${assembledPhoto}
                 </section>
             </div>
             ${courierBlock}

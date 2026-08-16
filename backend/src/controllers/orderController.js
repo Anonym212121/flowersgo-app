@@ -226,6 +226,12 @@ const createOrder = async (req, res) => {
             greeting_card_fee = orderPriceService.resolveGreetingCardFee(true);
         }
 
+        const do_not_call_recipient =
+            recipient_mode === 'other' &&
+            (req.body.do_not_call_recipient === '1' ||
+                req.body.do_not_call_recipient === 'on' ||
+                req.body.do_not_call_recipient === true);
+
         let receiver_name = '';
         let receiver_phone = '';
         if (recipient_mode === 'other' && recFirst && recLast && recPhone) {
@@ -258,6 +264,7 @@ const createOrder = async (req, res) => {
             recipient_note: recipient_mode === 'other' ? recNote || null : null,
             bouquet_note: bouquetNote || null,
             greeting_card_text,
+            do_not_call_recipient,
             delivery_method,
             delivery_datetime,
             total_price,

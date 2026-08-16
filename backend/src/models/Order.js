@@ -16,7 +16,9 @@ const ORDER_DELIVERY_STRUCT_SQL = `
                 o.delivery_apartment,
                 o.recipient_note,
                 o.bouquet_note,
-                o.greeting_card_text,`;
+                o.greeting_card_text,
+                o.do_not_call_recipient,
+                o.assembled_photo_url,`;
 
 const getStatusIdByName = async (name) => {
     const [rows] = await db.execute(
@@ -163,10 +165,10 @@ const createWithTransaction = async (payload) => {
                 user_id, status_id, delivery_address,
                 customer_first_name, customer_last_name, customer_phone, customer_email,
                 delivery_street, delivery_house, delivery_apartment,
-                recipient_note, bouquet_note, greeting_card_text,
+                recipient_note, bouquet_note, greeting_card_text, do_not_call_recipient,
                 delivery_date, delivery_timeslot, delivery_method,
                 total_amount, receiver_name, receiver_phone, admin_approved, payment_deadline_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, DATE_ADD(NOW(), INTERVAL ? MINUTE))`,
             [
                 user_id,
                 status_id,
@@ -181,6 +183,7 @@ const createWithTransaction = async (payload) => {
                 deliveryMeta.recipient_note,
                 deliveryMeta.bouquet_note,
                 deliveryMeta.greeting_card_text,
+                deliveryMeta.do_not_call_recipient ? 1 : 0,
                 delivery_date,
                 delivery_timeslot,
                 deliveryMeta.delivery_method,
@@ -551,6 +554,9 @@ const getDetailForCourier = async (orderId, courierId) => {
                 o.receiver_phone,
                 o.recipient_note,
                 o.greeting_card_text,
+                o.do_not_call_recipient,
+                o.assembled_photo_url,
+                o.customer_phone,
                 o.delivery_street,
                 o.delivery_house,
                 o.delivery_apartment,
@@ -1891,6 +1897,8 @@ const getRowForCustomerNotify = async (orderId) => {
                 o.recipient_note,
                 o.bouquet_note,
                 o.greeting_card_text,
+                o.do_not_call_recipient,
+                o.assembled_photo_url,
                 o.receiver_name,
                 o.receiver_phone,
                 o.payment_status,
@@ -1931,6 +1939,8 @@ const getDetailForWarehouse = async (orderId) => {
                 o.recipient_note,
                 o.bouquet_note,
                 o.greeting_card_text,
+                o.do_not_call_recipient,
+                o.assembled_photo_url,
                 o.delivery_date,
                 o.delivery_timeslot,
                 o.delivery_method,
@@ -2047,6 +2057,34 @@ const findLastDeliveredHighlight = async () => {
     return fallback[0];
 };
 
+const updateAssembledPhotoUrl = async (orderId, url) => {
+    const oid = Number(orderId);
+    const photoUrl = typeof url === 'string' ? url.trim() : '';
+    if (!Number.isFinite(oid) || oid <= 0 || !photoUrl) {
+        return { ok: false };
+    }
+
+    const [rows] = await db.execute(
+        'SELECT assembled_photo_url FROM orders WHERE id = ? LIMIT 1',
+        [oid]
+    );
+    if (!rows || rows.length === 0) {
+        return { ok: false };
+    }
+
+    const previousUrl = rows[0].assembled_photo_url ? String(rows[0].assembled_photo_url).trim() : '';
+    const [result] = await db.execute(
+        'UPDATE orders SET assembled_photo_url = ? WHERE id = ?',
+        [photoUrl, oid]
+    );
+
+    return {
+        ok: !!(result && result.affectedRows > 0),
+        wasEmpty: previousUrl === '',
+        previousUrl: previousUrl || null
+    };
+};
+
 module.exports = {
     createWithTransaction,
     normalizeItems,
@@ -2101,5 +2139,6 @@ module.exports = {
     markRefundCompleted,
     completePickupByWarehouse,
     cancelExpiredUnpaidOrders,
-    findLastDeliveredHighlight
+    findLastDeliveredHighlight,
+    updateAssembledPhotoUrl
 };

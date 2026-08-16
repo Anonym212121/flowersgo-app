@@ -3504,6 +3504,56 @@ a:hover {
     max-width: 320px;
 }
 
+.warehouse-assembled {
+    margin: 0 0 1rem;
+    padding: 0.85rem;
+    border-radius: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.28);
+}
+
+.warehouse-assembled-title {
+    margin: 0 0 0.55rem;
+    font-size: 0.95rem;
+}
+
+.warehouse-assembled-img {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    border-radius: 10px;
+    margin-bottom: 0.7rem;
+}
+
+.warehouse-assembled-img--courier {
+    max-width: 280px;
+    margin-bottom: 0;
+}
+
+.warehouse-assembled-form {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.cabinet-assembled-img {
+    display: block;
+    width: 100%;
+    max-width: 320px;
+    height: auto;
+    border-radius: 10px;
+    margin-top: 0.35rem;
+}
+
+.admin-assembled-img {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    height: auto;
+    border-radius: 8px;
+    margin-top: 0.35rem;
+}
+
 .warehouse-order-cancel-msg {
     margin: 0;
     font-size: 0.84rem;
@@ -3610,6 +3660,18 @@ a:hover {
     background: rgba(245, 158, 11, 0.16);
     color: #fcd34d;
     border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.warehouse-badge--surprise {
+    background: rgba(244, 114, 182, 0.18);
+    color: #f9a8d4;
+    border: 1px solid rgba(244, 114, 182, 0.45);
+}
+
+.warehouse-badge--photo {
+    background: rgba(56, 189, 248, 0.16);
+    color: #7dd3fc;
+    border: 1px solid rgba(56, 189, 248, 0.4);
 }
 
 a.warehouse-order-no {
@@ -3722,6 +3784,14 @@ a.warehouse-order-no:hover {
     flex-wrap: wrap;
     gap: 0.4rem;
     margin-bottom: 0.45rem;
+}
+
+.warehouse-phone-hint {
+    flex: 1 0 100%;
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f9a8d4;
 }
 
 .warehouse-phone-btn {

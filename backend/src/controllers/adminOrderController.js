@@ -444,6 +444,7 @@ const getDetailForAdmin = async (req, res) => {
         data.order.recipient_note_display = orderDeliveryFields.recipientNoteFromRow(data.order);
         data.order.bouquet_note_display = orderDeliveryFields.bouquetNoteFromRow(data.order);
         data.order.greeting_card_text_display = orderDeliveryFields.greetingCardTextFromRow(data.order);
+        data.order.do_not_call_recipient = orderDeliveryFields.doNotCallRecipientFromRow(data.order);
 
         return res.status(200).json(data);
 

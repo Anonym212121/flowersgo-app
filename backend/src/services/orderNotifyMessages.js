@@ -252,6 +252,23 @@ const customer = {
         };
     },
 
+    assembledPhoto(order) {
+        const id = order.id;
+        return {
+            subject: 'Фото вашого букета №' + id,
+            text: customerText(
+                'Вітаємо, ' + customerName(order) + '!',
+                'Флорист зібрав букет і додав фото. Відкрийте кабінет, щоб подивитися, як він виглядає перед доставкою.',
+                order,
+                '/cabinet'
+            ),
+            ntype: 'order_assembled_photo',
+            title: 'Фото букета',
+            body: 'До замовлення №' + id + ' додано фото зібраного букета.',
+            link_url: '/cabinet'
+        };
+    },
+
     cancelRequestSent(order) {
         const id = order.id;
         return {

@@ -189,6 +189,25 @@ router.get('/warehouse/orders/poll', pageRequireWarehousePage, pagesController.w
 router.get('/warehouse/orders/:id', pageRequireWarehousePage, pagesController.warehouseOrderDetailPage);
 router.post('/warehouse/orders/:id/status', pageRequireWarehousePage, orderController.updateOrderStatusForWarehouse);
 router.post('/warehouse/orders/:id/pickup-complete', pageRequireWarehousePage, orderController.completePickupByWarehouse);
+router.post(
+    '/warehouse/orders/:id/assembled-photo',
+    pageRequireWarehousePage,
+    (req, res, next) => {
+        warehouseController.uploadAssembledPhotoMiddleware(req, res, (err) => {
+            const id = Number(req.params.id);
+            const back =
+                Number.isFinite(id) && id > 0 ? '/warehouse/orders/' + id : '/warehouse/orders';
+            if (err) {
+                if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+                    return res.redirect(back + '?err=photo_big');
+                }
+                return res.redirect(back + '?err=photo_type');
+            }
+            next();
+        });
+    },
+    warehouseController.uploadAssembledPhoto
+);
 router.get('/warehouse/stock', pageRequireWarehousePage, warehouseController.warehouseStockPage);
 router.post('/warehouse/stock/adjust', pageRequireWarehousePage, warehouseController.warehouseStockAdjust);
 router.get('/warehouse/stock/poll', pageRequireWarehousePage, warehouseController.warehouseStockPoll);
