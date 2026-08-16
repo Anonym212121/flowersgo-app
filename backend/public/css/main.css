@@ -84,16 +84,14 @@ a:hover { color: #bae6fd; }
 
 .header__inner {
     position: relative;
-    width: 100%;
-    max-width: none;
-    margin: 0;
-    padding: 0.72rem max(1rem, env(safe-area-inset-right, 0px)) 0.72rem max(1rem, env(safe-area-inset-left, 0px));
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 0.72rem 1rem;
     min-height: 4rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    box-sizing: border-box;
 }
 
 .logo {
