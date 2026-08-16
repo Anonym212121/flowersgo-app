@@ -57,6 +57,34 @@ const listByProductIds = async (productIds) => {
     return rows || [];
 };
 
+const findByIds = async (variantIds) => {
+    const ids = [];
+    const seen = {};
+    const raw = Array.isArray(variantIds) ? variantIds : [];
+    for (let i = 0; i < raw.length; i += 1) {
+        const id = Number(raw[i]);
+        if (!Number.isFinite(id) || id <= 0 || seen[id]) {
+            continue;
+        }
+        seen[id] = true;
+        ids.push(id);
+    }
+    if (ids.length === 0) {
+        return [];
+    }
+
+    const placeholders = ids.map(() => '?').join(', ');
+    const [rows] = await db.execute(
+        `SELECT v.*, p.name AS product_name, p.sale_price, p.is_constructor, c.name AS category_name
+         FROM product_color_variants v
+         INNER JOIN products p ON p.id = v.product_id
+         INNER JOIN categories c ON c.id = p.category_id
+         WHERE v.id IN (${placeholders})`,
+        ids
+    );
+    return rows || [];
+};
+
 const findById = async (variantId) => {
     const id = Number(variantId);
     if (!Number.isFinite(id) || id <= 0) {
@@ -222,6 +250,7 @@ module.exports = {
     listByProductId,
     listByProductIds,
     findById,
+    findByIds,
     create,
     updateById,
     updateImageUrl,

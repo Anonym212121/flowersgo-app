@@ -951,7 +951,7 @@
     }
 
     function runPreview() {
-        if (!previewBtn) {
+        if (!previewBtn || previewBtn.disabled) {
             return;
         }
 
@@ -1130,7 +1130,14 @@
         clearBtn.addEventListener('click', clearBouquet);
     }
 
+    var addingToCart = false;
+
     function addBouquetToCart() {
+        if (addingToCart) {
+            return;
+        }
+        addingToCart = true;
+
         var items = getItems();
         var body = new URLSearchParams();
         body.set('items', JSON.stringify(items));
@@ -1171,6 +1178,7 @@
                 window.location.href = data.redirect || '/cart';
             })
             .catch(function (err) {
+                addingToCart = false;
                 msg(err.message || 'Не вдалося додати', false);
                 addBtn.disabled = !lastOk;
                 if (mobileAddBtn) {
@@ -1180,7 +1188,7 @@
     }
 
     addBtn.addEventListener('click', function () {
-        if (!lastOk) {
+        if (!lastOk || addingToCart) {
             return;
         }
         confirmEvenStems(lastStemTotal, addBouquetToCart);

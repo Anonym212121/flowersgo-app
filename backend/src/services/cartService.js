@@ -444,6 +444,12 @@ const removeFromCart = (currentItems, productId, colorVariantId = null) => {
 
 
 
+const countItems = (items) => {
+    return normalizeCartItems(items).reduce((sum, row) => {
+        return sum + Number(row.quantity || 0);
+    }, 0);
+};
+
 const buildCartDetails = async (items) => {
 
     const normalized = normalizeCartItems(items);
@@ -471,23 +477,13 @@ const buildCartDetails = async (items) => {
 
 
     const variantIds = normalized
-
         .map((i) => i.color_variant_id)
-
         .filter((id) => id != null && Number(id) > 0);
 
     const variantById = {};
-
-    for (const vid of variantIds) {
-
-        const variant = await ProductColorVariant.findById(vid);
-
-        if (variant) {
-
-            variantById[Number(variant.id)] = variant;
-
-        }
-
+    const variants = await ProductColorVariant.findByIds(variantIds);
+    for (const variant of variants || []) {
+        variantById[Number(variant.id)] = variant;
     }
 
 
@@ -629,6 +625,8 @@ module.exports = {
     updateCartItem,
 
     removeFromCart,
+
+    countItems,
 
     buildCartDetails,
 

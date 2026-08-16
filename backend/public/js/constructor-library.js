@@ -130,12 +130,16 @@
     }
 
     function onBuyClick(btn) {
+        if (btn.dataset.buyBusy === '1') {
+            return;
+        }
         var slug = btn.getAttribute('data-slug');
         if (!slug) {
             return;
         }
 
         var doBuy = function () {
+            btn.dataset.buyBusy = '1';
             btn.disabled = true;
             fetch('/constructor/templates/' + encodeURIComponent(slug) + '/add', {
                 method: 'POST',
@@ -163,6 +167,7 @@
                 })
                 .catch(function (err) {
                     toast(err.message || 'Не вдалося додати', false);
+                    btn.dataset.buyBusy = '';
                     btn.disabled = false;
                 });
         };

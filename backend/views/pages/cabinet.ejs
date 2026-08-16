@@ -994,9 +994,13 @@ if (savedStreet && savedHouse) {
     document.querySelectorAll('.cabinet-review-edit-form, .cabinet-review-delete-form').forEach(function (form) {
         form.addEventListener('submit', async function (event) {
             event.preventDefault();
+            if (form.dataset.busy === '1') {
+                return;
+            }
             if (form.classList.contains('cabinet-review-delete-form')) {
                 if (!window.confirm('Надіслати запит на видалення?')) return;
             }
+            form.dataset.busy = '1';
             try {
                 var data = await submitForm(form, false);
                 if (form._formDraftHandle && form._formDraftHandle.clear) {
@@ -1005,6 +1009,7 @@ if (savedStreet && savedHouse) {
                 renderMessage('ok', data.message || 'Надіслано');
                 window.setTimeout(function () { window.location.reload(); }, 600);
             } catch (err) {
+                form.dataset.busy = '';
                 renderMessage('error', err.message || 'Помилка');
             }
         });

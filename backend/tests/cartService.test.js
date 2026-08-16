@@ -3,7 +3,8 @@ jest.mock('../src/models/Product', () => ({
 }));
 
 jest.mock('../src/models/ProductColorVariant', () => ({
-    findById: jest.fn()
+    findById: jest.fn(),
+    findByIds: jest.fn().mockResolvedValue([])
 }));
 
 const ProductModel = require('../src/models/Product');

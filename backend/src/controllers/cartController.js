@@ -26,9 +26,8 @@ const add = async (req, res) => {
         const current = cartService.getCartFromRequest(req);
         const next = cartService.addToCart(current, product_id, quantity);
         cartService.setCartCookie(res, next);
-        const totalCount = next.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-        return res.json({ ok: true, count: totalCount, message: 'Товар додано в кошик' });
+        return res.json({ ok: true, count: cartService.countItems(next), message: 'Товар додано в кошик' });
     } catch (err) {
         return res.status(500).json({ ok: false, message: 'Помилка кошика' });
     }
@@ -42,11 +41,9 @@ const update = async (req, res) => {
         const current = cartService.getCartFromRequest(req);
         const next = cartService.updateCartItem(current, product_id, quantity, color_variant_id);
         cartService.setCartCookie(res, next);
-        const details = await cartService.buildCartDetails(next);
         return res.json({
             ok: true,
-            total: details.total,
-            count: next.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+            count: cartService.countItems(next)
         });
     } catch (err) {
         return res.status(500).json({ ok: false, message: 'Не вдалося оновити кошик' });
@@ -60,11 +57,9 @@ const remove = async (req, res) => {
         const current = cartService.getCartFromRequest(req);
         const next = cartService.removeFromCart(current, product_id, color_variant_id);
         cartService.setCartCookie(res, next);
-        const details = await cartService.buildCartDetails(next);
         return res.json({
             ok: true,
-            total: details.total,
-            count: next.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+            count: cartService.countItems(next)
         });
     } catch (err) {
         return res.status(500).json({ ok: false, message: 'Не вдалося видалити товар' });

@@ -44,4 +44,20 @@
     }
 
     timer = setInterval(poll, pollMs);
+
+    page.addEventListener('submit', function (e) {
+        var form = e.target.closest('.warehouse-stock-adjust-form');
+        if (!form) {
+            return;
+        }
+        if (form.dataset.busy === '1') {
+            e.preventDefault();
+            return;
+        }
+        form.dataset.busy = '1';
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) {
+            btn.disabled = true;
+        }
+    });
 })();
