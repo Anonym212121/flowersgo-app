@@ -26,4 +26,30 @@ describe('sameOrigin.originMatchesHost', () => {
             }
         })).toBe(false);
     });
+
+    test('пускає origin з APP_BASE_URL коли Host інший', () => {
+        const prev = process.env.APP_BASE_URL;
+        process.env.APP_BASE_URL = 'https://flowersgo.online';
+        expect(sameOrigin.originMatchesHost({
+            headers: {
+                host: 'flowersgo.onrender.com',
+                origin: 'https://flowersgo.online'
+            }
+        })).toBe(true);
+        if (prev === undefined) {
+            delete process.env.APP_BASE_URL;
+        } else {
+            process.env.APP_BASE_URL = prev;
+        }
+    });
+
+    test('пускає origin як X-Forwarded-Host', () => {
+        expect(sameOrigin.originMatchesHost({
+            headers: {
+                host: 'flowersgo.onrender.com',
+                'x-forwarded-host': 'flowersgo.online',
+                origin: 'https://flowersgo.online'
+            }
+        })).toBe(true);
+    });
 });
