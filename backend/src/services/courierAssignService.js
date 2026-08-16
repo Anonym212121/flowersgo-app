@@ -26,7 +26,7 @@ const tryAutoAssign = async (orderId) => {
     if (order.delivery_method === 'pickup') {
         return false;
     }
-    if (order.status_name !== 'ready_for_pickup') {
+    if (order.status_name !== 'processing' && order.status_name !== 'ready_for_pickup') {
         return false;
     }
     if (order.courier_id) {

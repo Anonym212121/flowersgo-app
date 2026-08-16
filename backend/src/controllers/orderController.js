@@ -5,6 +5,7 @@ const orderStatusService = require('../services/orderStatusService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const courierAssignService = require('../services/courierAssignService');
+const orderDispatchService = require('../services/orderDispatchService');
 const paymentToken = require('../utils/paymentToken');
 const deliveryService = require('../services/deliveryService');
 const DeliverySettings = require('../models/DeliverySettings');
@@ -286,11 +287,14 @@ const createOrder = async (req, res) => {
             } catch (notifyErr) {
                 console.error('onNewOrderForAdmin:', notifyErr.message);
             }
+            const dispatched = await orderDispatchService.dispatchToWarehouse(orderId);
+            const placedNote = dispatched.ok
+                ? 'Оплата при отриманні. Букет уже на складі, флорист збирає замовлення.'
+                : dispatched.code === 'no_stock'
+                    ? 'Оплата при отриманні. Адмін перевірить наявність товару і відправить замовлення на склад.'
+                    : 'Оплата при отриманні. Очікуйте підтвердження.';
             try {
-                await orderWarehouseNotifyService.notifyCustomerOrderPlaced(
-                    orderId,
-                    'Оплата при отриманні. Очікуйте підтвердження адміністратора.'
-                );
+                await orderWarehouseNotifyService.notifyCustomerOrderPlaced(orderId, placedNote);
             } catch (notifyErr) {
                 console.error('notifyCustomerOrderPlaced:', notifyErr.message);
             }

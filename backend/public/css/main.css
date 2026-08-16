@@ -6154,3 +6154,176 @@ textarea.auth-input {
         grid-column: auto;
     }
 }
+
+html {
+    scroll-padding-top: calc(5.25rem + env(safe-area-inset-top, 0px));
+    color-scheme: dark;
+}
+
+html.theme-light {
+    color-scheme: light;
+}
+
+.skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    z-index: 400;
+    padding: 0.65rem 1rem;
+    border-radius: 10px;
+    background: var(--green-2);
+    color: #ecfeff;
+    font-weight: 700;
+    text-decoration: none;
+    transform: translateY(-160%);
+    transition: transform 160ms var(--ease);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+    transform: translateY(calc(0.75rem + env(safe-area-inset-top, 0px)));
+    outline: 2px solid #ecfeff;
+    outline-offset: 2px;
+    color: #ecfeff;
+}
+
+.header {
+    padding-top: env(safe-area-inset-top, 0px);
+}
+
+.main {
+    padding-bottom: calc(2.4rem + env(safe-area-inset-bottom, 0px));
+}
+
+.header__burger,
+.nav-notify__btn {
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.auth-input,
+.admin-form input,
+.admin-form textarea,
+.admin-form select,
+.admin-filters input,
+.admin-filters select,
+.warehouse-status-select,
+.cart-qty-input,
+.checkout-qty-input {
+    font-size: 16px;
+}
+
+.auth-button,
+.admin-primary-btn,
+.admin-secondary-btn,
+.admin-edit-btn,
+.warehouse-status-save,
+.warehouse-handoff-btn,
+.warehouse-print-btn,
+.courier-finish-btn,
+.warehouse-phone-btn,
+.warehouse-view-tab,
+.checkout-submit-btn,
+.catalog-empty__btn,
+.nav__btn {
+    min-height: 44px;
+}
+
+.warehouse-view-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.warehouse-phone-btn {
+    min-height: 44px;
+    padding: 0.55rem 0.85rem;
+    flex: 1 1 6.5rem;
+    font-size: 0.9rem;
+}
+
+.warehouse-handoff-btn,
+.courier-finish-btn {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+}
+
+.checkout-qty-stepper {
+    max-width: 220px;
+}
+
+.checkout-qty-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+}
+
+.cart-icon-btn {
+    width: 44px;
+    height: 44px;
+}
+
+a:focus-visible,
+button:focus-visible,
+.nav__link:focus-visible,
+.nav__btn:focus-visible,
+.auth-button:focus-visible,
+.warehouse-phone-btn:focus-visible,
+.warehouse-view-tab:focus-visible,
+.cart-icon-btn:focus-visible,
+.wishlist-star-btn:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+}
+
+@media (max-width: 860px) {
+    .nav__link,
+    .nav__btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 980px) {
+    .checkout-submit-btn {
+        position: sticky;
+        bottom: 0;
+        z-index: 50;
+        box-shadow: 0 -10px 28px rgba(2, 6, 23, 0.42);
+        padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    .cart-summary {
+        position: sticky;
+        bottom: 0.4rem;
+        z-index: 50;
+        margin-bottom: env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -10px 28px rgba(2, 6, 23, 0.38);
+    }
+
+    .warehouse-detail-page .warehouse-handoff-block,
+    .courier-detail-page .courier-finish-block {
+        position: sticky;
+        bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+        z-index: 50;
+        box-shadow: 0 10px 28px rgba(2, 6, 23, 0.42);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

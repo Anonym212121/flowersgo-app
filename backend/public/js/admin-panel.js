@@ -1392,7 +1392,7 @@ const renderPendingReviewsList = (reviews, requests) => {
     const renderPendingOrdersList = (orders) => {
         if (!Array.isArray(orders) || orders.length === 0) {
             content.innerHTML =
-                '<h3>Замовлення на модерацію</h3><p class="admin-panel-placeholder">Немає нових замовлень.</p>';
+                '<h3>Потребують уваги</h3><p class="admin-panel-placeholder">Усі оплачені замовлення вже на складі. Тут зʼявляться лише винятки: немає залишку або запит на скасування.</p>';
             return;
         }
 
@@ -1470,7 +1470,7 @@ const renderPendingReviewsList = (reviews, requests) => {
             .join('');
 
         content.innerHTML = `
-            <h3>Замовлення на модерацію</h3>
+            <h3>Потребують уваги</h3>
             <div class="admin-filters">
                 <label>Пошук <input type="search" id="admin-pending-orders-search" placeholder="№, клієнт, email, адреса"></label>
                 <span id="admin-pending-orders-search-count"></span>
@@ -1518,7 +1518,7 @@ const renderPendingReviewsList = (reviews, requests) => {
         content.querySelectorAll('.admin-order-approve').forEach((btn) => {
             btn.addEventListener('click', async () => {
                 const id = btn.getAttribute('data-id');
-                if (!window.confirm('Підтвердити замовлення і відправити на склад?')) {
+                if (!window.confirm('Відправити це замовлення на склад вручну?')) {
                     return;
                 }
                 try {

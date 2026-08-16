@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
     <%
@@ -32,8 +32,9 @@
     <script src="/js/site-notify-auto.js"></script>
 </head>
 <body>
+    <a class="skip-link" href="#page-main">Перейти до вмісту</a>
     <%- include('partials/header') %>
-    <main class="main" id="page-main">
+    <main class="main" id="page-main" tabindex="-1">
         <%- include(bodyPartial) %>
     </main>
     <% if (headerType !== 'admin' && headerType !== 'warehouse_worker' && headerType !== 'courier') { %>

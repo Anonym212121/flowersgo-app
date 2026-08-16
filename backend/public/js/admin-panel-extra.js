@@ -311,7 +311,7 @@
             if (Number(s.pending_orders) > 0) {
                 alertItems.push({
                     go: 'orders-pending',
-                    text: s.pending_orders + ' замовлень на модерації'
+                    text: s.pending_orders + ' замовлень не пішли на склад'
                 });
             }
             if (Number(s.awaiting_payment) > 0) {
@@ -909,7 +909,7 @@
         const backMode = backTo || 'ordersAll';
         let backLabel = '← До списку';
         if (backMode === 'moderation') {
-            backLabel = '← До модерації';
+            backLabel = '← До винятків';
         } else if (backMode === 'awaiting') {
             backLabel = '← До очікування оплати';
         }
@@ -994,7 +994,7 @@
             Number(o.admin_approved) === 0 &&
             (o.payment_status === 'paid' || o.payment_status === 'cod')
                 ? `<div class="admin-order-alert">
-                <p><strong>Замовлення чекає модерації</strong> - підтвердіть перед відправкою на склад.</p>
+                <p><strong>Не пішло на склад автоматично</strong> - перевір залишок і відправ вручну, або відхили.</p>
                 <div class="admin-order-moderation-actions">
                 <button type="button" class="admin-primary-btn" id="admin-detail-approve">На склад</button>
                 <button type="button" class="admin-secondary-btn" id="admin-detail-reject">Відхилити</button>

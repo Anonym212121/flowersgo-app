@@ -56,6 +56,7 @@ const navBtnClass = (href, baseClass) => {
         <nav class="nav" id="headerNav">
             <div class="nav__links">
                 <% if (headerType === 'guest') { %>
+                    <a class="<%= navLinkClass('/') %>" href="/">Каталог</a>
                     <a class="<%= navLinkClass('/constructor') %>" href="/constructor">Конструктор</a>
                     <a class="<%= navLinkClass('/cart') %> nav__link--with-badge" href="/cart">
                         Кошик

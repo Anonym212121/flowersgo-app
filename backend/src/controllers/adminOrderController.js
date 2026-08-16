@@ -6,6 +6,7 @@ const courierAssignService = require('../services/courierAssignService');
 
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
+const orderDispatchService = require('../services/orderDispatchService');
 
 const formatDelivery = require('../utils/formatDelivery');
 
@@ -67,7 +68,7 @@ const approveForAdmin = async (req, res) => {
 
 
 
-        const result = await OrderModel.approveForAdmin(id);
+        const result = await orderDispatchService.dispatchToWarehouse(id);
 
         if (!result.ok) {
 
@@ -92,20 +93,6 @@ const approveForAdmin = async (req, res) => {
             }
 
             return res.status(404).json({ message: 'Замовлення не знайдено або вже оброблене' });
-
-        }
-
-
-
-        try {
-
-            await orderRoleNotifyService.onOrderApprovedForWarehouse(id);
-
-            await orderWarehouseNotifyService.notifyCustomerOrderConfirmed(id);
-
-        } catch (hookErr) {
-
-            console.error('approveForAdmin hooks:', hookErr.message);
 
         }
 

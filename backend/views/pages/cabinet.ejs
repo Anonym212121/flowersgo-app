@@ -125,7 +125,9 @@ if (savedStreet && savedHouse) {
                                     </span>
                                 </div>
                             <% } %>
-                            <% if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup') { %>
+                            <% if (o.status_name === 'processing' || o.status_name === 'confirmed') { %>
+                                <p class="cabinet-cancel-hint cabinet-status-hint">Флорист збирає букет. Коли буде готово - надішлемо сповіщення.</p>
+                            <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup') { %>
                                 <p class="cabinet-cancel-hint cabinet-status-hint">Букет зібрано. Кур'єр скоро забере замовлення.</p>
                             <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method === 'pickup') { %>
                                 <p class="cabinet-cancel-hint cabinet-status-hint">Замовлення готове до самовивозу. Можна забрати за адресою магазину.</p>

@@ -36,7 +36,7 @@ const buildDeliveryTariffsHtml = (delivery) => {
             </div>
             <div class="info-page__card">
                 <h3>Експрес</h3>
-                <p>Збираємо і веземо якнайшвидше - орієнтовно протягом ${expressBuffer} хв після підтвердження.</p>
+                <p>Збираємо і веземо якнайшвидше - орієнтовно протягом ${expressBuffer} хв після оплати або оформлення.</p>
                 <p class="info-page__price">${priceLabel(feeExpress, true)}</p>
             </div>
             <div class="info-page__card">

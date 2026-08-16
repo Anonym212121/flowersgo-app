@@ -1930,3 +1930,29 @@ html.theme-light .admin-stats-intro {
 html.theme-light .admin-stats-section-title {
     color: var(--text);
 }
+
+html.theme-light .skip-link {
+    background: #047857;
+    color: #fff;
+}
+
+html.theme-light .skip-link:focus,
+html.theme-light .skip-link:focus-visible {
+    color: #fff;
+    outline-color: #064e3b;
+}
+
+@media (max-width: 980px) {
+    html.theme-light .checkout-submit-btn {
+        box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    html.theme-light .cart-summary {
+        box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.12);
+    }
+
+    html.theme-light .warehouse-detail-page .warehouse-handoff-block,
+    html.theme-light .courier-detail-page .courier-finish-block {
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+    }
+}

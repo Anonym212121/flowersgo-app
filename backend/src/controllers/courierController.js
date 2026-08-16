@@ -5,6 +5,7 @@ const OrderStatusLogModel = require('../models/OrderStatusLog');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const courierAssignService = require('../services/courierAssignService');
+const orderDispatchService = require('../services/orderDispatchService');
 const { mapOrderForWarehouse, buildWarehouseStats } = require('../utils/warehouseOrderView');
 const { buildMapsLink } = require('../utils/mapsLink');
 const {
@@ -468,6 +469,13 @@ const updateOrderStatusForCourier = async (req, res) => {
             }
         }
 
+        if (newStatusName === 'delivered' && currentOrder.payment_status === 'paid') {
+            const closed = await orderDispatchService.tryFinishCourierOrder(orderId, courierId);
+            if (closed.ok) {
+                return res.redirect(buildCourierRedirect(req, req.body, '?ok=closed'));
+            }
+        }
+
         return res.redirect(buildCourierRedirect(req, req.body, '?ok=1'));
     } catch (err) {
         console.error('updateOrderStatusForCourier:', err.message);
@@ -492,6 +500,11 @@ const confirmCodPayment = async (req, res) => {
         if (!result.ok) {
             const code = result.code || 'update_failed';
             return res.redirect(buildCourierRedirect(req, req.body, '?err=' + code));
+        }
+
+        const closed = await orderDispatchService.tryFinishCourierOrder(orderId, courierId);
+        if (closed.ok) {
+            return res.redirect(buildCourierRedirect(req, req.body, '?ok=closed'));
         }
 
         return res.redirect(buildCourierRedirect(req, req.body, '?ok=cod'));

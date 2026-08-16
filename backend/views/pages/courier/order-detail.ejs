@@ -10,9 +10,19 @@ const surprise = !!o.do_not_call_recipient;
 const callLinks = surprise
     ? (o.buyer_phone_links && o.buyer_phone_links.ok ? o.buyer_phone_links : null)
     : phoneLinks;
+let shippedStatusId = '';
+let deliveredStatusId = '';
+for (const s of safeStatuses) {
+    if (s.status_name === 'shipped') {
+        shippedStatusId = String(s.id);
+    }
+    if (s.status_name === 'delivered') {
+        deliveredStatusId = String(s.id);
+    }
+}
 %>
 
-<div class="warehouse-page courier-page">
+<div class="warehouse-page courier-page courier-detail-page">
     <p class="warehouse-back-link"><a href="/courier/orders">← До списку</a></p>
 
     <div class="warehouse-order-top">
@@ -95,46 +105,38 @@ const callLinks = surprise
     <% if (!shiftOn) { %>
         <p class="warehouse-order-cancel-msg">Зміна вимкнена - <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
     <% } else if (o.status_name === 'accepted') { %>
-        <p class="warehouse-feedback warehouse-feedback--ok">Замовлення завершено і закрито.</p>
+        <p class="warehouse-feedback warehouse-feedback--ok">Доставку завершено.</p>
+    <% } else if (o.status_name === 'processing') { %>
+        <p class="warehouse-order-hint">Склад ще збирає букет. Як тільки буде «Готово» - забереш і натиснеш «В дорозі».</p>
+    <% } else if (o.status_name === 'ready_for_pickup' && shippedStatusId) { %>
+        <div class="courier-finish-block">
+            <p class="courier-finish-hint">Наступний крок: забери букет на складі.</p>
+            <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                <input type="hidden" name="return_to" value="detail" />
+                <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
+                <button type="submit" class="auth-button courier-finish-btn">Забрав на складі - в дорозі</button>
+            </form>
+        </div>
+    <% } else if (o.status_name === 'shipped' && deliveredStatusId) { %>
+        <div class="courier-finish-block">
+            <p class="courier-finish-hint">Наступний крок: віддай букет одержувачу.</p>
+            <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                <input type="hidden" name="return_to" value="detail" />
+                <input type="hidden" name="status_id" value="<%= deliveredStatusId %>" />
+                <button type="submit" class="auth-button courier-finish-btn">Доставлено клієнту</button>
+            </form>
+        </div>
     <% } else if (o.status_name === 'delivered') { %>
         <div class="courier-finish-block">
-            <p class="courier-finish-hint">Крок 1 виконано - статус «Доставлено». Далі підтверди оплату та закрий замовлення.</p>
             <% if (o.payment_status === 'cod') { %>
+                <p class="courier-finish-hint">Візьми оплату. Після цього замовлення закриється само.</p>
                 <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
                     <input type="hidden" name="return_to" value="detail" />
-                    <button type="submit" class="auth-button courier-finish-btn">Крок 2: оплату отримано</button>
+                    <button type="submit" class="auth-button courier-finish-btn">Оплату отримано</button>
                 </form>
-            <% } else if (o.payment_status === 'paid') { %>
-                <p class="warehouse-feedback warehouse-feedback--ok">Оплату вже зафіксовано (картка).</p>
-            <% } %>
-            <% if (o.payment_status === 'paid') { %>
-                <form method="post" action="/courier/orders/<%= o.id %>/close" class="courier-finish-form">
-                    <input type="hidden" name="return_to" value="detail" />
-                    <button type="submit" class="auth-button courier-finish-btn courier-finish-btn--close">Крок 3: завершити замовлення</button>
-                </form>
+            <% } else { %>
+                <p class="warehouse-feedback warehouse-feedback--ok">Оплату вже зафіксовано. Замовлення закриється автоматично.</p>
             <% } %>
         </div>
-    <% } else if (o.status_name === 'processing') { %>
-        <p class="warehouse-order-cancel-msg">Замовлення ще збирають на складі. Після статусу «Готово до видачі» зможеш забрати букет і відмітити «В дорозі».</p>
-    <% } else { %>
-        <form method="post" action="/courier/orders/<%= o.id %>/status" class="warehouse-status-form">
-            <input type="hidden" name="return_to" value="detail" />
-            <label class="warehouse-status-label">
-                Статус
-                <select name="status_id" class="auth-input warehouse-status-select">
-                    <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
-                    <% const currentId = Number(o.status_id); %>
-                    <% for (const s of safeStatuses) { %>
-                        <% const sid = Number(s.id); %>
-                        <% const isCurrent = sid === currentId; %>
-                        <% const canChoose = isCurrent || nextIds.includes(sid); %>
-                        <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
-                            <%= s.label_uk || s.status_name %>
-                        </option>
-                    <% } %>
-                </select>
-            </label>
-            <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
-        </form>
     <% } %>
 </div>

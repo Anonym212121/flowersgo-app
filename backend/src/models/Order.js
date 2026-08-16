@@ -521,6 +521,7 @@ const getByIdForCourier = async (orderId, courierId) => {
                 o.status_id,
                 o.courier_id,
                 o.delivery_method,
+                o.payment_status,
                 s.status_name,
                 o.cancel_request_at
          FROM orders o
@@ -796,7 +797,7 @@ const listIdsUnassignedReady = async () => {
          WHERE o.admin_approved = 1
            AND o.courier_id IS NULL
            AND o.delivery_method <> 'pickup'
-           AND s.status_name = 'ready_for_pickup'
+           AND s.status_name IN ('processing', 'ready_for_pickup')
          ORDER BY o.delivery_date ASC, o.delivery_timeslot ASC, o.id ASC`
     );
 

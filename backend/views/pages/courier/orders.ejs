@@ -14,6 +14,9 @@ const pollCount = typeof pollListCount === 'number' ? pollListCount : safeOrders
 const pollMaxId = typeof pollMaxOrderId === 'number' ? pollMaxOrderId : 0;
 
 const statusBadgeClass = (statusName) => {
+    if (statusName === 'processing') {
+        return 'warehouse-badge--processing';
+    }
     if (statusName === 'ready_for_pickup') {
         return 'warehouse-badge--ready';
     }
@@ -112,7 +115,7 @@ for (const s of safeStatuses) {
     <% if (errorText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p><% } %>
 
     <% if (safeOrders.length === 0) { %>
-        <p class="warehouse-empty"><%= ordersListView === 'history' ? 'У історії поки нічого немає.' : 'Активних доставок немає. Перевір, чи увімкнена зміна і чи є призначення від складу.' %></p>
+        <p class="warehouse-empty"><%= ordersListView === 'history' ? 'У історії поки нічого немає.' : 'Немає активних доставок. Увімкни зміну - нові замовлення підхопляться самі.' %></p>
     <% } else { %>
         <div class="warehouse-orders-list" data-list-pager data-list-pager-item=".warehouse-order-card">
             <% for (const o of safeOrders) { %>
@@ -185,24 +188,22 @@ for (const s of safeStatuses) {
                                         <button type="submit" class="auth-button courier-finish-btn">Доставлено клієнту</button>
                                     </form>
                                 </div>
+                            <% } else if (o.status_name === 'processing') { %>
+                                <p class="warehouse-order-hint">Чекає збірку на складі.</p>
                             <% } else if (o.status_name === 'delivered') { %>
                                 <div class="courier-finish-block warehouse-quick-action">
-                                    <p class="courier-finish-hint">Підтверди оплату (якщо при отриманні) і закрий замовлення.</p>
                                     <% if (isCod) { %>
+                                        <p class="courier-finish-hint">Візьми оплату - замовлення закриється само.</p>
                                         <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
                                             <input type="hidden" name="return_day" value="<%= dayFilter %>" />
                                             <button type="submit" class="auth-button courier-finish-btn">Оплату отримано</button>
                                         </form>
-                                    <% } %>
-                                    <% if (o.payment_status === 'paid') { %>
-                                        <form method="post" action="/courier/orders/<%= o.id %>/close" class="courier-finish-form">
-                                            <input type="hidden" name="return_day" value="<%= dayFilter %>" />
-                                            <button type="submit" class="auth-button courier-finish-btn courier-finish-btn--close">Завершити замовлення</button>
-                                        </form>
+                                    <% } else { %>
+                                        <p class="warehouse-order-hint">Картка вже оплачена. Замовлення закриється автоматично.</p>
                                     <% } %>
                                 </div>
                             <% } %>
-                            <% if (o.status_name !== 'delivered' && o.status_name !== 'accepted') { %>
+                            <% if (o.status_name !== 'delivered' && o.status_name !== 'accepted' && o.status_name !== 'processing') { %>
                             <details class="warehouse-status-details">
                                 <summary class="warehouse-status-details__summary">Інший статус</summary>
                                 <form method="post" action="/courier/orders/<%= o.id %>/status" class="warehouse-status-form">

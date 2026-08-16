@@ -74,6 +74,10 @@ const onNewOrderForAdmin = async (orderId) => {
     await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.newOrder);
 };
 
+const onOrderStockProblemForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.stockProblem);
+};
+
 const onOrderApprovedForWarehouse = async (orderId) => {
     await notifyRoleWithOrder('warehouse_worker', orderId, orderNotifyMessages.warehouse.orderToAssemble);
 };
@@ -216,6 +220,7 @@ const onReviewChangeRequestForAdmin = async (reviewId, requestType) => {
 
 module.exports = {
     onNewOrderForAdmin,
+    onOrderStockProblemForAdmin,
     onOrderApprovedForWarehouse,
     onCancelRequestForAdmin,
     onCancelRequestForWarehouse,

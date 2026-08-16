@@ -986,6 +986,14 @@ document.addEventListener('DOMContentLoaded', onPageReady);
         burger.setAttribute('aria-label', isOpen ? 'Закрити меню' : 'Відкрити меню');
     });
 
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !nav.classList.contains('nav--open')) {
+            return;
+        }
+        closeMenu();
+        burger.focus();
+    });
+
     nav.querySelectorAll('a').forEach((link) => {
         link.addEventListener('click', closeMenu);
     });

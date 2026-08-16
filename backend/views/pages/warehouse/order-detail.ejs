@@ -19,10 +19,13 @@ const canCompletePickup =
     o.status_name === 'ready_for_pickup' &&
     !hasCancel;
 let shippedStatusId = '';
+let readyStatusId = '';
 for (const s of safeStatuses) {
     if (s.status_name === 'shipped') {
         shippedStatusId = String(s.id);
-        break;
+    }
+    if (s.status_name === 'ready_for_pickup') {
+        readyStatusId = String(s.id);
     }
 }
 
@@ -206,7 +209,18 @@ const logWorkerName = (row) => {
         <% if (hasCancel) { %>
             <p class="warehouse-order-cancel-msg">Запит на скасування - не комплектуй, чекай адміна.</p>
         <% } else { %>
-            <% if (canHandoff && shippedStatusId) { %>
+            <% if (o.status_name === 'processing' && readyStatusId) { %>
+                <div class="warehouse-handoff-block">
+                    <p class="warehouse-handoff-hint">
+                        Збери букет, за бажанням додай фото вище, тоді натисни «Готово».
+                    </p>
+                    <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
+                        <input type="hidden" name="return_to" value="detail" />
+                        <input type="hidden" name="status_id" value="<%= readyStatusId %>" />
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Букет зібрано - готово до видачі</button>
+                    </form>
+                </div>
+            <% } else if (canHandoff && shippedStatusId) { %>
                 <div class="warehouse-handoff-block">
                     <p class="warehouse-handoff-hint">
                         Букет готовий. Кур'єр <strong><%= o.courier_name %></strong> забере замовлення зі складу.
@@ -237,27 +251,30 @@ const logWorkerName = (row) => {
             <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup' && !(o.courier_name || '').trim()) { %>
                 <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено - замовлення збережеться на складі, поки адмін або система не підбере доставщика.</p>
             <% } else if (o.needs_courier && o.status_name === 'processing') { %>
-                <p class="warehouse-order-hint">Йде збірка. Кур'єра можна призначити заздалегідь - після «Готове» спрацює автопризначення.</p>
+                <p class="warehouse-order-hint">Йде збірка. Кур'єр підхопить сам, якщо хтось на зміні.</p>
             <% } %>
-            <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
-                <input type="hidden" name="return_to" value="detail" />
-                <label class="warehouse-status-label">
-                    Статус
-                    <select name="status_id" class="auth-input warehouse-status-select">
-                        <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
-                        <% const currentId = Number(o.status_id); %>
-                        <% for (const s of safeStatuses) { %>
-                            <% const sid = Number(s.id); %>
-                            <% const isCurrent = sid === currentId; %>
-                            <% const canChoose = isCurrent || nextIds.includes(sid); %>
-                            <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
-                                <%= s.label_uk || s.status_name %>
-                            </option>
-                        <% } %>
-                    </select>
-                </label>
-                <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
-            </form>
+            <details class="warehouse-status-details">
+                <summary class="warehouse-status-details__summary">Інший статус</summary>
+                <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
+                    <input type="hidden" name="return_to" value="detail" />
+                    <label class="warehouse-status-label">
+                        Статус
+                        <select name="status_id" class="auth-input warehouse-status-select">
+                            <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
+                            <% const currentId = Number(o.status_id); %>
+                            <% for (const s of safeStatuses) { %>
+                                <% const sid = Number(s.id); %>
+                                <% const isCurrent = sid === currentId; %>
+                                <% const canChoose = isCurrent || nextIds.includes(sid); %>
+                                <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
+                                    <%= s.label_uk || s.status_name %>
+                                </option>
+                            <% } %>
+                        </select>
+                    </label>
+                    <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
+                </form>
+            </details>
         <% } %>
     </div>
 
