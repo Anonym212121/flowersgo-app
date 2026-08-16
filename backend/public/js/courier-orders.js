@@ -97,10 +97,19 @@
 
     document.querySelectorAll('.courier-finish-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             var btn = form.querySelector('button[type="submit"]');
             var label = btn ? btn.textContent.trim() : 'дію';
             if (!window.confirm('Підтвердити: ' + label + '?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });

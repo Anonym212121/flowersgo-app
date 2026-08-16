@@ -137,18 +137,38 @@
         });
     }
 
-    document.querySelectorAll('.warehouse-handoff-form').forEach(function (form) {
+    document.querySelectorAll('.warehouse-handoff-form:not(.warehouse-handoff-form--pickup)').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             if (!window.confirm('Підтвердити передачу букета кур\'єру?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });
 
     document.querySelectorAll('.warehouse-handoff-form--pickup').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             if (!window.confirm('Підтвердити видачу замовлення клієнту?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });

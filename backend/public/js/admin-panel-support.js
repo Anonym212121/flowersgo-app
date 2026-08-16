@@ -14,6 +14,9 @@
     let activeChatId = null;
     let lastMessageId = 0;
     let chatPollActive = false;
+    let pollBusy = false;
+    let refreshBusy = false;
+    let sendBusy = false;
 
     const escapeHtml = (value) => {
         return String(value == null ? '' : value)
@@ -326,9 +329,10 @@
                 e.preventDefault();
                 const input = document.getElementById('admin-support-input');
                 const text = input && input.value ? input.value.trim() : '';
-                if (!text || !activeChatId) {
+                if (!text || !activeChatId || sendBusy) {
                     return;
                 }
+                sendBusy = true;
                 try {
                     const res = await api.apiFetch('/api/admin/support/chats/' + activeChatId + '/message', {
                         method: 'POST',
@@ -348,15 +352,18 @@
                     input.value = '';
                 } catch (err) {
                     api.showMessage(err.message, true);
+                } finally {
+                    sendBusy = false;
                 }
             });
         }
     };
 
     const pollChat = async (api) => {
-        if (!activeChatId) {
+        if (!activeChatId || pollBusy) {
             return;
         }
+        pollBusy = true;
         try {
             const url = '/api/admin/support/chats/' + activeChatId + '/poll?since_id=' + lastMessageId;
             const data = await api.apiFetch(url);
@@ -389,6 +396,8 @@
                 renderChatDetail(api, detail.chat, detail.messages, false);
             }
         } catch (e) {
+        } finally {
+            pollBusy = false;
         }
     };
 
@@ -447,12 +456,20 @@
     };
 
     const refreshAdminSupport = async (api) => {
-        await updateBadge(api);
-        if (window.__realtimeLive) {
+        if (refreshBusy || document.hidden) {
             return;
         }
-        if (chatPollActive && activeChatId) {
-            await pollChat(api);
+        refreshBusy = true;
+        try {
+            await updateBadge(api);
+            if (window.__realtimeLive) {
+                return;
+            }
+            if (chatPollActive && activeChatId) {
+                await pollChat(api);
+            }
+        } finally {
+            refreshBusy = false;
         }
     };
 

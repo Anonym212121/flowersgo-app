@@ -278,6 +278,9 @@
 
     registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (registerForm.dataset.busy === '1') {
+            return;
+        }
         authError.textContent = '';
 
         const formData = new FormData(registerForm);
@@ -306,7 +309,9 @@
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Зачекайте…';
+        registerForm.dataset.busy = '1';
 
+        let registered = false;
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -326,6 +331,7 @@
             }
 
             sessionStorage.removeItem(draftKey);
+            registered = true;
 
             if (typeof window.showToast === 'function') {
                 window.showToast('Реєстрацію завершено', 'ok');
@@ -335,8 +341,11 @@
         } catch (err) {
             authError.textContent = 'Не вдалося з’єднатися з сервером';
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зареєструватися';
+            if (!registered) {
+                registerForm.dataset.busy = '';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Зареєструватися';
+            }
         }
     });
 </script>

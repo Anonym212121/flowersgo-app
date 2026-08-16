@@ -7,6 +7,7 @@
     var statsRoot = document.getElementById('warehouseStockStats');
     var pollMs = 60000;
     var timer = null;
+    var pollBusy = false;
 
     function updateStats(summary) {
         if (!statsRoot || !summary) {
@@ -23,6 +24,10 @@
     }
 
     function poll() {
+        if (pollBusy || document.hidden) {
+            return;
+        }
+        pollBusy = true;
         fetch('/warehouse/stock/poll', { credentials: 'same-origin' })
             .then(function (res) {
                 return res.json();
@@ -32,7 +37,10 @@
                     updateStats(data.summary);
                 }
             })
-            .catch(function () {});
+            .catch(function () {})
+            .finally(function () {
+                pollBusy = false;
+            });
     }
 
     timer = setInterval(poll, pollMs);

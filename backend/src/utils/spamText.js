@@ -16,6 +16,20 @@ profanity.add({
     words: ['blyat*', 'blya*', 'suka', 'pidar*', 'pidor*', 'nahui', 'nahuy'],
     lookalike: {}
 });
+profanity.add({
+    id: 'ua_extra',
+    words: [
+        'підар*',
+        'підарас*',
+        'підерас*',
+        'мудак*',
+        'єблан*',
+        'йобан*',
+        'йований*',
+        'нахєр*'
+    ],
+    lookalike: {}
+});
 
 const looksLikeSpam = (raw) => {
     const text = typeof raw === 'string' ? raw.trim() : '';

@@ -28,6 +28,8 @@
     let hasClosedChats = false;
     let hasActiveChat = false;
     let chatPollActive = false;
+    let pollInFlight = false;
+    let refreshInFlight = false;
 
     const setChatPanelMode = (enabled) => {
         if (enabled) {
@@ -122,12 +124,20 @@
     };
 
     const refreshSupport = async () => {
-        await pollUnread();
-        if (window.__realtimeLive) {
+        if (refreshInFlight || document.hidden) {
             return;
         }
-        if (chatPollActive && chat && !isArchive && chat.status !== 'closed') {
-            await pollOnce();
+        refreshInFlight = true;
+        try {
+            await pollUnread();
+            if (window.__realtimeLive) {
+                return;
+            }
+            if (chatPollActive && chat && !isArchive && chat.status !== 'closed') {
+                await pollOnce();
+            }
+        } finally {
+            refreshInFlight = false;
         }
     };
 
@@ -613,9 +623,10 @@
     };
 
     const pollOnce = async () => {
-        if (!chat || chat.status === 'closed' || isArchive) {
+        if (!chat || chat.status === 'closed' || isArchive || pollInFlight) {
             return;
         }
+        pollInFlight = true;
         try {
             const url = '/api/support/poll?chat_id=' + encodeURIComponent(chat.id) +
                 '&since_id=' + encodeURIComponent(lastMessageId);
@@ -650,6 +661,8 @@
                 updateStatusLine();
             }
         } catch (err) {
+        } finally {
+            pollInFlight = false;
         }
     };
 

@@ -21,6 +21,7 @@
     let loadedCount = 0;
     let totalCount = 0;
     let loadingList = false;
+    let refreshBusy = false;
 
     const formatTime = (raw) => {
         if (!raw) {
@@ -187,9 +188,17 @@
     };
 
     const refreshNotifications = async () => {
-        await loadCount();
-        if (panelOpen && !panel.hidden) {
-            await loadList(true);
+        if (refreshBusy || document.hidden) {
+            return;
+        }
+        refreshBusy = true;
+        try {
+            await loadCount();
+            if (panelOpen && !panel.hidden) {
+                await loadList(true);
+            }
+        } finally {
+            refreshBusy = false;
         }
     };
 

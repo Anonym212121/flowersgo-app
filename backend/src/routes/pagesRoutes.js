@@ -68,6 +68,13 @@ const orderLimit = createRateLimit({
     message: 'Забагато замовлень за короткий час. Спробуйте пізніше.'
 });
 
+const cartWriteLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'cart-write',
+    message: 'Забагато змін у кошику. Зачекайте секунду.'
+});
+
 const wishlistWriteLimit = createRateLimit({
     windowMs: 60 * 1000,
     max: 40,
@@ -159,9 +166,9 @@ router.post('/constructor/preview', pageRequireConstructorEnabled, previewLimit,
 router.post('/constructor/preview-save', pageRequireConstructorEnabled, previewLimit, constructorController.savePreviewJson);
 router.post('/constructor/preview-clear', constructorController.previewClearJson);
 router.post('/constructor/add', pageRequireConstructorEnabled, constructorController.addToCart);
-router.post('/cart/add', cartController.add);
-router.post('/cart/update', cartController.update);
-router.post('/cart/remove', cartController.remove);
+router.post('/cart/add', cartWriteLimit, cartController.add);
+router.post('/cart/update', cartWriteLimit, cartController.update);
+router.post('/cart/remove', cartWriteLimit, cartController.remove);
 router.post('/cart/clear', cartController.clear);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
 router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfile);

@@ -111,7 +111,9 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
                 var btn = e.target.closest('.cart-remove-btn');
                 if (!btn) return;
                 var row = btn.closest('tr[data-product-id]');
-                if (!row) return;
+                if (!row || row.dataset.busy === '1') return;
+                row.dataset.busy = '1';
+                btn.disabled = true;
                 var pid = Number(row.dataset.productId);
                 var variantRaw = row.dataset.colorVariantId || '';
                 var body = { product_id: pid };
@@ -131,10 +133,12 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
                     }
                 } catch (err) {
                     msg(err.message || 'Не вдалося видалити товар', false);
+                    row.dataset.busy = '';
+                    btn.disabled = false;
                 }
             });
 
-            table.addEventListener('change', async function (e) {
+            table.addEventListener('change', function (e) {
                 var input = e.target.closest('.cart-qty-input');
                 if (!input) return;
                 var row = input.closest('tr[data-product-id]');
@@ -148,20 +152,32 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
                 if (variantRaw) {
                     updateBody.color_variant_id = variantRaw;
                 }
-                try {
-                    const data = await post('/cart/update', updateBody);
-                    var unit = Number(row.dataset.unitPrice || 0);
-                    var lineOut = row.querySelector('.cart-line-total');
-                    if (lineOut) {
-                        lineOut.textContent = (qty * unit).toLocaleString('uk-UA') + ' грн';
-                    }
-                    totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
-                    if (typeof window.updateNavCartCount === 'function' && data.count != null) {
-                        window.updateNavCartCount(data.count);
-                    }
-                } catch (err) {
-                    msg(err.message || 'Не вдалося оновити кількість', false);
+                if (row._qtyTimer) {
+                    clearTimeout(row._qtyTimer);
                 }
+                row._qtyTimer = setTimeout(async function () {
+                    row._qtyTimer = null;
+                    if (row.dataset.qtyBusy === '1') {
+                        return;
+                    }
+                    row.dataset.qtyBusy = '1';
+                    try {
+                        const data = await post('/cart/update', updateBody);
+                        var unit = Number(row.dataset.unitPrice || 0);
+                        var lineOut = row.querySelector('.cart-line-total');
+                        if (lineOut) {
+                            lineOut.textContent = (qty * unit).toLocaleString('uk-UA') + ' грн';
+                        }
+                        totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+                        if (typeof window.updateNavCartCount === 'function' && data.count != null) {
+                            window.updateNavCartCount(data.count);
+                        }
+                    } catch (err) {
+                        msg(err.message || 'Не вдалося оновити кількість', false);
+                    } finally {
+                        row.dataset.qtyBusy = '';
+                    }
+                }, 280);
             });
         })();
         </script>

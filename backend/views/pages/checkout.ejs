@@ -1444,7 +1444,17 @@ function applyProfileAddressIfNeeded() {
         try {
             localStorage.removeItem('checkoutDraft');
         } catch (err) {
+        }
+
+        if (form.dataset.sent === '1') {
+            e.preventDefault();
             return;
+        }
+        form.dataset.sent = '1';
+        var submitBtn = document.getElementById('checkoutSubmitOrder');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Оформлюємо…';
         }
     });
 })();

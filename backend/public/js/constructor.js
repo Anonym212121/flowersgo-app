@@ -23,6 +23,7 @@
     var mobileAddBtn = document.getElementById('constructorMobileAddBtn');
 
     var calcTimer = null;
+    var calcReqId = 0;
     var lastOk = false;
     var lastStemTotal = 0;
     var draftStorageKey = cfg.draftStorageKey || 'flowersgo_constructor_draft';
@@ -757,7 +758,7 @@
                 label +
                 ' ×' +
                 Number(line.quantity || 0) +
-                ' - ' +
+                ' — ' +
                 Number(line.line_total || 0).toLocaleString('uk-UA') +
                 ' грн</span>' +
                 '<button type="button" class="constructor-summary-remove" data-product-id="' +
@@ -772,7 +773,7 @@
                 '<li class="constructor-summary-item constructor-summary-item--pack">' +
                 '<span class="constructor-summary-item__text">Упаковка: ' +
                 escapeHtml(data.packagingLabel) +
-                ' - ' +
+                ' — ' +
                 Number(data.packagingPrice).toLocaleString('uk-UA') +
                 ' грн</span></li>';
         }
@@ -861,11 +862,19 @@
 
         saveDraft();
 
+        calcReqId += 1;
+        var reqId = calcReqId;
         fetchCalc(buildRequestBody())
             .then(function (data) {
+                if (reqId !== calcReqId) {
+                    return;
+                }
                 renderSummary(data);
             })
             .catch(function (err) {
+                if (reqId !== calcReqId) {
+                    return;
+                }
                 renderSummary({ ok: false, message: err.message || 'Помилка розрахунку' });
             });
     }
@@ -1226,7 +1235,7 @@
             window.restoreFormProgress({
                 restored: true,
                 targetEl: document.querySelector('.constructor-aside'),
-                message: 'Букет відновлено - продовжуй збір'
+                message: 'Букет відновлено — продовжуй збір'
             });
         }
         loadPreviewStorage();

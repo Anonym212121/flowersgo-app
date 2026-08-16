@@ -136,7 +136,16 @@
 
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (loginForm.dataset.busy === '1') {
+            return;
+        }
+        loginForm.dataset.busy = '1';
         authError.textContent = '';
+
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
 
         const formData = new FormData(loginForm);
         const payload = {
@@ -145,28 +154,41 @@
             website: formData.get('website') || ''
         };
 
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'same-origin',
-            body: JSON.stringify(payload)
-        });
+        let loggedIn = false;
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify(payload)
+            });
 
-        const data = await response.json().catch(() => null);
-        if (!response.ok) {
-            const msg = (data && data.message) ? data.message : 'Помилка входу';
-            if (data && data.blocked) {
-                sessionStorage.setItem('blocked_login_email', String(payload.email || ''));
-                authError.innerHTML = msg + ' <a href="/account-blocked" class="auth-error-link">Дізнатися причину</a>';
-            } else {
-                authError.textContent = msg;
+            const data = await response.json().catch(() => null);
+            if (!response.ok) {
+                const msg = (data && data.message) ? data.message : 'Помилка входу';
+                if (data && data.blocked) {
+                    sessionStorage.setItem('blocked_login_email', String(payload.email || ''));
+                    authError.innerHTML = msg + ' <a href="/account-blocked" class="auth-error-link">Дізнатися причину</a>';
+                } else {
+                    authError.textContent = msg;
+                }
+                return;
             }
-            return;
+
+            sessionStorage.removeItem(loginDraftKey);
+            loggedIn = true;
+
+            const roleName = data && data.user && data.user.role_name ? data.user.role_name : '';
+            window.location.href = getRedirectUrl(roleName);
+        } catch (err) {
+            authError.textContent = 'Не вдалося з’єднатися з сервером';
+        } finally {
+            if (!loggedIn) {
+                loginForm.dataset.busy = '';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                }
+            }
         }
-
-        sessionStorage.removeItem(loginDraftKey);
-
-        const roleName = data && data.user && data.user.role_name ? data.user.role_name : '';
-        window.location.href = getRedirectUrl(roleName);
     });
 </script>

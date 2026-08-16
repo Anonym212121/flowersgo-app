@@ -45,6 +45,8 @@ describe('looksLikeAttack', () => {
 describe('hasProfanity', () => {
     test('ловить нецензурне слово', () => {
         expect(hasProfanity('це сука')).toBe(true);
+        expect(hasProfanity('підар')).toBe(true);
+        expect(hasProfanity('підарас')).toBe(true);
     });
 
     test('пропускає нормальний відгук', () => {

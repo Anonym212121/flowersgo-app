@@ -98,24 +98,26 @@ const addProduct = async (req, res) => {
         }
 
         const userId = getUserId(res);
-        let ids = [];
+        let count = 0;
         if (userId) {
             await WishlistModel.add(userId, productId);
-            ids = await WishlistModel.productIdsForUser(userId);
+            count = await WishlistModel.countForUser(userId);
         } else {
-            ids = readGuestWishlist(req);
+            const ids = readGuestWishlist(req);
             if (!ids.includes(productId)) {
                 ids.push(productId);
             }
             writeGuestWishlist(res, ids);
+            count = ids.length;
         }
 
         if (wantsJson(req)) {
             return res.status(200).json({
                 ok: true,
                 message: 'Додано в обране',
-                count: ids.length,
-                ids
+                count: count,
+                product_id: productId,
+                in_wishlist: true
             });
         }
 
@@ -144,21 +146,23 @@ const removeProduct = async (req, res) => {
         }
 
         const userId = getUserId(res);
-        let ids = [];
+        let count = 0;
         if (userId) {
             await WishlistModel.remove(userId, productId);
-            ids = await WishlistModel.productIdsForUser(userId);
+            count = await WishlistModel.countForUser(userId);
         } else {
-            ids = readGuestWishlist(req).filter((id) => id !== productId);
+            const ids = readGuestWishlist(req).filter((id) => id !== productId);
             writeGuestWishlist(res, ids);
+            count = ids.length;
         }
 
         if (wantsJson(req)) {
             return res.status(200).json({
                 ok: true,
                 message: 'Прибрано з обраного',
-                count: ids.length,
-                ids
+                count: count,
+                product_id: productId,
+                in_wishlist: false
             });
         }
 

@@ -1,66 +1,70 @@
-document.addEventListener('submit', async (e) => {
-    const form = e.target;
-    if (!(form instanceof HTMLFormElement) || !form.classList.contains('wishlist-ajax')) {
-        return;
-    }
-
-    e.preventDefault();
-    if (form.dataset.wlBusy === '1') {
-        return;
-    }
-    form.dataset.wlBusy = '1';
-
+function setWishlistStarState(form, active) {
     const btn = form.querySelector('.wishlist-star-btn');
-    if (btn) {
-        btn.disabled = true;
+    if (!btn) {
+        return;
     }
-    const productId = form.querySelector('[name=product_id]')?.value;
-    const isActive = btn && btn.classList.contains('wishlist-star-btn--active');
-    const willRemove = btn ? isActive : (form.getAttribute('action') || '').includes('/wishlist/remove');
-    const targetAction = willRemove ? '/wishlist/remove' : '/wishlist/add';
-    const body = new URLSearchParams(new FormData(form));
+    btn.textContent = active ? '★' : '☆';
+    btn.classList.toggle('wishlist-star-btn--active', active);
+    const title = active ? 'Прибрати з обраного' : 'Додати в обране';
+    btn.setAttribute('title', title);
+    btn.setAttribute('aria-label', title);
+    form.setAttribute('action', active ? '/wishlist/remove' : '/wishlist/add');
+}
+
+function localWishlistHas(productId) {
+    const id = Number(productId);
+    if (!Array.isArray(window.__wishlistProductIds)) {
+        return false;
+    }
+    return window.__wishlistProductIds.indexOf(id) !== -1;
+}
+
+async function flushWishlistForm(form) {
+    if (!(form instanceof HTMLFormElement) || form.dataset.wlBusy === '1') {
+        return;
+    }
+
+    form.dataset.wlBusy = '1';
+    const input = form.querySelector('[name=product_id]');
+    const productId = input ? input.value : '';
+    const btn = form.querySelector('.wishlist-star-btn');
 
     try {
-        const res = await fetch(targetAction, {
-            method: 'POST',
-            body,
-            credentials: 'include',
-            headers: {
-                Accept: 'application/json'
+        while (true) {
+            const wanted = btn ? form.dataset.wlWanted === '1' : false;
+            const targetAction = wanted ? '/wishlist/add' : '/wishlist/remove';
+            const body = new URLSearchParams(new FormData(form));
+            const res = await fetch(targetAction, {
+                method: 'POST',
+                body,
+                credentials: 'include',
+                headers: {
+                    Accept: 'application/json'
+                }
+            });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                const msg = data && data.message ? data.message : 'Не вдалося оновити обране';
+                if (typeof window.showToast === 'function') {
+                    window.showToast(msg, 'error');
+                }
+                if (btn) {
+                    setWishlistStarState(form, localWishlistHas(productId));
+                }
+                break;
             }
-        });
 
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            const msg = data && data.message ? data.message : 'Не вдалося оновити обране';
-            if (typeof window.showToast === 'function') {
-                window.showToast(msg, 'error');
+            if (typeof data.in_wishlist === 'boolean') {
+                syncWishlistProductId(productId, data.in_wishlist);
+            } else if (Array.isArray(data.ids)) {
+                window.__wishlistProductIds = data.ids
+                    .map((id) => Number(id))
+                    .filter((id) => Number.isFinite(id) && id > 0);
             }
-            return;
-        }
 
-        if (Array.isArray(data.ids)) {
-            window.__wishlistProductIds = data.ids
-                .map((id) => Number(id))
-                .filter((id) => Number.isFinite(id) && id > 0);
-        }
-
-        if (typeof window.updateNavWishlistCount === 'function' && data.count != null) {
-            window.updateNavWishlistCount(data.count);
-        }
-
-        if (willRemove) {
-            if (btn) {
-                btn.textContent = '☆';
-                btn.classList.remove('wishlist-star-btn--active');
-                btn.setAttribute('title', 'Додати в обране');
-                btn.setAttribute('aria-label', 'Додати в обране');
-                form.setAttribute('action', '/wishlist/add');
-                syncWishlistProductId(productId, false);
-            }
-            if (typeof window.showToast === 'function') {
-                window.showToast(data.message || 'Прибрано з обраного', 'ok');
+            if (typeof window.updateNavWishlistCount === 'function' && data.count != null) {
+                window.updateNavWishlistCount(data.count);
             }
 
             if (!btn) {
@@ -68,35 +72,66 @@ document.addEventListener('submit', async (e) => {
                 if (card && card.parentElement) {
                     card.remove();
                 }
-
                 const grid = document.querySelector('.products-grid');
                 if (grid && grid.children.length === 0) {
                     window.location.reload();
                 }
+                break;
             }
-        } else {
-            if (btn) {
-                btn.textContent = '★';
-                btn.classList.add('wishlist-star-btn--active');
-                btn.setAttribute('title', 'Прибрати з обраного');
-                btn.setAttribute('aria-label', 'Прибрати з обраного');
-                form.setAttribute('action', '/wishlist/remove');
-                syncWishlistProductId(productId, true);
-            }
-            if (typeof window.showToast === 'function') {
-                window.showToast(data.message || 'Додано в обране', 'ok');
+
+            const stillWanted = form.dataset.wlWanted === '1';
+            if (stillWanted === localWishlistHas(productId)) {
+                setWishlistStarState(form, stillWanted);
+                break;
             }
         }
     } catch (err) {
         if (typeof window.showToast === 'function') {
             window.showToast('Помилка мережі', 'error');
         }
+        if (btn) {
+            setWishlistStarState(form, localWishlistHas(productId));
+        }
     } finally {
         form.dataset.wlBusy = '';
-        if (btn) {
-            btn.disabled = false;
-        }
     }
+}
+
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || !form.classList.contains('wishlist-ajax')) {
+        return;
+    }
+
+    e.preventDefault();
+    const btn = form.querySelector('.wishlist-star-btn');
+    const input = form.querySelector('[name=product_id]');
+    const productId = input ? input.value : '';
+
+    if (!btn) {
+        if (form.dataset.wlBusy === '1') {
+            return;
+        }
+        flushWishlistForm(form);
+        return;
+    }
+
+    const wantActive = !btn.classList.contains('wishlist-star-btn--active');
+    form.dataset.wlWanted = wantActive ? '1' : '0';
+    setWishlistStarState(form, wantActive);
+    syncWishlistProductId(productId, wantActive);
+    if (typeof window.updateNavWishlistCount === 'function') {
+        const n = Array.isArray(window.__wishlistProductIds) ? window.__wishlistProductIds.length : 0;
+        window.updateNavWishlistCount(n);
+    }
+
+    if (form._wlTimer) {
+        window.clearTimeout(form._wlTimer);
+    }
+    form._wlTimer = window.setTimeout(() => {
+        form._wlTimer = null;
+        flushWishlistForm(form);
+    }, 250);
 });
 
 function syncWishlistProductId(productId, add) {
@@ -172,6 +207,15 @@ document.addEventListener('submit', async (e) => {
     }
 
     e.preventDefault();
+    if (form.dataset.cartBusy === '1') {
+        return;
+    }
+    form.dataset.cartBusy = '1';
+    const cartBtn = form.querySelector('.cart-icon-btn, button[type="submit"]');
+    if (cartBtn) {
+        cartBtn.disabled = true;
+    }
+
     const action = form.getAttribute('action') || '';
     const body = new URLSearchParams(new FormData(form));
     try {
@@ -190,8 +234,7 @@ document.addEventListener('submit', async (e) => {
             return;
         }
 
-        const cartBtn = form.querySelector('.cart-icon-btn');
-        if (cartBtn) {
+        if (cartBtn && cartBtn.classList.contains('cart-icon-btn')) {
             cartBtn.classList.add('cart-icon-btn--added');
             window.setTimeout(function () {
                 cartBtn.classList.remove('cart-icon-btn--added');
@@ -208,6 +251,11 @@ document.addEventListener('submit', async (e) => {
     } catch (err) {
         if (typeof window.showToast === 'function') {
             window.showToast('Помилка мережі', 'error');
+        }
+    } finally {
+        form.dataset.cartBusy = '';
+        if (cartBtn) {
+            cartBtn.disabled = false;
         }
     }
 });
@@ -635,6 +683,9 @@ function buildCatalogUrl(categoryId, q) {
     return s ? `/?${s}` : '/';
 }
 
+let catalogAbort = null;
+let catalogReqId = 0;
+
 async function loadCatalogProducts(categoryId, q) {
     const hitRoot = document.getElementById('catalog-hit-root');
     const sectionsRoot = document.getElementById('catalog-sections-root');
@@ -653,11 +704,22 @@ async function loadCatalogProducts(categoryId, q) {
     const qs = params.toString();
     const url = '/api/catalog/products' + (qs ? `?${qs}` : '');
 
+    catalogReqId += 1;
+    const reqId = catalogReqId;
+    if (catalogAbort) {
+        catalogAbort.abort();
+    }
+    catalogAbort = new AbortController();
+
     try {
         const res = await fetch(url, {
             credentials: 'include',
-            headers: { Accept: 'application/json' }
+            headers: { Accept: 'application/json' },
+            signal: catalogAbort.signal
         });
+        if (reqId !== catalogReqId) {
+            return false;
+        }
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             const msg =
@@ -676,6 +738,9 @@ async function loadCatalogProducts(categoryId, q) {
         applyWishlistStars(window.__wishlistProductIds);
         return true;
     } catch (err) {
+        if (err && err.name === 'AbortError') {
+            return false;
+        }
         if (typeof window.showToast === 'function') {
             window.showToast('Помилка мережі', 'error');
         }
