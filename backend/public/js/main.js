@@ -1357,6 +1357,11 @@ function onPageReady() {
         burger.setAttribute('aria-expanded', 'false');
         burger.setAttribute('aria-label', 'Відкрити меню');
     }
+    document.body.classList.remove('nav-menu-open');
+    const backdropReady = document.getElementById('navBackdrop');
+    if (backdropReady) {
+        backdropReady.hidden = true;
+    }
 
     const main = document.getElementById('page-main');
     if (main) {
@@ -1524,20 +1529,37 @@ document.addEventListener('DOMContentLoaded', onPageReady);
 (function initHeaderMenu() {
     const burger = document.getElementById('headerBurger');
     const nav = document.getElementById('headerNav');
+    const backdrop = document.getElementById('navBackdrop');
     if (!burger || !nav) {
         return;
     }
 
     const closeMenu = () => {
         nav.classList.remove('nav--open');
+        document.body.classList.remove('nav-menu-open');
         burger.setAttribute('aria-expanded', 'false');
         burger.setAttribute('aria-label', 'Відкрити меню');
+        if (backdrop) {
+            backdrop.hidden = true;
+        }
+    };
+
+    const openMenu = () => {
+        nav.classList.add('nav--open');
+        document.body.classList.add('nav-menu-open');
+        burger.setAttribute('aria-expanded', 'true');
+        burger.setAttribute('aria-label', 'Закрити меню');
+        if (backdrop) {
+            backdrop.hidden = false;
+        }
     };
 
     burger.addEventListener('click', () => {
-        const isOpen = nav.classList.toggle('nav--open');
-        burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        burger.setAttribute('aria-label', isOpen ? 'Закрити меню' : 'Відкрити меню');
+        if (nav.classList.contains('nav--open')) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
     });
 
     document.addEventListener('keydown', (event) => {
@@ -1551,6 +1573,10 @@ document.addEventListener('DOMContentLoaded', onPageReady);
     nav.querySelectorAll('a').forEach((link) => {
         link.addEventListener('click', closeMenu);
     });
+
+    if (backdrop) {
+        backdrop.addEventListener('click', closeMenu);
+    }
 
     document.addEventListener('click', (event) => {
         if (!nav.classList.contains('nav--open')) {

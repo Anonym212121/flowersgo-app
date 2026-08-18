@@ -395,25 +395,53 @@ a:hover { color: #bae6fd; }
     .header__burger {
         display: inline-flex;
         margin-left: auto;
+        position: relative;
+        z-index: 123;
+    }
+
+    .nav-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 121;
+        background: rgba(2, 6, 23, 0.58);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+    }
+
+    .nav-backdrop[hidden] {
+        display: none;
+    }
+
+    body.nav-menu-open {
+        overflow: hidden;
+    }
+
+    body.nav-menu-open .support-widget {
+        visibility: hidden;
+        pointer-events: none;
     }
 
     .nav {
-        position: absolute;
-        top: calc(100% + 0.45rem);
-        left: 1rem;
-        right: 1rem;
+        position: fixed;
+        top: calc(4.15rem + env(safe-area-inset-top, 0px));
+        left: 0.7rem;
+        right: 0.7rem;
+        bottom: 0.7rem;
         display: none;
         flex: none;
         margin-left: 0;
         flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
-        gap: 0.75rem;
-        padding: 0.85rem;
-        border-radius: 16px;
+        gap: 1rem;
+        padding: 0.95rem 0.9rem calc(1.1rem + env(safe-area-inset-bottom, 0px));
+        border-radius: 20px;
         border: 1px solid rgba(148, 163, 184, 0.22);
-        background: rgba(10, 17, 31, 0.96);
+        background: rgba(10, 17, 31, 0.97);
         box-shadow: 0 22px 48px rgba(2, 6, 23, 0.55);
+        overflow-y: auto;
+        z-index: 122;
+        -webkit-overflow-scrolling: touch;
     }
 
     .nav.nav--open {
@@ -428,13 +456,96 @@ a:hover { color: #bae6fd; }
         margin: 0;
         padding: 0;
         border: 0;
+        gap: 0.4rem;
     }
 
-    .nav__link,
-    .nav__btn {
+    .nav__actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-top: auto;
+        padding-top: 0.85rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .nav__links .nav__link {
         width: 100%;
-        justify-content: center;
-        text-align: center;
+        justify-content: flex-start;
+        text-align: left;
+        min-height: 48px;
+        padding: 0.8rem 1rem;
+        border-radius: 14px;
+        font-size: 1.02rem;
+        font-weight: 600;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .nav__links .nav__link--highlight {
+        background: rgba(16, 185, 129, 0.16);
+    }
+
+    .nav__links .nav__link--with-badge {
+        padding-right: 2.7rem;
+    }
+
+    .nav__links .nav__count-badge {
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        box-shadow: none;
+    }
+
+    .theme-switch,
+    .nav-settings,
+    .nav-notify {
+        grid-column: 1 / -1;
+    }
+
+    .theme-switch {
+        width: 100%;
+        justify-content: space-between;
+        margin: 0;
+        min-height: 48px;
+        padding: 0.7rem 1rem;
+        border-radius: 14px;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background: rgba(15, 23, 42, 0.55);
+    }
+
+    .theme-switch__text {
+        font-size: 0.95rem;
+        color: #e2e8f0;
+    }
+
+    .nav-settings__btn,
+    .nav-notify__btn {
+        width: 100%;
+        min-height: 48px;
+        justify-content: flex-start;
+        gap: 0.65rem;
+        padding: 0.7rem 1rem;
+        border-radius: 14px;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .nav-settings__btn::after {
+        content: 'Налаштування';
+    }
+
+    .nav-notify__btn::after {
+        content: 'Сповіщення';
+    }
+
+    .nav__actions > a.nav__btn {
+        min-height: 48px;
+        border-radius: 14px;
+        font-weight: 700;
+    }
+
+    .nav__actions > a.nav__btn:only-of-type {
+        grid-column: 1 / -1;
     }
 }
 
@@ -6110,11 +6221,14 @@ textarea.auth-input {
         width: 100%;
     }
 
-    .nav-settings__panel {
+    .nav-settings__panel,
+    .nav-notify__panel {
         position: static;
         width: 100%;
-        max-height: none;
+        max-height: min(40vh, 280px);
         margin-top: 0.45rem;
+        left: auto;
+        right: auto;
     }
 }
 
@@ -6929,10 +7043,9 @@ button:focus-visible,
 @media (max-width: 860px) {
     .nav__link,
     .nav__btn {
-        min-height: 44px;
+        min-height: 48px;
         display: inline-flex;
         align-items: center;
-        justify-content: center;
     }
 }
 

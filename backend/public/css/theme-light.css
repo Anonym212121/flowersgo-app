@@ -115,6 +115,33 @@ html.theme-light .header__burger-line {
     background: #334155;
 }
 
+@media (max-width: 860px) {
+    html.theme-light .nav-backdrop {
+        background: rgba(15, 23, 42, 0.42);
+    }
+
+    html.theme-light .nav {
+        background: rgba(255, 255, 255, 0.98);
+        border-color: rgba(15, 23, 42, 0.1);
+    }
+
+    html.theme-light .nav__links .nav__link,
+    html.theme-light .theme-switch {
+        background: #f8fafc;
+        border-color: rgba(15, 23, 42, 0.08);
+        color: #0f172a;
+    }
+
+    html.theme-light .nav__links .nav__link--highlight {
+        background: rgba(16, 185, 129, 0.14);
+        color: #065f46;
+    }
+
+    html.theme-light .theme-switch__text {
+        color: #334155;
+    }
+}
+
 html.theme-light .nav__link {
     color: #334155;
 }
