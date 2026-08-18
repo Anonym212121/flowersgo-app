@@ -1619,7 +1619,7 @@ window.addEventListener('popstate', (e) => {
     };
 
     document.addEventListener('click', (event) => {
-        const btn = event.target.closest('.product-preview-btn');
+        const btn = event.target.closest('.product-preview-btn, .js-photo-preview');
         if (btn) {
             event.preventDefault();
             event.stopPropagation();

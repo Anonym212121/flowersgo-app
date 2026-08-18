@@ -1653,6 +1653,23 @@ html.theme-light .cabinet-avatar-wrap {
     border-color: var(--line);
 }
 
+html.theme-light .public-profile-avatar {
+    background:
+        radial-gradient(circle at 30% 20%, rgba(244, 114, 182, 0.14), transparent 55%),
+        #f8fafc;
+    border-color: rgba(244, 114, 182, 0.5);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+html.theme-light .public-profile-avatar--empty {
+    color: #64748b;
+}
+
+html.theme-light .public-profile-meta {
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.28);
+}
+
 html.theme-light .cabinet-avatar-placeholder {
     color: #64748b;
 }

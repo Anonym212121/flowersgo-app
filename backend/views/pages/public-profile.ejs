@@ -26,13 +26,26 @@ const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || 
         </div>
     <% } else { %>
         <div class="public-profile-card">
-            <div class="cabinet-avatar-wrap cabinet-avatar-wrap--view">
-                <% if (avatarUrl) { %>
-                    <img class="cabinet-avatar-img" src="<%= avatarUrl %>" alt="<%= fullName %>" />
-                <% } else { %>
-                    <div class="cabinet-avatar-placeholder" aria-hidden="true"><%= initials %></div>
-                <% } %>
-            </div>
+            <% if (avatarUrl) { %>
+                <button
+                    type="button"
+                    class="public-profile-avatar js-photo-preview"
+                    data-preview-src="<%= avatarUrl %>"
+                    data-preview-alt="<%= fullName %>"
+                    title="Розгорнути фото"
+                    aria-label="Розгорнути фото <%= fullName %>"
+                >
+                    <img class="public-profile-avatar__img" src="<%= avatarUrl %>" alt="" />
+                    <span class="public-profile-avatar__zoom" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                        </svg>
+                    </span>
+                </button>
+            <% } else { %>
+                <div class="public-profile-avatar public-profile-avatar--empty" aria-hidden="true"><%= initials %></div>
+            <% } %>
             <h1 class="public-profile-name"><%= fullName %></h1>
             <% if (person.joined_label) { %>
                 <p class="public-profile-meta">На сайті з <%= person.joined_label %></p>
