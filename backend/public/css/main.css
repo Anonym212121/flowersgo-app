@@ -62,7 +62,14 @@ a:hover { color: #bae6fd; }
     top: 0;
     z-index: 120;
     border-bottom: 1px solid rgba(148, 163, 184, 0.14);
-    background: rgba(8, 14, 26, 0.72);
+    background: rgba(8, 14, 26, 0.82);
+    overflow: visible;
+}
+
+.header__blur {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     backdrop-filter: blur(18px) saturate(1.35);
     -webkit-backdrop-filter: blur(18px) saturate(1.35);
 }
@@ -84,6 +91,7 @@ a:hover { color: #bae6fd; }
 
 .header__inner {
     position: relative;
+    z-index: 1;
     max-width: 1240px;
     margin: 0 auto;
     padding: 0.72rem 1rem;
@@ -402,7 +410,7 @@ a:hover { color: #bae6fd; }
     .nav-backdrop {
         position: fixed;
         inset: 0;
-        z-index: 121;
+        z-index: 129;
         background: rgba(2, 6, 23, 0.58);
         backdrop-filter: blur(6px);
         -webkit-backdrop-filter: blur(6px);
@@ -423,10 +431,14 @@ a:hover { color: #bae6fd; }
 
     .nav {
         position: fixed;
-        top: calc(4.15rem + env(safe-area-inset-top, 0px));
-        left: 0.7rem;
-        right: 0.7rem;
-        bottom: 0.7rem;
+        top: calc(4.35rem + env(safe-area-inset-top, 0px));
+        left: 0.6rem;
+        right: 0.6rem;
+        bottom: auto;
+        width: auto;
+        height: calc(100dvh - 4.35rem - env(safe-area-inset-top, 0px) - 0.6rem);
+        max-height: calc(100svh - 4.35rem - env(safe-area-inset-top, 0px) - 0.6rem);
+        min-height: 0;
         display: none;
         flex: none;
         margin-left: 0;
@@ -439,8 +451,9 @@ a:hover { color: #bae6fd; }
         border: 1px solid rgba(148, 163, 184, 0.22);
         background: rgba(10, 17, 31, 0.97);
         box-shadow: 0 22px 48px rgba(2, 6, 23, 0.55);
+        overflow-x: hidden;
         overflow-y: auto;
-        z-index: 122;
+        z-index: 130;
         -webkit-overflow-scrolling: touch;
     }
 
