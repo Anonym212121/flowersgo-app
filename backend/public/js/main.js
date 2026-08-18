@@ -983,6 +983,39 @@ function initPhoneCategoriesPanel() {
     panel.querySelectorAll('[data-phone-categories-close]').forEach(function (el) {
         el.addEventListener('click', closePhoneCategoriesPanel);
     });
+
+    panel.addEventListener('click', function (event) {
+        const toggle = event.target.closest('.catalog-categories-phone-toggle');
+        if (!toggle || !panel.contains(toggle)) {
+            return;
+        }
+        const group = toggle.closest('[data-phone-group]');
+        if (!group) {
+            return;
+        }
+        const subs = group.querySelector('.catalog-categories-phone-subs');
+        if (!subs) {
+            return;
+        }
+        const willOpen = subs.hidden;
+        panel.querySelectorAll('[data-phone-group]').forEach(function (other) {
+            if (other === group) {
+                return;
+            }
+            other.classList.remove('is-open');
+            const otherSubs = other.querySelector('.catalog-categories-phone-subs');
+            const otherToggle = other.querySelector('.catalog-categories-phone-toggle');
+            if (otherSubs) {
+                otherSubs.hidden = true;
+            }
+            if (otherToggle) {
+                otherToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+        subs.hidden = !willOpen;
+        group.classList.toggle('is-open', willOpen);
+        toggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    });
 }
 
 function updateCategoryNavActive(categoryId) {
@@ -1003,8 +1036,23 @@ function updateCategoryNavActive(categoryId) {
     const labelEl = document.getElementById('catalog-categories-phone-current');
     const activeLink = document.querySelector('.catalog-categories-phone .catalog-category-nav.active');
     if (labelEl && activeLink) {
-        labelEl.textContent = activeLink.textContent.trim();
+        const label = activeLink.getAttribute('data-category-label');
+        labelEl.textContent = label && label.trim() ? label.trim() : activeLink.textContent.trim();
     }
+
+    document.querySelectorAll('[data-phone-group]').forEach((group) => {
+        const hasActive = !!group.querySelector('.catalog-category-nav.active');
+        const subs = group.querySelector('.catalog-categories-phone-subs');
+        const toggle = group.querySelector('.catalog-categories-phone-toggle');
+        if (!subs || !toggle) {
+            return;
+        }
+        if (hasActive) {
+            group.classList.add('is-open');
+            subs.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+        }
+    });
 }
 
 function buildCatalogUrl(categoryId, q) {

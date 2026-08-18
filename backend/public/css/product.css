@@ -1192,17 +1192,117 @@ a.product-order-btn {
         color: #a7f3d0;
     }
 
-    .catalog-categories-phone-link--parent {
-        font-size: 0.9rem;
-        margin-top: 0.25rem;
+    .catalog-categories-phone-group {
+        margin-bottom: 0.35rem;
     }
 
-    .catalog-categories-phone-link--sub {
-        margin-left: 0.65rem;
-        padding-left: 0.85rem;
+    .catalog-categories-phone-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.55rem;
+        min-height: 48px;
+        padding: 0.45rem 0.65rem;
+        margin: 0;
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.55);
+        color: #e2e8f0;
+        font-size: 0.92rem;
+        font-weight: 700;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    .catalog-categories-phone-toggle-main {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        min-width: 0;
+    }
+
+    .catalog-categories-phone-toggle-chevron {
+        flex-shrink: 0;
+        font-size: 0.7rem;
+        color: #94a3b8;
+        transition: transform 180ms ease;
+    }
+
+    .catalog-categories-phone-group.is-open .catalog-categories-phone-toggle-chevron {
+        transform: rotate(180deg);
+    }
+
+    .catalog-categories-phone-subs {
+        padding: 0.45rem 0 0.2rem;
+    }
+
+    .catalog-categories-phone-subs[hidden] {
+        display: none;
+    }
+
+    .catalog-categories-phone-link--parent {
         font-size: 0.84rem;
-        font-weight: 500;
-        border-left: 2px solid rgba(148, 163, 184, 0.25);
+        font-weight: 600;
+        margin-bottom: 0.45rem;
+    }
+
+    .catalog-categories-phone-subgrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+    }
+
+    .catalog-categories-phone-subitem {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.35rem;
+        padding: 0.4rem;
+        border-radius: 12px;
+        text-decoration: none;
+        color: #cbd5e1;
+        background: rgba(15, 23, 42, 0.45);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .catalog-categories-phone-subitem.active {
+        border-color: rgba(16, 185, 129, 0.45);
+        background: rgba(16, 185, 129, 0.16);
+        color: #a7f3d0;
+    }
+
+    .catalog-categories-phone-thumb {
+        display: block;
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: linear-gradient(145deg, rgba(244, 114, 182, 0.22), rgba(16, 185, 129, 0.18));
+        border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .catalog-categories-phone-thumb--lg {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+        border-radius: 10px;
+    }
+
+    .catalog-categories-phone-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .catalog-categories-phone-subitem-name {
+        font-size: 0.8rem;
+        font-weight: 600;
+        line-height: 1.25;
+        padding: 0 0.15rem 0.15rem;
     }
 
     body.catalog-categories-phone-open {

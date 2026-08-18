@@ -138,21 +138,51 @@ if (safeSelectedCategoryId) {
                         <% for (const parent of parentCategories) { %>
                             <% const nested = subCategories.filter((item) => Number(item.parent_id) === Number(parent.id)).sort(sortCats); %>
                             <% if (nested.length > 0) { %>
-                                <div class="catalog-categories-phone-group">
-                                    <a
-                                        href="/?category_id=<%= parent.id %>"
-                                        class="catalog-categories-phone-link catalog-categories-phone-link--parent catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
-                                        data-category-id="<%= parent.id %>"
-                                        data-category-label="<%= parent.name %>"
-                                    ><%= parent.name %></a>
-                                    <% for (const sub of nested) { %>
+                                <%
+                                const groupOpen = Number(safeSelectedCategoryId) === Number(parent.id)
+                                    || nested.some((sub) => Number(safeSelectedCategoryId) === Number(sub.id));
+                                %>
+                                <div class="catalog-categories-phone-group<%= groupOpen ? ' is-open' : '' %>" data-phone-group>
+                                    <button
+                                        type="button"
+                                        class="catalog-categories-phone-toggle"
+                                        aria-expanded="<%= groupOpen ? 'true' : 'false' %>"
+                                    >
+                                        <span class="catalog-categories-phone-toggle-main">
+                                            <span class="catalog-categories-phone-thumb">
+                                                <% if (parent.image_url) { %>
+                                                    <img src="<%= parent.image_url %>" alt="" />
+                                                <% } %>
+                                            </span>
+                                            <span><%= parent.name %></span>
+                                        </span>
+                                        <span class="catalog-categories-phone-toggle-chevron" aria-hidden="true">▼</span>
+                                    </button>
+                                    <div class="catalog-categories-phone-subs"<%= groupOpen ? '' : ' hidden' %>>
                                         <a
-                                            href="/?category_id=<%= sub.id %>"
-                                            class="catalog-categories-phone-link catalog-categories-phone-link--sub catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
-                                            data-category-id="<%= sub.id %>"
-                                            data-category-label="<%= sub.name %>"
-                                        ><%= sub.name %></a>
-                                    <% } %>
+                                            href="/?category_id=<%= parent.id %>"
+                                            class="catalog-categories-phone-link catalog-categories-phone-link--parent catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
+                                            data-category-id="<%= parent.id %>"
+                                            data-category-label="<%= parent.name %>"
+                                        >Усі в цій категорії</a>
+                                        <div class="catalog-categories-phone-subgrid">
+                                            <% for (const sub of nested) { %>
+                                                <a
+                                                    href="/?category_id=<%= sub.id %>"
+                                                    class="catalog-categories-phone-subitem catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
+                                                    data-category-id="<%= sub.id %>"
+                                                    data-category-label="<%= sub.name %>"
+                                                >
+                                                    <span class="catalog-categories-phone-thumb catalog-categories-phone-thumb--lg">
+                                                        <% if (sub.image_url) { %>
+                                                            <img src="<%= sub.image_url %>" alt="<%= sub.name %>" />
+                                                        <% } %>
+                                                    </span>
+                                                    <span class="catalog-categories-phone-subitem-name"><%= sub.name %></span>
+                                                </a>
+                                            <% } %>
+                                        </div>
+                                    </div>
                                 </div>
                             <% } else { %>
                                 <a
