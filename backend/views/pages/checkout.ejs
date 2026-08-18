@@ -38,11 +38,14 @@ const checkoutAuthNext = isCartMode
 %>
 
 <section class="catalog-content checkout-page">
-    <h1 class="checkout-page-title">Оформлення замовлення</h1>
+    <h1 class="checkout-page-title"><%= t('page.checkout') %></h1>
+    <% if (typeof lang === 'string' && lang === 'en' && t('money.uahNote')) { %>
+        <p class="locale-money-note"><%= t('money.uahNote') %></p>
+    <% } %>
 
     <% if (bouquetNote) { %>
         <div class="constructor-cart-note constructor-cart-note--checkout">
-            <strong>Ваш букет:</strong>
+            <strong><%= t('cart.bouquet') %></strong>
             <span><%= bouquetNote %></span>
             <% if (bouquetPreview) { %>
                 <div class="constructor-cart-preview">
@@ -139,7 +142,7 @@ const checkoutAuthNext = isCartMode
                 <h2 class="checkout-step-heading">Листівка</h2>
                 <label class="checkout-radio-label">
                     <input type="checkbox" name="want_greeting_card" value="1" id="wantGreetingCard" />
-                    Додати листівку (+<%= Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50) %> грн)
+                    Додати листівку (+<%= formatMoney(Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50)) %>)
                 </label>
                 <div id="greetingCardFields" hidden>
                     <label class="auth-label">
@@ -168,11 +171,11 @@ const checkoutAuthNext = isCartMode
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="exact" />
-                        В точний час · +99 грн
+                        В точний час · +<%= formatMoney(99) %>
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="express" />
-                        Експрес - якнайшвидше · +99 грн
+                        Експрес - якнайшвидше · +<%= formatMoney(99) %>
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="pickup" />
@@ -258,7 +261,7 @@ const checkoutAuthNext = isCartMode
             <div class="checkout-summary-card">
                 <div class="checkout-summary-head">
                     <span class="checkout-summary-title">Ваші товари</span>
-                    <strong class="checkout-summary-total" id="checkoutLineTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                    <strong class="checkout-summary-total" id="checkoutLineTotal"><%= formatMoney(initialTotal) %></strong>
                 </div>
 
                 <% if (isCartMode) { %>
@@ -271,9 +274,9 @@ const checkoutAuthNext = isCartMode
                                 <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
                             <% } %>
                             <div class="checkout-summary-body">
-                                <p class="checkout-summary-name"><%= row.product.name %></p>
+                                <p class="checkout-summary-name"><%= locName(row.product) %></p>
                                 <p class="checkout-summary-unit">
-                                    <%= Number(row.unit_price || 0).toLocaleString('uk-UA') %> грн / <%= row.product.unit_type || 'шт' %>
+                                    <%= formatMoney(Number(row.unit_price || 0)) %> / <%= translateUnit(row.product.unit_type || 'шт') %>
                                 </p>
                                 <input class="auth-input checkout-qty-input" type="number" min="1" max="<%= Number(row.product.stock_quantity || row.quantity || 1) %>" value="<%= Number(row.quantity || 1) %>" />
                             </div>
@@ -287,9 +290,9 @@ const checkoutAuthNext = isCartMode
                             <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
                         <% } %>
                         <div class="checkout-summary-body">
-                            <p class="checkout-summary-name"><%= product.name %></p>
+                            <p class="checkout-summary-name"><%= locName(product) %></p>
                             <p class="checkout-summary-unit">
-                                <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн / <%= product.unit_type || 'шт' %>
+                                <%= formatMoney(checkoutUnitPrice) %> / <%= translateUnit(product.unit_type || 'шт') %>
                             </p>
                             <div class="checkout-qty-stepper">
                                 <button type="button" class="checkout-qty-btn" id="checkoutQtyMinus" aria-label="Зменшити кількість">−</button>
@@ -312,15 +315,15 @@ const checkoutAuthNext = isCartMode
                     <h3 class="checkout-summary-extra-title">Додатково</h3>
                     <div class="checkout-summary-row">
                         <span>Доставка</span>
-                        <span class="checkout-summary-row-value" id="checkoutDeliveryFee">Безкоштовно</span>
+                        <span class="checkout-summary-row-value" id="checkoutDeliveryFee"><%= t('money.free') %></span>
                     </div>
                     <div class="checkout-summary-row" id="checkoutGreetingCardRow" hidden>
                         <span>Листівка</span>
-                        <span class="checkout-summary-row-value" id="checkoutGreetingCardFee">0 грн</span>
+                        <span class="checkout-summary-row-value" id="checkoutGreetingCardFee"><%= formatMoney(0) %></span>
                     </div>
                     <div class="checkout-summary-row checkout-summary-row--total">
                         <span>Разом до сплати</span>
-                        <strong id="checkoutGrandTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                        <strong id="checkoutGrandTotal"><%= formatMoney(initialTotal) %></strong>
                     </div>
                 </div>
 
@@ -332,9 +335,9 @@ const checkoutAuthNext = isCartMode
                                 <% const up = Number(u.sale_price || 0); %>
                                 <% const st = Number(u.stock_quantity || 0); %>
                                 <li class="checkout-upsell-item">
-                                    <span class="checkout-upsell-name"><%= u.name %></span>
+                                    <span class="checkout-upsell-name"><%= locName(u) %></span>
                                     <span class="checkout-upsell-meta">
-                                        <%= up.toLocaleString('uk-UA') %> грн
+                                        <%= formatMoney(up) %>
                                         <% if (st <= 0) { %>
                                             · немає в наявності
                                         <% } %>
@@ -370,6 +373,18 @@ var checkoutPageConfig = JSON.parse(document.getElementById('checkoutPageConfig'
 var DELIVERY_CONFIG = checkoutPageConfig.deliveryConfig;
 var GREETING_CARD_FEE = Number(checkoutPageConfig.greetingCardFee) || 50;
 var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
+function money(uah) {
+    if (typeof window.formatMoney === 'function') {
+        return window.formatMoney(uah);
+    }
+    return (Number(uah) || 0).toLocaleString('uk-UA') + ' грн';
+}
+function tt(key) {
+    if (typeof window.t === 'function') {
+        return window.t(key);
+    }
+    return key;
+}
 (function () {
     var form = document.getElementById('checkoutOrderForm');
     var q = document.getElementById('checkoutQty');
@@ -393,7 +408,7 @@ var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
         if (n > maxQ) n = maxQ;
         q.value = String(n);
         var lineTotal = n * unit;
-        out.textContent = lineTotal.toLocaleString('uk-UA') + ' грн';
+        out.textContent = money(lineTotal);
         hidTotal.value = String(lineTotal);
         hidItems.value = JSON.stringify([{ product_id: pid, quantity: n, unit_price: unit }]);
     }
@@ -422,7 +437,7 @@ var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
             items.push(item);
             total += qty * lineUnit;
         });
-        out.textContent = total.toLocaleString('uk-UA') + ' грн';
+        out.textContent = money(total);
         hidTotal.value = String(total);
         hidItems.value = JSON.stringify(items);
     }
@@ -724,17 +739,17 @@ function applyProfileAddressIfNeeded() {
         var fee = currentFee();
         var cardFee = currentCardFee();
         if (feeOut) {
-            feeOut.textContent = fee > 0 ? fee.toLocaleString('uk-UA') + ' грн' : 'Безкоштовно';
+            feeOut.textContent = fee > 0 ? money(fee) : tt('money.free');
         }
         if (cardFeeRow) {
             cardFeeRow.hidden = cardFee <= 0;
         }
         if (cardFeeOut) {
-            cardFeeOut.textContent = cardFee.toLocaleString('uk-UA') + ' грн';
+            cardFeeOut.textContent = money(cardFee);
         }
         if (grandOut) {
             var grand = getItemsTotal() + fee + cardFee;
-            grandOut.textContent = grand.toLocaleString('uk-UA') + ' грн';
+            grandOut.textContent = money(grand);
         }
     }
 

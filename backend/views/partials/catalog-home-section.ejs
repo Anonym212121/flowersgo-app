@@ -1,9 +1,9 @@
 <section class="catalog-section-panel">
     <div class="catalog-section-head">
-        <h2 class="catalog-section-title"><%= section.title %></h2>
+        <h2 class="catalog-section-title"><%= section.key === 'discount' ? t('catalog.discount') : (section.key === 'bouquets' ? t('catalog.bouquets') : locName(section.title)) %></h2>
         <% if (section.categoryId) { %>
             <a href="/?category_id=<%= section.categoryId %>" class="catalog-section-link catalog-category-nav" data-category-id="<%= section.categoryId %>">
-                Переглянути всі
+                <%= t('catalog.viewAll') %>
             </a>
         <% } %>
     </div>

@@ -6,27 +6,27 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
 %>
 
 <section class="catalog-content cart-page">
-    <h1 class="catalog-title">Кошик</h1>
+    <h1 class="catalog-title"><%= t('page.cart') %></h1>
 
     <% if (lines.length === 0) { %>
         <div class="catalog-empty">
-            <p class="catalog-empty__title">Кошик порожній</p>
-            <p class="catalog-empty__text">Додай букет з каталогу<% if (typeof constructorEnabled === 'undefined' || constructorEnabled) { %> або зібери свій у конструкторі<% } %>.</p>
+            <p class="catalog-empty__title"><%= t('cart.emptyTitle') %></p>
+            <p class="catalog-empty__text"><%= t('cart.emptyText') %><% if (typeof constructorEnabled === 'undefined' || constructorEnabled) { %><%= t('cart.emptyOr') %><% } else { %>.<% } %></p>
             <div class="catalog-empty__actions">
-                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary">До каталогу</a>
+                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary"><%= t('cart.toCatalog') %></a>
                 <% if (typeof constructorEnabled === 'undefined' || constructorEnabled) { %>
-                <a href="/constructor" class="catalog-empty__btn catalog-empty__btn--constructor">Конструктор</a>
+                <a href="/constructor" class="catalog-empty__btn catalog-empty__btn--constructor"><%= t('nav.constructor') %></a>
                 <% } %>
             </div>
         </div>
     <% } else { %>
         <% if (bouquetNote) { %>
             <div class="constructor-cart-note">
-                <strong>Ваш букет:</strong>
+                <strong><%= t('cart.bouquet') %></strong>
                 <span><%= bouquetNote %></span>
                 <% if (bouquetPreview) { %>
                     <div class="constructor-cart-preview">
-                        <img src="<%= bouquetPreview %>" alt="Превʼю букета" />
+                        <img src="<%= bouquetPreview %>" alt="<%= t('cart.bouquetPreview') %>" />
                     </div>
                 <% } %>
             </div>
@@ -35,10 +35,10 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
         <table class="cabinet-orders-table cart-table" id="cartTable">
             <thead>
                 <tr>
-                    <th>Товар</th>
-                    <th>Ціна</th>
-                    <th>Кількість</th>
-                    <th>Сума</th>
+                    <th><%= t('cart.product') %></th>
+                    <th><%= t('cart.price') %></th>
+                    <th><%= t('cart.qty') %></th>
+                    <th><%= t('cart.sum') %></th>
                     <th></th>
                 </tr>
             </thead>
@@ -46,9 +46,9 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
                 <% for (const row of lines) { %>
                     <tr data-product-id="<%= row.product_id %>" data-color-variant-id="<%= row.color_variant_id || '' %>" data-unit-price="<%= Number(row.unit_price || 0) %>">
                         <td>
-                            <a href="/product/<%= row.product_id %>"><%= row.product.name %><% if (row.flower_color) { %> (<%= row.flower_color %>)<% } %></a>
+                            <a href="/product/<%= row.product_id %>"><%= locName(row.product) %><% if (row.flower_color) { %> (<%= locName(row.flower_color) %>)<% } %></a>
                         </td>
-                        <td><%= Number(row.unit_price || 0).toLocaleString('uk-UA') %> грн</td>
+                        <td><%= formatMoney(Number(row.unit_price || 0)) %></td>
                         <td>
                             <input
                                 class="auth-input cart-qty-input"
@@ -56,12 +56,12 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
                                 min="1"
                                 max="<%= Number(row.max_quantity || row.product.stock_quantity || 1) %>"
                                 value="<%= Number(row.quantity || 1) %>"
-                                aria-label="Кількість: <%= row.product.name %>"
+                                aria-label="<%= t('cart.qty') %>: <%= locName(row.product) %>"
                             />
                         </td>
-                        <td class="cart-line-total"><%= Number(row.line_total || 0).toLocaleString('uk-UA') %> грн</td>
+                        <td class="cart-line-total"><%= formatMoney(Number(row.line_total || 0)) %></td>
                         <td>
-                            <button class="admin-secondary-btn cart-remove-btn" type="button">Видалити</button>
+                            <button class="admin-secondary-btn cart-remove-btn" type="button"><%= t('cart.remove') %></button>
                         </td>
                     </tr>
                 <% } %>
@@ -71,14 +71,17 @@ const bouquetPreview = typeof constructorPreview === 'string' ? constructorPrevi
 
         <div class="checkout-summary-card cart-summary">
             <p class="checkout-summary-row">
-                <span>Разом:</span>
-                <strong class="checkout-summary-total" id="cartGrandTotal"><%= total.toLocaleString('uk-UA') %> грн</strong>
+                <span><%= t('cart.total') %></span>
+                <strong class="checkout-summary-total" id="cartGrandTotal"><%= formatMoney(total) %></strong>
             </p>
+            <% if (typeof lang === 'string' && lang === 'en' && t('money.uahNote')) { %>
+                <p class="locale-money-note"><%= t('money.uahNote') %></p>
+            <% } %>
             <div class="cart-actions">
                 <form method="post" action="/cart/clear">
-                    <button type="submit" class="admin-secondary-btn">Очистити кошик</button>
+                    <button type="submit" class="admin-secondary-btn"><%= t('cart.clear') %></button>
                 </form>
-                <a href="/checkout?cart=1" class="auth-button">Оформити замовлення</a>
+                <a href="/checkout?cart=1" class="auth-button"><%= t('cart.checkout') %></a>
             </div>
         </div>
     <% } %>

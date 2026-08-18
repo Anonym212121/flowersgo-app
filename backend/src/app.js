@@ -85,6 +85,10 @@ const wantsJson = (req) => {
 app.set('view engine', 'ejs');
 app.set('views', path.join(rootDir, 'views'));
 
+const i18n = require('./utils/i18n');
+const localeContext = require('./middleware/localeContext');
+app.use(localeContext);
+
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
 app.use(express.static(path.join(rootDir, 'public')));
@@ -171,6 +175,7 @@ const realtimeService = require('./services/realtimeService');
 const PORT = process.env.PORT || 5000;
 const start = async () => {
     try {
+        await i18n.initI18n();
         await seedDefaults();
         await ensureAdminSchema();
         await seedLegalPages();

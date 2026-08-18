@@ -48,7 +48,51 @@ const FAQ_ITEMS = [
     }
 ];
 
-const getFaqItems = () => {
+const FAQ_ITEMS_EN = [
+    {
+        id: 'order',
+        question: 'How do I place an order?',
+        answer: 'Pick a bouquet in the catalog or build one in the bouquet builder, add it to the cart and go to checkout. Enter your details, address, delivery date and time, and a payment method.'
+    },
+    {
+        id: 'delivery',
+        question: 'How does delivery work?',
+        answer: 'Courier delivery or pickup — you choose this at checkout. A date and delivery window are required. If there are no slots today, pick another day.'
+    },
+    {
+        id: 'pay',
+        question: 'How do I pay?',
+        answer: 'Card payment via LiqPay after checkout. You have 10 minutes to pay. If you miss the window, the order is cancelled automatically. Charged in UAH.'
+    },
+    {
+        id: 'cancel',
+        question: 'How do I cancel an order?',
+        answer: 'Open the order in your account and tap Cancel while the button is still available. Otherwise message an administrator in this chat.'
+    },
+    {
+        id: 'constructor',
+        question: 'What is the bouquet builder?',
+        answer: 'You can assemble a bouquet yourself: choose flowers and quantities, then check out as usual. If the builder is turned off, use the catalog.'
+    },
+    {
+        id: 'cabinet',
+        question: 'Where are my orders and profile?',
+        answer: 'After logging in, open Account: orders, reviews, profile and delivery address. Wishlist is a separate page in the menu.'
+    },
+    {
+        id: 'account',
+        question: 'How do I sign up or log in?',
+        answer: 'Use Sign up or Log in in the header. You can create an account with email or continue with Google.'
+    }
+];
+
+const WELCOME_MESSAGE_EN =
+    'Welcome to FlowersGo support! Describe how we can help — an operator will join the chat shortly.';
+
+const getFaqItems = (lang) => {
+    if (lang === 'en') {
+        return FAQ_ITEMS_EN.slice();
+    }
     return FAQ_ITEMS.slice();
 };
 
@@ -75,7 +119,10 @@ const phonesFromEnv = () => {
     return phones;
 };
 
-const getWelcomeMessage = () => {
+const getWelcomeMessage = (lang) => {
+    if (lang === 'en') {
+        return WELCOME_MESSAGE_EN;
+    }
     const row = ShopSettings.getCached();
     if (row && row.support_welcome && String(row.support_welcome).trim()) {
         return String(row.support_welcome).trim();

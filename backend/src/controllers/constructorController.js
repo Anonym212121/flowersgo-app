@@ -38,7 +38,7 @@ const constructorPage = async (req, res) => {
             templateSlug = req.query.template.trim();
         }
 
-        return renderLayout(res, 'Конструктор букета', 'pages/constructor', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.constructor') : 'Конструктор букета', 'pages/constructor', {
             flowerGroups,
             packagingOptions,
             minStems: settings.min_stems,

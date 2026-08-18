@@ -212,6 +212,13 @@ a:hover { color: #bae6fd; }
     border-left: 1px solid rgba(148, 163, 184, 0.18);
 }
 
+.locale-money-note {
+    margin: 0.65rem 0 0;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
 .theme-switch {
     display: inline-flex;
     align-items: center;
@@ -510,6 +517,7 @@ a:hover { color: #bae6fd; }
     }
 
     .theme-switch,
+    .lang-switch,
     .nav-settings,
     .nav-notify {
         grid-column: 1 / -1;

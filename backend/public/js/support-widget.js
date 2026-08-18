@@ -13,6 +13,13 @@
         return;
     }
 
+    const tt = (key) => {
+        if (typeof window.t === 'function') {
+            return window.t(key);
+        }
+        return key;
+    };
+
     const isLoggedIn = root.getAttribute('data-logged-in') === '1';
     const POLL_MS = 8000;
 
@@ -364,19 +371,19 @@
 
     const showMenu = () => {
         screen = 'menu';
-        panelTitle.textContent = 'Підтримка';
+        panelTitle.textContent = tt('support.title');
         btnBack.hidden = true;
         setChatPanelMode(false);
 
-        const chatBtnLabel = hasActiveChat ? 'Мій чат' : 'Запросити адміністратора';
+        const chatBtnLabel = hasActiveChat ? tt('support.myChat') : tt('support.askAdmin');
         let menuHtml =
             '<div class="support-menu">' +
-            '<button type="button" class="support-menu__btn" id="support-go-faq">Часті питання</button>' +
+            '<button type="button" class="support-menu__btn" id="support-go-faq">' + tt('support.faq') + '</button>' +
             '<button type="button" class="support-menu__btn" id="support-go-chat">' + chatBtnLabel + '</button>' +
-            '<button type="button" class="support-menu__btn" id="support-go-phones">Телефони</button>';
+            '<button type="button" class="support-menu__btn" id="support-go-phones">' + tt('support.phones') + '</button>';
 
         if (hasClosedChats) {
-            menuHtml += '<button type="button" class="support-menu__btn support-menu__btn--archive" id="support-go-archive">Архів чатів</button>';
+            menuHtml += '<button type="button" class="support-menu__btn support-menu__btn--archive" id="support-go-archive">' + tt('support.archive') + '</button>';
         }
 
         menuHtml += '</div>';
@@ -487,13 +494,13 @@
 
     const showFaqList = () => {
         screen = 'faq';
-        panelTitle.textContent = 'Часті питання';
+        panelTitle.textContent = tt('support.faq');
         btnBack.hidden = false;
         setChatPanelMode(false);
 
-        let listHtml = '<p class="support-note">Оберіть питання - відповідь з\'явиться одразу. Якщо не допомогло, запросіть адміністратора.</p>';
+        let listHtml = '<p class="support-note">' + tt('support.faqLead') + '</p>';
         if (faqItems.length === 0) {
-            listHtml += '<p class="support-note">Список питань поки порожній.</p>';
+            listHtml += '<p class="support-note">' + tt('support.faqEmpty') + '</p>';
         } else {
             listHtml += '<div class="support-faq">';
             let i = 0;
@@ -509,7 +516,7 @@
         }
         listHtml +=
             '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
-            'Запросити адміністратора' +
+            tt('support.askAdmin') +
             '</button>';
 
         panelBody.innerHTML = listHtml;
@@ -538,7 +545,7 @@
 
         screen = 'faq-answer';
         lastFaqQuestion = item.question;
-        panelTitle.textContent = 'Відповідь';
+        panelTitle.textContent = tt('support.answer');
         btnBack.hidden = false;
         setChatPanelMode(false);
 
@@ -546,9 +553,9 @@
             '<div class="support-faq-answer">' +
             '<h3 class="support-faq-answer__q">' + escapeHtml(item.question) + '</h3>' +
             '<p class="support-faq-answer__a">' + escapeHtml(item.answer) + '</p>' +
-            '<button type="button" class="support-menu__btn" id="support-faq-back">Інше питання</button>' +
+            '<button type="button" class="support-menu__btn" id="support-faq-back">' + tt('support.otherQ') + '</button>' +
             '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
-            'Це не допомогло - запросити адміністратора' +
+            tt('support.notHelp') +
             '</button>' +
             '</div>';
 

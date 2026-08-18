@@ -9,7 +9,7 @@
                     <span class="logo__text">Flowers<span class="logo__accent">Go</span></span>
                 </a>
                 <p class="site-footer__about">
-                    Доставка свіжих квітів, букетів і подарунків по місту. Збираємо замовлення вручну, фото перед відправкою - за запитом.
+                    <%= t('footer.about') %>
                 </p>
                 <div class="site-footer__social">
                     <a href="https://t.me/" target="_blank" rel="noopener noreferrer">Telegram</a>
@@ -19,57 +19,57 @@
             </div>
 
             <div class="site-footer__col">
-                <h3 class="site-footer__title">Доставка</h3>
+                <h3 class="site-footer__title"><%= t('footer.delivery') %></h3>
                 <ul class="site-footer__list">
-                    <li>Кур'єр по місту - від 2 годин</li>
-                    <li>Точний час і експрес-слоти</li>
-                    <li>Самовивіз з 9:00 до 19:00</li>
-                    <li>Доставка вночі за попереднім записом</li>
+                    <li><%= t('footer.d1') %></li>
+                    <li><%= t('footer.d2') %></li>
+                    <li><%= t('footer.d3') %></li>
+                    <li><%= t('footer.d4') %></li>
                 </ul>
             </div>
 
             <div class="site-footer__col">
-                <h3 class="site-footer__title">Покупцям</h3>
+                <h3 class="site-footer__title"><%= t('footer.buyers') %></h3>
                 <ul class="site-footer__links">
-                    <li><a href="/">Каталог</a></li>
-                    <li><a href="/cart">Кошик</a></li>
-                    <li><a href="/wishlist">Обране</a></li>
+                    <li><a href="/"><%= t('nav.catalog') %></a></li>
+                    <li><a href="/cart"><%= t('nav.cart') %></a></li>
+                    <li><a href="/wishlist"><%= t('nav.wishlist') %></a></li>
                     <% if (headerType === 'guest') { %>
-                        <li><a href="/login">Вхід</a></li>
-                        <li><a href="/register">Реєстрація</a></li>
+                        <li><a href="/login"><%= t('page.login') %></a></li>
+                        <li><a href="/register"><%= t('page.register') %></a></li>
                     <% } else { %>
-                        <li><a href="/cabinet">Особистий кабінет</a></li>
-                        <li><a href="/checkout?cart=1">Оформлення</a></li>
+                        <li><a href="/cabinet"><%= t('footer.cabinet') %></a></li>
+                        <li><a href="/checkout?cart=1"><%= t('footer.checkout') %></a></li>
                     <% } %>
-                    <li><a href="/delivery-terms">Умови доставки</a></li>
-                    <li><a href="/privacy">Конфіденційність</a></li>
+                    <li><a href="/delivery-terms"><%= t('footer.deliveryTerms') %></a></li>
+                    <li><a href="/privacy"><%= t('footer.privacy') %></a></li>
                 </ul>
             </div>
 
             <div class="site-footer__col">
-                <h3 class="site-footer__title">Контакти</h3>
+                <h3 class="site-footer__title"><%= t('footer.contacts') %></h3>
                 <ul class="site-footer__contacts">
                     <li><a href="tel:+380671234567">+38 (067) 123-45-67</a></li>
                     <li><a href="mailto:info@flowersgo.ua">info@flowersgo.ua</a></li>
-                    <li>Щодня з 9:00 до 23:00</li>
-                    <li>Підтримка у месенджерах 24/7</li>
+                    <li><%= t('footer.hours') %></li>
+                    <li><%= t('footer.support') %></li>
                 </ul>
             </div>
         </div>
 
         <div class="site-footer__pay">
-            <span class="site-footer__pay-label">Оплата:</span>
+            <span class="site-footer__pay-label"><%= t('footer.pay') %></span>
             <span class="site-footer__badge">Visa / Mastercard</span>
             <span class="site-footer__badge">LiqPay</span>
-            <span class="site-footer__badge">Готівка кур'єру</span>
-            <span class="site-footer__badge">При отриманні</span>
+            <span class="site-footer__badge"><%= t('footer.cash') %></span>
+            <span class="site-footer__badge"><%= t('footer.cod') %></span>
         </div>
 
         <div class="site-footer__bottom">
-            <span>© <%= new Date().getFullYear() %> FlowersGo. Доставка квітів.</span>
+            <span>© <%= new Date().getFullYear() %> FlowersGo. <%= t('footer.copy') %></span>
             <span class="site-footer__bottom-links">
-                <a href="/privacy">Політика конфіденційності</a>
-                <a href="/delivery-terms">Умови доставки</a>
+                <a href="/privacy"><%= t('footer.privacyLong') %></a>
+                <a href="/delivery-terms"><%= t('footer.deliveryTerms') %></a>
             </span>
         </div>
     </div>

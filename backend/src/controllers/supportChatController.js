@@ -64,8 +64,8 @@ const getConfig = (req, res) => {
     try {
         return res.json({
             phones: supportChatService.getSupportPhones(),
-            welcome_message: supportChatService.getWelcomeMessage(),
-            faq: supportChatService.getFaqItems()
+            welcome_message: supportChatService.getWelcomeMessage(res.locals.lang),
+            faq: supportChatService.getFaqItems(res.locals.lang)
         });
     } catch (err) {
         return res.status(500).json({ message: 'Помилка завантаження' });

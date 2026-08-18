@@ -5,7 +5,7 @@ function setWishlistStarState(form, active) {
     }
     btn.textContent = active ? '★' : '☆';
     btn.classList.toggle('wishlist-star-btn--active', active);
-    const title = active ? 'Прибрати з обраного' : 'Додати в обране';
+    const title = active ? tt('catalog.removeWish') : tt('catalog.addWish');
     btn.setAttribute('title', title);
     btn.setAttribute('aria-label', title);
     form.setAttribute('action', active ? '/wishlist/remove' : '/wishlist/add');
@@ -176,7 +176,7 @@ function applyWishlistStars(ids) {
         const active = idSet.has(pid);
         btn.textContent = active ? '★' : '☆';
         btn.classList.toggle('wishlist-star-btn--active', active);
-        const title = active ? 'Прибрати з обраного' : 'Додати в обране';
+        const title = active ? tt('catalog.removeWish') : tt('catalog.addWish');
         btn.setAttribute('title', title);
         btn.setAttribute('aria-label', title);
         form.setAttribute('action', active ? '/wishlist/remove' : '/wishlist/add');
@@ -292,7 +292,7 @@ function applyCartButtons() {
         }
         const inCart = cartHasProduct(input.value);
         btn.classList.toggle('cart-icon-btn--in-cart', inCart);
-        const title = inCart ? 'Уже в кошику' : 'Додати в кошик';
+        const title = inCart ? tt('catalog.inCart') : tt('catalog.addCart');
         btn.setAttribute('title', title);
         btn.setAttribute('aria-label', title);
     });
@@ -438,11 +438,11 @@ function refreshCartGrandTotal() {
             sum += unit * qty;
             const lineOut = row.querySelector('.cart-line-total');
             if (lineOut) {
-                lineOut.textContent = (unit * qty).toLocaleString('uk-UA') + ' грн';
+                lineOut.textContent = money(unit * qty);
             }
         }
     });
-    totalOut.textContent = sum.toLocaleString('uk-UA') + ' грн';
+    totalOut.textContent = money(sum);
 }
 
 let cartPageBusy = false;
@@ -636,6 +636,20 @@ function escapeHtml(text) {
         .replace(/"/g, '&quot;');
 }
 
+function tt(key, vars) {
+    if (typeof window.t === 'function') {
+        return window.t(key, vars);
+    }
+    return key;
+}
+
+function money(uah) {
+    if (typeof window.formatMoney === 'function') {
+        return window.formatMoney(uah);
+    }
+    return (Number(uah) || 0).toLocaleString('uk-UA') + ' грн';
+}
+
 function buildProductCardHtml(product, showHitBadge) {
     const basePrice = Number(product.base_price || 0);
     const salePrice = Number(product.sale_price || 0);
@@ -647,11 +661,11 @@ function buildProductCardHtml(product, showHitBadge) {
     const unitEsc = escapeHtml(product.unit_type || 'шт');
     const imgInner = product.image_url
         ? `<img src="${escapeHtml(product.image_url)}" alt="${nameEsc}" class="product-image" />`
-        : '<div class="product-image product-image--placeholder">Немає фото</div>';
+        : `<div class="product-image product-image--placeholder">${escapeHtml(tt('catalog.noPhoto'))}</div>`;
     const imgBlock =
         `<a href="/product/${product.id}" class="product-card-image-link" tabindex="-1">${imgInner}</a>` +
         (product.image_url
-            ? `<button type="button" class="product-preview-btn" data-preview-src="${escapeHtml(product.image_url)}" data-preview-alt="${nameEsc}" title="Переглянути фото" aria-label="Переглянути фото ${nameEsc}">
+            ? `<button type="button" class="product-preview-btn" data-preview-src="${escapeHtml(product.image_url)}" data-preview-alt="${nameEsc}" title="${escapeHtml(tt('catalog.preview'))}" aria-label="${escapeHtml(tt('catalog.preview'))} ${nameEsc}">
                 <svg class="product-preview-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
                     <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
@@ -662,15 +676,15 @@ function buildProductCardHtml(product, showHitBadge) {
         discountPercent > 0
             ? `<span class="discount-badge">${discountPercent}%</span>`
             : '';
-    const hitBadge = showHitBadge ? '<span class="hit-badge">Хіт продажів</span>' : '';
+    const hitBadge = showHitBadge ? `<span class="hit-badge">${escapeHtml(tt('catalog.hit'))}</span>` : '';
     const oldPriceBlock = hasDiscount
-        ? `<span class="old-price">${basePrice.toLocaleString('uk-UA')} грн</span>`
+        ? `<span class="old-price">${escapeHtml(money(basePrice))}</span>`
         : '';
     const stockQty = Number(product.stock_quantity);
     const stockText =
         stockQty > 0
-            ? `В наявності: ${stockQty} ${unitEsc}`
-            : 'Немає в наявності';
+            ? escapeHtml(tt('catalog.inStockLine', { count: stockQty, unit: unitEsc }))
+            : escapeHtml(tt('catalog.outStock'));
     const cardRating = Number(product.average_rating);
     let ratingBlock = '';
     if (Number.isFinite(cardRating) && cardRating > 0) {
@@ -680,32 +694,32 @@ function buildProductCardHtml(product, showHitBadge) {
             stars += `<span class="star-icon ${on}">★</span>`;
         }
         ratingBlock = `<p class="product-card-rating">
-                <span class="star-rating star-rating--sm" title="Середня оцінка ${cardRating.toFixed(1)} з 5">${stars}</span>
+                <span class="star-rating star-rating--sm" title="${escapeHtml(tt('product.ratingOf', { value: cardRating.toFixed(1) }))}">${stars}</span>
                 <strong>${cardRating.toFixed(1)}</strong>
             </p>`;
     }
 
     const orderBtn =
         stockQty > 0
-            ? `<a class="product-order-btn" href="/checkout?product_id=${product.id}">Замовити</a>`
-            : `<button class="product-order-btn" type="button" disabled>Замовити</button>`;
+            ? `<a class="product-order-btn" href="/checkout?product_id=${product.id}">${escapeHtml(tt('catalog.order'))}</a>`
+            : `<button class="product-order-btn" type="button" disabled>${escapeHtml(tt('catalog.order'))}</button>`;
     const wlIds = Array.isArray(window.__wishlistProductIds) ? window.__wishlistProductIds : [];
     const cardProductId = Number(product.id);
     const inCart = cartHasProduct(cardProductId);
-    const cartTitle = inCart ? 'Уже в кошику' : 'Додати в кошик';
+    const cartTitle = inCart ? tt('catalog.inCart') : tt('catalog.addCart');
     const cartBtn =
         stockQty > 0
             ? `<form method="post" action="/cart/add" class="cart-form cart-ajax">
                         <input type="hidden" name="product_id" value="${product.id}" />
                         <input type="hidden" name="quantity" value="1" />
-                        <button class="cart-icon-btn${inCart ? ' cart-icon-btn--in-cart' : ''}" type="submit" title="${cartTitle}" aria-label="${cartTitle}">🛒</button>
+                        <button class="cart-icon-btn${inCart ? ' cart-icon-btn--in-cart' : ''}" type="submit" title="${escapeHtml(cartTitle)}" aria-label="${escapeHtml(cartTitle)}">🛒</button>
                    </form>`
-            : `<button class="cart-icon-btn" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>`;
+            : `<button class="cart-icon-btn" type="button" disabled title="${escapeHtml(tt('catalog.outStock'))}" aria-label="${escapeHtml(tt('catalog.outStock'))}">🛒</button>`;
     const inWishlist = wlIds.some((id) => Number(id) === cardProductId);
     const wishlistAction = inWishlist ? '/wishlist/remove' : '/wishlist/add';
     const wishlistStarClass = inWishlist ? ' wishlist-star-btn--active' : '';
     const wishlistStarChar = inWishlist ? '★' : '☆';
-    const wishlistTitle = inWishlist ? 'Прибрати з обраного' : 'Додати в обране';
+    const wishlistTitle = inWishlist ? tt('catalog.removeWish') : tt('catalog.addWish');
 
     return `<article class="product-card">
                         <div class="product-image-wrap">
@@ -720,7 +734,7 @@ function buildProductCardHtml(product, showHitBadge) {
 
                         <p class="product-price">
                             ${oldPriceBlock}
-                            <strong>${salePrice.toLocaleString('uk-UA')} грн</strong>
+                            <strong>${escapeHtml(money(salePrice))}</strong>
                         </p>
 
                         <p class="product-stock">
@@ -731,7 +745,7 @@ function buildProductCardHtml(product, showHitBadge) {
                         <div class="product-card-actions">
                             <form method="post" action="${wishlistAction}" class="wishlist-form wishlist-ajax">
                                 <input type="hidden" name="product_id" value="${product.id}" />
-                                <button class="wishlist-star-btn${wishlistStarClass}" type="submit" title="${wishlistTitle}" aria-label="${wishlistTitle}">${wishlistStarChar}</button>
+                                <button class="wishlist-star-btn${wishlistStarClass}" type="submit" title="${escapeHtml(wishlistTitle)}" aria-label="${escapeHtml(wishlistTitle)}">${wishlistStarChar}</button>
                             </form>
                             ${cartBtn}
                             ${orderBtn}
@@ -746,7 +760,7 @@ function buildCatalogHitHtml(hitProducts) {
     }
     const hitCards = hits.map((product) => buildProductCardHtml(product, true));
     return `<section class="catalog-hit-section">
-            <h2 class="catalog-section-title">Хіт продажів</h2>
+            <h2 class="catalog-section-title">${escapeHtml(tt('catalog.hit'))}</h2>
             <div class="products-grid">${hitCards.join('')}</div>
         </section>`;
 }
@@ -759,7 +773,7 @@ function buildCatalogSectionHtml(section) {
     const cards = section.products.map((product) => buildProductCardHtml(product, false));
     let link = '';
     if (section.categoryId) {
-        link = `<a href="/?category_id=${section.categoryId}" class="catalog-section-link catalog-category-nav" data-category-id="${section.categoryId}">Переглянути всі</a>`;
+        link = `<a href="/?category_id=${section.categoryId}" class="catalog-section-link catalog-category-nav" data-category-id="${section.categoryId}">${escapeHtml(tt('catalog.viewAll'))}</a>`;
     }
     return `<section class="catalog-section-panel">
             <div class="catalog-section-head">
@@ -789,14 +803,14 @@ function buildCatalogAllHtml(products, hitProducts, homeSections) {
     const featured = hasFeaturedCatalogBlocks(hitProducts, homeSections);
 
     if (!featured && list.length === 0) {
-        return '<p class="catalog-empty">Товари не знайдено.</p>';
+        return `<p class="catalog-empty">${escapeHtml(tt('catalog.empty'))}</p>`;
     }
     if (list.length === 0) {
         return '';
     }
 
     const cards = list.map((product) => buildProductCardHtml(product, false));
-    const title = featured ? '<h2 class="catalog-section-title">Усі товари</h2>' : '';
+    const title = featured ? `<h2 class="catalog-section-title">${escapeHtml(tt('catalog.all'))}</h2>` : '';
     return `${title}<div class="products-grid products-grid--wide">${cards.join('')}</div>`;
 }
 
@@ -813,7 +827,7 @@ function isCatalogHomeMode(categoryId, q) {
 function buildCatalogCategoryHtml(products) {
     const list = products || [];
     if (list.length === 0) {
-        return '<p class="catalog-empty">Товари не знайдено.</p>';
+        return `<p class="catalog-empty">${escapeHtml(tt('catalog.empty'))}</p>`;
     }
     const cards = list.map((product) => buildProductCardHtml(product, false));
     return `<div class="products-grid">${cards.join('')}</div>`;
@@ -829,14 +843,14 @@ function updateCatalogHeroFromNav(categoryId, q) {
     const searchText = typeof q === 'string' ? q.trim() : '';
 
     if (isCatalogHomeMode(categoryId, searchText)) {
-        titleEl.textContent = 'Обери свіжий букет';
-        leadEl.textContent = 'Свіжі квіти та букети - доставимо у зручний для тебе час';
+        titleEl.textContent = tt('catalog.heroTitle');
+        leadEl.textContent = tt('catalog.heroLead');
         return;
     }
 
     if (searchText) {
-        titleEl.textContent = 'Результати пошуку';
-        leadEl.textContent = 'Знайдені товари за вашим запитом';
+        titleEl.textContent = tt('catalog.searchResults');
+        leadEl.textContent = tt('catalog.searchLead');
         return;
     }
 
@@ -856,8 +870,8 @@ function updateCatalogHeroFromNav(categoryId, q) {
     const labelNode = activeLink.querySelector('.category-parent-label');
     let label = labelNode ? labelNode.textContent.trim() : activeLink.textContent.trim();
     label = label.replace('›', '').trim();
-    titleEl.textContent = label || 'Каталог';
-    leadEl.textContent = 'Замов онлайн - зберемо букет перед відправкою';
+    titleEl.textContent = label || tt('nav.catalog');
+    leadEl.textContent = tt('catalog.heroLeadCat');
 }
 
 function applyCatalogProductsHtml(products, hitProducts, homeSections, categoryId, q) {

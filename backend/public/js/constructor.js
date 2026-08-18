@@ -5,6 +5,19 @@
         return;
     }
 
+    function money(uah) {
+        if (typeof window.formatMoney === 'function') {
+            return window.formatMoney(uah);
+        }
+        return (Number(uah) || 0).toLocaleString('uk-UA') + ' грн';
+    }
+    function tt(key, vars) {
+        if (typeof window.t === 'function') {
+            return window.t(key, vars);
+        }
+        return key;
+    }
+
     var summaryList = document.getElementById('constructorSummaryList');
     var stemOut = document.getElementById('constructorStemCount');
     var totalOut = document.getElementById('constructorTotal');
@@ -412,10 +425,10 @@
         var hasItems = Number.isFinite(stems) && stems > 0;
         mobileBar.hidden = !hasItems;
         if (mobileTotal) {
-            mobileTotal.textContent = total.toLocaleString('uk-UA') + ' грн';
+            mobileTotal.textContent = money(total);
         }
         if (mobileStems) {
-            mobileStems.textContent = stems + ' квіток';
+            mobileStems.textContent = tt('constructor.stems', { count: stems });
         }
         if (mobileAddBtn) {
             mobileAddBtn.disabled = !(data && data.ok);
@@ -686,7 +699,7 @@
 
         var priceEl = card.querySelector('.constructor-card__price strong');
         if (priceEl) {
-            priceEl.textContent = price.toLocaleString('uk-UA') + ' грн / шт';
+            priceEl.textContent = tt('constructor.perStem', { price: money(price) });
         }
 
         var stockEl = card.querySelector('.constructor-card__stock-value');
@@ -728,7 +741,7 @@
         if (!data || (!data.ok && !hasLines)) {
             summaryList.innerHTML = '<li class="constructor-summary-empty">Поки нічого не обрано</li>';
             stemOut.textContent = '0';
-            totalOut.textContent = '0 грн';
+            totalOut.textContent = money(0);
             hintEl.textContent = data && data.message ? data.message : 'Мінімум ' + cfg.minStems + ' квіток';
             if (hintEl) {
                 hintEl.classList.remove('constructor-hint--even');
@@ -759,8 +772,8 @@
                 ' ×' +
                 Number(line.quantity || 0) +
                 ' — ' +
-                Number(line.line_total || 0).toLocaleString('uk-UA') +
-                ' грн</span>' +
+                money(line.line_total || 0) +
+                '</span>' +
                 '<button type="button" class="constructor-summary-remove" data-product-id="' +
                 String(line.product_id) +
                 '"' +
@@ -771,15 +784,16 @@
         if (Number(data.packagingPrice || 0) > 0) {
             html +=
                 '<li class="constructor-summary-item constructor-summary-item--pack">' +
-                '<span class="constructor-summary-item__text">Упаковка: ' +
-                escapeHtml(data.packagingLabel) +
-                ' — ' +
-                Number(data.packagingPrice).toLocaleString('uk-UA') +
-                ' грн</span></li>';
+                '<span class="constructor-summary-item__text">' +
+                escapeHtml(tt('constructor.packing', {
+                    name: data.packagingLabel,
+                    price: money(data.packagingPrice)
+                })) +
+                '</span></li>';
         }
-        summaryList.innerHTML = html || '<li class="constructor-summary-empty">Поки нічого не обрано</li>';
+        summaryList.innerHTML = html || '<li class="constructor-summary-empty">' + escapeHtml(tt('constructor.emptyPick')) + '</li>';
         stemOut.textContent = String(data.stemTotal || 0);
-        totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+        totalOut.textContent = money(data.total || 0);
         lastStemTotal = Number(data.stemTotal || 0);
         var evenNow = data.evenStems === true || isEvenStemCount(lastStemTotal);
         if (hintEl) {

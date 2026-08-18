@@ -18,22 +18,22 @@ const sortCats = (a, b) => {
 };
 const parentCategories = safeCategories.filter((item) => !item.parent_id).sort(sortCats);
 const subCategories = safeCategories.filter((item) => item.parent_id);
-let selectedCategoryLabel = 'Усі товари';
+let selectedCategoryLabel = t('catalog.all');
 if (safeSelectedCategoryId) {
     const selectedCat = safeCategories.find((item) => Number(item.id) === Number(safeSelectedCategoryId));
     if (selectedCat && selectedCat.name) {
-        selectedCategoryLabel = selectedCat.name;
+        selectedCategoryLabel = locName(selectedCat);
     }
 }
 %>
 
 <div class="catalog-layout <%= isCatalogHome ? 'catalog-layout--home' : 'catalog-layout--filtered' %>">
     <aside class="catalog-sidebar">
-        <h3>Категорії</h3>
+        <h3><%= t('catalog.categories') %></h3>
 
         <ul class="category-list">
             <li>
-                <a href="/" class="catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>" data-category-id="">Усі товари</a>
+                <a href="/" class="catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>" data-category-id=""><%= t('catalog.all') %></a>
             </li>
 
             <% for (const parent of parentCategories) { %>
@@ -45,10 +45,10 @@ if (safeSelectedCategoryId) {
                             class="category-parent-link catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
                             data-category-id="<%= parent.id %>"
                         >
-                            <span class="category-parent-label"><%= parent.name %></span>
+                            <span class="category-parent-label"><%= locName(parent) %></span>
                             <span class="category-chevron" aria-hidden="true">›</span>
                         </a>
-                        <div class="category-flyout" role="navigation" aria-label="Підкатегорії: <%= parent.name %>">
+                        <div class="category-flyout" role="navigation" aria-label="<%= t('catalog.subcats', { name: locName(parent) }) %>">
                             <div class="category-flyout-grid">
                                 <% for (const sub of nested) { %>
                                     <a
@@ -58,10 +58,10 @@ if (safeSelectedCategoryId) {
                                     >
                                         <span class="category-flyout-thumb">
                                             <% if (sub.image_url) { %>
-                                                <img src="<%= sub.image_url %>" alt="<%= sub.name %>">
+                                                <img src="<%= sub.image_url %>" alt="<%= locName(sub) %>">
                                             <% } %>
                                         </span>
-                                        <span class="category-flyout-text"><%= sub.name %></span>
+                                        <span class="category-flyout-text"><%= locName(sub) %></span>
                                     </a>
                                 <% } %>
                             </div>
@@ -74,7 +74,7 @@ if (safeSelectedCategoryId) {
                             class="catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
                             data-category-id="<%= parent.id %>"
                         >
-                            <%= parent.name %>
+                            <%= locName(parent) %>
                         </a>
                     </li>
                 <% } %>
@@ -90,11 +90,11 @@ if (safeSelectedCategoryId) {
 
         <% if (isCatalogHome && (typeof constructorEnabled === 'undefined' || constructorEnabled)) { %>
             <div class="catalog-sidebar-constructor">
-                <a href="/constructor" class="catalog-sidebar-constructor__link" aria-label="Перейти до конструктора букетів">
+                <a href="/constructor" class="catalog-sidebar-constructor__link" aria-label="<%= t('catalog.constructorAria') %>">
                     <img
                         class="catalog-sidebar-constructor__image"
                         src="/images/constructor-sidebar-banner.png"
-                        alt="Конструктор букетів"
+                        alt="<%= t('catalog.constructorAlt') %>"
                         loading="lazy"
                         decoding="async"
                     />
@@ -114,26 +114,26 @@ if (safeSelectedCategoryId) {
             >
                 <span class="catalog-categories-phone-btn-icon" aria-hidden="true">☰</span>
                 <span class="catalog-categories-phone-btn-text">
-                    <span class="catalog-categories-phone-btn-label">Категорія</span>
+                    <span class="catalog-categories-phone-btn-label"><%= t('catalog.phoneCat') %></span>
                     <span class="catalog-categories-phone-btn-value" id="catalog-categories-phone-current"><%= selectedCategoryLabel %></span>
                 </span>
                 <span class="catalog-categories-phone-btn-chevron" aria-hidden="true">▼</span>
             </button>
 
             <div class="catalog-categories-phone-panel" id="catalog-categories-phone-panel" hidden>
-                <button type="button" class="catalog-categories-phone-backdrop" data-phone-categories-close aria-label="Закрити категорії"></button>
-                <div class="catalog-categories-phone-sheet" role="dialog" aria-label="Категорії товарів">
+                <button type="button" class="catalog-categories-phone-backdrop" data-phone-categories-close aria-label="<%= t('catalog.closeCats') %>"></button>
+                <div class="catalog-categories-phone-sheet" role="dialog" aria-label="<%= t('catalog.phoneCats') %>">
                     <div class="catalog-categories-phone-sheet-head">
-                        <h3>Категорії</h3>
-                        <button type="button" class="catalog-categories-phone-close" data-phone-categories-close aria-label="Закрити">×</button>
+                        <h3><%= t('catalog.categories') %></h3>
+                        <button type="button" class="catalog-categories-phone-close" data-phone-categories-close aria-label="<%= t('catalog.close') %>">×</button>
                     </div>
                     <div class="catalog-categories-phone-sheet-body">
                         <a
                             href="/"
                             class="catalog-categories-phone-link catalog-category-nav <%= !safeSelectedCategoryId ? 'active' : '' %>"
                             data-category-id=""
-                            data-category-label="Усі товари"
-                        >Усі товари</a>
+                            data-category-label="<%= t('catalog.all') %>"
+                        ><%= t('catalog.all') %></a>
 
                         <% for (const parent of parentCategories) { %>
                             <% const nested = subCategories.filter((item) => Number(item.parent_id) === Number(parent.id)).sort(sortCats); %>
@@ -154,7 +154,7 @@ if (safeSelectedCategoryId) {
                                                     <img src="<%= parent.image_url %>" alt="" />
                                                 <% } %>
                                             </span>
-                                            <span><%= parent.name %></span>
+                                            <span><%= locName(parent) %></span>
                                         </span>
                                         <span class="catalog-categories-phone-toggle-chevron" aria-hidden="true">▼</span>
                                     </button>
@@ -163,22 +163,22 @@ if (safeSelectedCategoryId) {
                                             href="/?category_id=<%= parent.id %>"
                                             class="catalog-categories-phone-link catalog-categories-phone-link--parent catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
                                             data-category-id="<%= parent.id %>"
-                                            data-category-label="<%= parent.name %>"
-                                        >Усі в цій категорії</a>
+                                            data-category-label="<%= locName(parent) %>"
+                                        ><%= t('catalog.allInCat') %></a>
                                         <div class="catalog-categories-phone-subgrid">
                                             <% for (const sub of nested) { %>
                                                 <a
                                                     href="/?category_id=<%= sub.id %>"
                                                     class="catalog-categories-phone-subitem catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(sub.id) ? 'active' : '' %>"
                                                     data-category-id="<%= sub.id %>"
-                                                    data-category-label="<%= sub.name %>"
+                                                    data-category-label="<%= locName(sub) %>"
                                                 >
                                                     <span class="catalog-categories-phone-thumb catalog-categories-phone-thumb--lg">
                                                         <% if (sub.image_url) { %>
-                                                            <img src="<%= sub.image_url %>" alt="<%= sub.name %>" />
+                                                            <img src="<%= sub.image_url %>" alt="<%= locName(sub) %>" />
                                                         <% } %>
                                                     </span>
-                                                    <span class="catalog-categories-phone-subitem-name"><%= sub.name %></span>
+                                                    <span class="catalog-categories-phone-subitem-name"><%= locName(sub) %></span>
                                                 </a>
                                             <% } %>
                                         </div>
@@ -189,17 +189,17 @@ if (safeSelectedCategoryId) {
                                     href="/?category_id=<%= parent.id %>"
                                     class="catalog-categories-phone-link catalog-category-nav <%= Number(safeSelectedCategoryId) === Number(parent.id) ? 'active' : '' %>"
                                     data-category-id="<%= parent.id %>"
-                                    data-category-label="<%= parent.name %>"
-                                ><%= parent.name %></a>
+                                    data-category-label="<%= locName(parent) %>"
+                                ><%= locName(parent) %></a>
                             <% } %>
                         <% } %>
 
                         <% if (isCatalogHome && (typeof constructorEnabled === 'undefined' || constructorEnabled)) { %>
-                            <a href="/constructor" class="catalog-sidebar-constructor__link catalog-categories-phone-constructor" aria-label="Перейти до конструктора букетів">
+                            <a href="/constructor" class="catalog-sidebar-constructor__link catalog-categories-phone-constructor" aria-label="<%= t('catalog.constructorAria') %>">
                                 <img
                                     class="catalog-sidebar-constructor__image"
                                     src="/images/constructor-sidebar-banner.png"
-                                    alt="Конструктор букетів"
+                                    alt="<%= t('catalog.constructorAlt') %>"
                                     loading="lazy"
                                     decoding="async"
                                 />
@@ -212,28 +212,31 @@ if (safeSelectedCategoryId) {
 
         <header class="catalog-hero">
             <div class="catalog-hero__content">
-                <p class="catalog-hero__eyebrow">✿ Доставка квітів по місту</p>
-                <% if (selectedCategoryLabel === 'Усі товари') { %>
-                    <h1 class="catalog-hero__title">Обери свіжий букет</h1>
-                    <p class="catalog-hero__lead">Свіжі квіти та букети - доставимо у зручний для тебе час</p>
+                <p class="catalog-hero__eyebrow"><%= t('catalog.eyebrow') %></p>
+                <% if (!safeSelectedCategoryId && !safeSearchQuery) { %>
+                    <h1 class="catalog-hero__title"><%= t('catalog.heroTitle') %></h1>
+                    <p class="catalog-hero__lead"><%= t('catalog.heroLead') %></p>
                 <% } else { %>
                     <h1 class="catalog-hero__title"><%= selectedCategoryLabel %></h1>
-                    <p class="catalog-hero__lead">Замов онлайн - зберемо букет перед відправкою</p>
+                    <p class="catalog-hero__lead"><%= t('catalog.heroLeadCat') %></p>
                 <% } %>
             </div>
             <ul class="catalog-hero__perks">
-                <li>Доставка від 2 год</li>
-                <li>Свіжий зріз</li>
-                <li>LiqPay / готівка</li>
+                <li><%= t('catalog.perk1') %></li>
+                <li><%= t('catalog.perk2') %></li>
+                <li><%= t('catalog.perk3') %></li>
             </ul>
         </header>
+        <% if (typeof lang === 'string' && lang === 'en' && t('money.uahNote')) { %>
+            <p class="locale-money-note"><%= t('money.uahNote') %></p>
+        <% } %>
 
         <div class="catalog-toolbar">
             <form class="catalog-search" method="get" action="/" role="search">
                 <% if (safeSelectedCategoryId) { %>
                     <input type="hidden" name="category_id" value="<%= safeSelectedCategoryId %>" />
                 <% } %>
-                <label class="catalog-search-label" for="catalog-q">Пошук товарів</label>
+                <label class="catalog-search-label" for="catalog-q"><%= t('catalog.searchLabel') %></label>
                 <div class="catalog-search-row">
                     <input
                         id="catalog-q"
@@ -241,10 +244,10 @@ if (safeSelectedCategoryId) {
                         type="search"
                         name="q"
                         value="<%= safeSearchQuery %>"
-                        placeholder="Я шукаю..."
+                        placeholder="<%= t('catalog.searchPlaceholder') %>"
                         autocomplete="off"
                     />
-                    <button class="catalog-search-btn" type="submit">Шукати</button>
+                    <button class="catalog-search-btn" type="submit"><%= t('catalog.searchBtn') %></button>
                 </div>
             </form>
         </div>
@@ -252,7 +255,7 @@ if (safeSelectedCategoryId) {
         <div id="catalog-hit-root">
             <% if (isCatalogHome && safeHitProducts.length > 0) { %>
                 <section class="catalog-hit-section">
-                    <h2 class="catalog-section-title">Хіт продажів</h2>
+                    <h2 class="catalog-section-title"><%= t('catalog.hit') %></h2>
                     <div class="products-grid">
                         <% for (const product of safeHitProducts) { %>
                             <%- include('../partials/catalog-product-card', {
@@ -269,7 +272,7 @@ if (safeSelectedCategoryId) {
         <div id="catalog-category-root" class="catalog-category-panel">
             <% if (!isCatalogHome) { %>
                 <% if (safeProducts.length === 0) { %>
-                    <p class="catalog-empty">Товари не знайдено.</p>
+                    <p class="catalog-empty"><%= t('catalog.empty') %></p>
                 <% } else { %>
                     <div class="products-grid">
                         <% for (const product of safeProducts) { %>
@@ -299,10 +302,10 @@ if (safeSelectedCategoryId) {
     <section id="catalog-all-root" class="catalog-all-panel<% if (!isCatalogHome || safeProducts.length === 0) { %> catalog-all-panel--empty<% } %>">
         <% if (isCatalogHome) { %>
             <% if (!hasFeaturedBlocks && safeProducts.length === 0) { %>
-                <p class="catalog-empty">Товари не знайдено.</p>
+                <p class="catalog-empty"><%= t('catalog.empty') %></p>
             <% } else if (safeProducts.length > 0) { %>
                 <% if (hasFeaturedBlocks) { %>
-                    <h2 class="catalog-section-title">Усі товари</h2>
+                    <h2 class="catalog-section-title"><%= t('catalog.all') %></h2>
                 <% } %>
                 <div class="products-grid products-grid--wide">
                     <% for (const product of safeProducts) { %>

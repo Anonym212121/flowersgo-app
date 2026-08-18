@@ -27,6 +27,7 @@ const sanitizeLegalHtml = require('../utils/sanitizeLegalHtml');
 const homeCatalogService = require('../services/homeCatalogService');
 const recentDeliveryService = require('../services/recentDeliveryService');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const i18n = require('../utils/i18n');
 const {
     respondWithMessage,
     renderPageMessage,
@@ -80,7 +81,7 @@ const home = async (req, res) => {
 
         const recentDelivery = await recentDeliveryService.loadRecentDeliveryHighlight();
 
-        return renderLayout(res, 'Каталог товарів', 'pages/home', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.catalog') : 'Каталог товарів', 'pages/home', {
             categories,
             products,
             hitProducts,
@@ -100,7 +101,7 @@ const loginPage = (req, res) => {
         return res.redirect('/');
     }
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '';
-    return renderLayout(res, 'Вхід', 'pages/login', {
+    return renderLayout(res, res.locals.t ? res.locals.t('page.login') : 'Вхід', 'pages/login', {
         authNext: next,
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
@@ -115,7 +116,7 @@ const registerPage = (req, res) => {
         return res.redirect('/');
     }
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '';
-    return renderLayout(res, 'Реєстрація', 'pages/register', {
+    return renderLayout(res, res.locals.t ? res.locals.t('page.register') : 'Реєстрація', 'pages/register', {
         authNext: next,
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
@@ -284,7 +285,7 @@ const cabinetPage = async (req, res) => {
             server: 'Сталася помилка сервера'
         };
 
-        return renderLayout(res, 'Мій кабінет', 'pages/cabinet', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.cabinet') : 'Мій кабінет', 'pages/cabinet', {
             profile,
             myReviews,
             orders,
@@ -319,7 +320,7 @@ const publicProfilePage = async (req, res) => {
         const isOwner = current && Number(current.user_id) === userId;
 
         const closed = () => {
-            return renderLayout(res, 'Профіль закритий', 'pages/public-profile', {
+            return renderLayout(res, res.locals.t ? res.locals.t('page.profileClosed') : 'Профіль закритий', 'pages/public-profile', {
                 publicProfile: null,
                 publicReviews: [],
                 publicProfileClosed: true,
@@ -367,7 +368,7 @@ const cartPage = async (req, res) => {
         const details = await cartService.buildCartDetails(items);
         const constructorNote = constructorService.getNoteFromRequest(req);
         const constructorPreview = bouquetPreviewService.getPreviewFromRequest(req);
-        return renderLayout(res, 'Кошик', 'pages/cart', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.cart') : 'Кошик', 'pages/cart', {
             cartLines: details.lines,
             cartTotal: details.total,
             cartCount: details.lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
@@ -397,7 +398,7 @@ const checkoutPage = async (req, res) => {
                 return res.redirect('/cart');
             }
 
-            return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {
+            return renderLayout(res, res.locals.t ? res.locals.t('page.checkout') : 'Оформлення замовлення', 'pages/checkout', {
                 product: cartDetails.lines[0].product,
                 upsells: [],
                 cartMode: true,
@@ -451,7 +452,7 @@ const checkoutPage = async (req, res) => {
             .filter((n) => Number.isFinite(n) && n > 0);
         const upsells = await ProductModel.listForCheckoutUpsells(id, upsellIdList);
 
-        return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.checkout') : 'Оформлення замовлення', 'pages/checkout', {
             product,
             upsells,
             googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
@@ -575,7 +576,7 @@ const productPage = async (req, res) => {
         await ReviewModel.syncAverageForProduct(id);
         const productFresh = await ProductModel.findById(id);
 
-        return renderLayout(res, productFresh.name, 'pages/product', {
+        return renderLayout(res, res.locals.locName ? res.locals.locName(productFresh) : productFresh.name, 'pages/product', {
             product: productFresh,
             reviews
         });
@@ -840,7 +841,8 @@ const catalogProductsJson = async (req, res) => {
             products = await ProductModel.allProducts(selectedCategoryId, searchQuery);
         }
 
-        return res.json({ products, hitProducts, homeSections });
+        const lang = res.locals.lang || 'uk';
+        return res.json(i18n.localizeCatalogPayload(lang, { products, hitProducts, homeSections }));
     } catch (err) {
         return res.status(500).json({ message: 'Не вдалося завантажити товари' });
     }

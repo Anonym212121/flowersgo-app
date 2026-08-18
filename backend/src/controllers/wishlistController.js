@@ -76,7 +76,7 @@ const wishlistPage = async (req, res) => {
             products = await ProductModel.productsByIds(ids);
         }
 
-        return renderLayout(res, 'Обране', 'pages/wishlist', { products });
+        return renderLayout(res, res.locals.t ? res.locals.t('page.wishlist') : 'Обране', 'pages/wishlist', { products });
     } catch (err) {
         console.error('wishlistPage:', err.message);
         return respondServerError(req, res, { title: 'Обране', actions: defaultWishlistActions() });
