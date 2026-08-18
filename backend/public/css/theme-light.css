@@ -1764,6 +1764,7 @@ html.theme-light .toast-item__close:hover {
 }
 
 html.theme-light .support-menu__btn,
+html.theme-light .support-faq__btn,
 html.theme-light .support-phones__item a,
 html.theme-light .support-archive-list__btn {
     color: #334155;
@@ -1772,8 +1773,18 @@ html.theme-light .support-archive-list__btn {
 
 html.theme-light .support-phones__item a:hover,
 html.theme-light .support-menu__btn:hover,
+html.theme-light .support-faq__btn:hover,
 html.theme-light .support-archive-list__btn:hover {
     background: #f8fafc;
+}
+
+html.theme-light .support-faq-answer__q {
+    color: #0f172a;
+}
+
+html.theme-light .support-faq-answer__a {
+    background: rgba(16, 185, 129, 0.1);
+    color: #065f46;
 }
 
 html.theme-light .support-msg--client {

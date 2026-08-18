@@ -18,6 +18,9 @@
 
     let screen = 'menu';
     let phones = [];
+    let faqItems = [];
+    let lastFaqQuestion = '';
+    let composeDraft = '';
     let welcomeMessage = 'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
     let panelInitialized = false;
     let chat = null;
@@ -365,9 +368,10 @@
         btnBack.hidden = true;
         setChatPanelMode(false);
 
-        const chatBtnLabel = hasActiveChat ? 'Мій чат' : 'Новий чат';
+        const chatBtnLabel = hasActiveChat ? 'Мій чат' : 'Запросити адміністратора';
         let menuHtml =
             '<div class="support-menu">' +
+            '<button type="button" class="support-menu__btn" id="support-go-faq">Часті питання</button>' +
             '<button type="button" class="support-menu__btn" id="support-go-chat">' + chatBtnLabel + '</button>' +
             '<button type="button" class="support-menu__btn" id="support-go-phones">Телефони</button>';
 
@@ -378,7 +382,12 @@
         menuHtml += '</div>';
         panelBody.innerHTML = menuHtml;
 
+        document.getElementById('support-go-faq').addEventListener('click', () => {
+            showFaqList();
+        });
         document.getElementById('support-go-chat').addEventListener('click', () => {
+            lastFaqQuestion = '';
+            composeDraft = '';
             openChatFlow();
         });
         document.getElementById('support-go-phones').addEventListener('click', () => {
@@ -453,6 +462,104 @@
         }
     };
 
+    const findFaqItem = (id) => {
+        let i = 0;
+        while (i < faqItems.length) {
+            if (faqItems[i].id === id) {
+                return faqItems[i];
+            }
+            i += 1;
+        }
+        return null;
+    };
+
+    const buildAdminDraft = (question) => {
+        if (question) {
+            return 'Потрібна допомога адміністратора. Питання зі списку: ' + question;
+        }
+        return 'Потрібна допомога адміністратора. Моє питання не зі списку.';
+    };
+
+    const requestAdminFromFaq = () => {
+        composeDraft = buildAdminDraft(lastFaqQuestion);
+        openChatFlow();
+    };
+
+    const showFaqList = () => {
+        screen = 'faq';
+        panelTitle.textContent = 'Часті питання';
+        btnBack.hidden = false;
+        setChatPanelMode(false);
+
+        let listHtml = '<p class="support-note">Оберіть питання - відповідь з\'явиться одразу. Якщо не допомогло, запросіть адміністратора.</p>';
+        if (faqItems.length === 0) {
+            listHtml += '<p class="support-note">Список питань поки порожній.</p>';
+        } else {
+            listHtml += '<div class="support-faq">';
+            let i = 0;
+            while (i < faqItems.length) {
+                const item = faqItems[i];
+                listHtml +=
+                    '<button type="button" class="support-faq__btn" data-faq-id="' + escapeHtml(item.id) + '">' +
+                    escapeHtml(item.question) +
+                    '</button>';
+                i += 1;
+            }
+            listHtml += '</div>';
+        }
+        listHtml +=
+            '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
+            'Запросити адміністратора' +
+            '</button>';
+
+        panelBody.innerHTML = listHtml;
+
+        panelBody.querySelectorAll('[data-faq-id]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                showFaqAnswer(btn.getAttribute('data-faq-id'));
+            });
+        });
+
+        const adminBtn = document.getElementById('support-faq-admin');
+        if (adminBtn) {
+            adminBtn.addEventListener('click', () => {
+                lastFaqQuestion = '';
+                requestAdminFromFaq();
+            });
+        }
+    };
+
+    const showFaqAnswer = (id) => {
+        const item = findFaqItem(id);
+        if (!item) {
+            showFaqList();
+            return;
+        }
+
+        screen = 'faq-answer';
+        lastFaqQuestion = item.question;
+        panelTitle.textContent = 'Відповідь';
+        btnBack.hidden = false;
+        setChatPanelMode(false);
+
+        panelBody.innerHTML =
+            '<div class="support-faq-answer">' +
+            '<h3 class="support-faq-answer__q">' + escapeHtml(item.question) + '</h3>' +
+            '<p class="support-faq-answer__a">' + escapeHtml(item.answer) + '</p>' +
+            '<button type="button" class="support-menu__btn" id="support-faq-back">Інше питання</button>' +
+            '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
+            'Це не допомогло - запросити адміністратора' +
+            '</button>' +
+            '</div>';
+
+        document.getElementById('support-faq-back').addEventListener('click', () => {
+            showFaqList();
+        });
+        document.getElementById('support-faq-admin').addEventListener('click', () => {
+            requestAdminFromFaq();
+        });
+    };
+
     const showPhones = () => {
         screen = 'phones';
         panelTitle.textContent = 'Телефони';
@@ -496,6 +603,9 @@
             )
             : '';
 
+        const draft = composeDraft;
+        composeDraft = '';
+
         panelBody.innerHTML =
             '<p class="support-chat-status">Очікуємо ваше повідомлення…</p>' +
             '<div class="support-messages" id="support-messages">' +
@@ -507,6 +617,11 @@
             '<button type="submit">Надіслати</button>' +
             '</form>' +
             '<p class="support-error" id="support-start-error" hidden></p>';
+
+        const input = document.getElementById('support-message-input');
+        if (input && draft) {
+            input.value = draft;
+        }
 
         scrollMessagesDown();
         bindNewChatForm();
@@ -753,8 +868,12 @@
     };
 
     btnBack.addEventListener('click', () => {
-        if (screen === 'phones' || screen === 'new-chat') {
+        if (screen === 'phones' || screen === 'new-chat' || screen === 'faq') {
             showMenu();
+            return;
+        }
+        if (screen === 'faq-answer') {
+            showFaqList();
             return;
         }
         if (screen === 'archive-list') {
@@ -796,6 +915,7 @@
         try {
             const cfg = await apiFetch('/api/support/config');
             phones = Array.isArray(cfg.phones) ? cfg.phones : [];
+            faqItems = Array.isArray(cfg.faq) ? cfg.faq : [];
             if (cfg.welcome_message && typeof cfg.welcome_message === 'string') {
                 welcomeMessage = cfg.welcome_message;
             }
