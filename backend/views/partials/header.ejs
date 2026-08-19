@@ -106,11 +106,14 @@ const navBtnClass = (href, baseClass) => {
                     <span class="theme-switch__ui" aria-hidden="true"></span>
                     <span class="theme-switch__text"><%= t('nav.theme') %></span>
                 </label>
-                <label class="theme-switch" title="<%= t('nav.lang') %>">
+                <% /* кнопка зміни мови — тимчасово схована */ %>
+                <% if (false) { %>
+                <label class="theme-switch lang-switch" title="<%= t('nav.lang') %>">
                     <input type="checkbox" id="langToggle" aria-label="<%= t('nav.lang') %>"<%= typeof lang === 'string' && lang === 'en' ? ' checked' : '' %>>
                     <span class="theme-switch__ui" aria-hidden="true"></span>
                     <span class="theme-switch__text"><%= t('nav.lang') %></span>
                 </label>
+                <% } %>
                 <div class="nav-settings" id="navSettings">
                     <button type="button" class="nav-settings__btn" id="navSettingsBtn" aria-label="<%= t('nav.settings') %>" aria-expanded="false" aria-controls="navSettingsPanel" title="<%= t('nav.settings') %>">
                         <span class="nav-settings__icon" aria-hidden="true">⚙</span>
