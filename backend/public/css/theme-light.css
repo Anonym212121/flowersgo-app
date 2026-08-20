@@ -24,6 +24,11 @@ html.theme-light body {
         var(--bg);
 }
 
+html.theme-light .site-flowers-bg {
+    filter: none;
+    opacity: 0.2;
+}
+
 html.theme-light a {
     color: #0284c7;
 }
