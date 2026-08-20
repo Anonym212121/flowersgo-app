@@ -1,5 +1,8 @@
 <% if (typeof phoneLinks !== 'undefined' && phoneLinks && phoneLinks.ok) { %>
 <div class="warehouse-phone-actions">
+    <% if (typeof phoneActionsHint === 'string' && phoneActionsHint) { %>
+        <p class="warehouse-phone-hint"><%= phoneActionsHint %></p>
+    <% } %>
     <a class="warehouse-phone-btn warehouse-phone-btn--tel" href="<%= phoneLinks.tel %>" data-soft-nav="false">Дзвінок</a>
     <a class="warehouse-phone-btn warehouse-phone-btn--viber" href="<%= phoneLinks.viber %>" data-soft-nav="false" rel="noopener">Viber</a>
     <a class="warehouse-phone-btn warehouse-phone-btn--tg" href="<%= phoneLinks.telegram %>" target="_blank" rel="noopener noreferrer" data-soft-nav="false">Telegram</a>

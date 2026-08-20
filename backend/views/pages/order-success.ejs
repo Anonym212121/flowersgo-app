@@ -13,11 +13,11 @@ const paidOnline = typeof paymentPaid !== 'undefined'
         <h1>Дякуємо за замовлення!</h1>
 
         <% if (okFlag === 'order_created') { %>
-            <p class="order-success-lead">Замовлення прийнято. Запиши номер — він може знадобитись.</p>
+            <p class="order-success-lead">Замовлення прийнято. Флорист збирає букет. Запиши номер - він може знадобитись.</p>
         <% } else if (okFlag === 'cancel_request_sent') { %>
             <p class="order-success-lead">Запит на скасування надіслано адміну.</p>
         <% } else if (okFlag === 'payment_paid') { %>
-            <p class="order-success-lead">Оплату отримано.</p>
+            <p class="order-success-lead">Оплату отримано. Букет уже збирають на складі.</p>
         <% } else { %>
             <p class="order-success-lead">Замовлення оформлено.</p>
         <% } %>

@@ -52,7 +52,7 @@
         hintEl.hidden = false;
         if (autoReload && !userIsEditing()) {
             hintEl.innerHTML =
-                'Є нові зміни — оновлюю список… ' +
+                'Є нові зміни - оновлюю список… ' +
                 '<button type="button" class="warehouse-poll-refresh" id="warehousePollRefresh">зараз</button>';
             var btn = document.getElementById('warehousePollRefresh');
             if (btn) {
@@ -137,18 +137,38 @@
         });
     }
 
-    document.querySelectorAll('.warehouse-handoff-form').forEach(function (form) {
+    document.querySelectorAll('.warehouse-handoff-form:not(.warehouse-handoff-form--pickup)').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             if (!window.confirm('Підтвердити передачу букета кур\'єру?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });
 
     document.querySelectorAll('.warehouse-handoff-form--pickup').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             if (!window.confirm('Підтвердити видачу замовлення клієнту?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            var btn = form.querySelector('button[type="submit"]');
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });
@@ -161,4 +181,12 @@
 
     startPoll();
     setTimeout(pollOnce, 5000);
+
+    document.addEventListener('realtime:message', function (event) {
+        var data = event.detail;
+        if (!data || data.type !== 'warehouse_order') {
+            return;
+        }
+        showRefreshHint(true);
+    });
 })();

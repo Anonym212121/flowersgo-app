@@ -15,7 +15,7 @@ const loadRecentDeliveryHighlight = async () => {
             product_name: delivered.product_name,
             product_slug: delivered.product_slug,
             image_url: delivered.image_url,
-            place: place || '—',
+            place: place || '-',
             source: 'delivered'
         };
     }

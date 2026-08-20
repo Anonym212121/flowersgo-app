@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const multer = require('multer');
 const bcrypt = require('bcryptjs');
 const UserModel = require('../models/User');
@@ -11,7 +12,9 @@ const orderCancelService = require('../services/orderCancelService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const emailService = require('../services/emailService');
+const cloudinaryService = require('../services/cloudinaryService');
 const paymentToken = require('../utils/paymentToken');
+const checkUserContent = require('../utils/userContentGuard');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'avatars');
 
@@ -52,6 +55,10 @@ const upload = multer({
 });
 
 const uploadAvatarMiddleware = upload.single('avatar');
+
+const makeEmailCode = () => {
+    return String(crypto.randomInt(100000, 1000000));
+};
 
 const isJsonRequest = (req) => {
     const accept = String(req.headers.accept || '').toLowerCase();
@@ -215,7 +222,20 @@ const updateAvatar = async (req, res) => {
         }
 
         const profile = await UserModel.getUserid(current.user_id);
-        const avatar_url = `/uploads/avatars/${req.file.filename}`;
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/avatars',
+            '/uploads/avatars/' + req.file.filename
+        );
+        if (!stored.ok) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'avatar_not_saved',
+                message: stored.message || 'Не вдалося зберегти аватар'
+            });
+        }
+
+        const avatar_url = stored.url;
         const updated = await UserModel.updateAvatarUrlById({
             user_id: current.user_id,
             avatar_url
@@ -279,14 +299,17 @@ const requestPasswordEmailCode = async (req, res) => {
         const new_password_confirm =
             typeof req.body.new_password_confirm === 'string' ? req.body.new_password_confirm : '';
 
-        if (!new_password || new_password.length < 6) {
-            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Новий пароль має бути не менше 6 символів' });
+        if (!new_password || new_password.length < 8) {
+            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Новий пароль має бути не менше 8 символів' });
+        }
+        if (new_password.length > 72) {
+            return respond(req, res, { ok: false, err_code: 'bad_new_password', message: 'Пароль занадто довгий' });
         }
         if (new_password !== new_password_confirm) {
             return respond(req, res, { ok: false, err_code: 'password_confirm_mismatch', message: 'Підтвердження пароля не збігається' });
         }
 
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const code = makeEmailCode();
         const new_password_hash = await bcrypt.hash(
             new_password,
             Number(process.env.BCRYPT_SALT_ROUNDS || 10)
@@ -411,7 +434,7 @@ const requestEmailVerifyCode = async (req, res) => {
             });
         }
 
-        const code = String(Math.floor(100000 + Math.random() * 900000));
+        const code = makeEmailCode();
         const codeId = await EmailVerifyCodeModel.createCode({
             user_id: current.user_id,
             email: String(profile.email),
@@ -663,7 +686,15 @@ const requestReviewEdit = async (req, res) => {
         }
 
         const rating = Number(req.body.rating);
-        const comment = typeof req.body.comment === 'string' ? req.body.comment.trim() : '';
+        const check = checkUserContent(req.body.comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'review_' + check.code,
+                message: check.message
+            });
+        }
+        const comment = check.text;
 
         const result = await ReviewModel.createChangeRequest({
             review_id: reviewId,
@@ -812,6 +843,44 @@ const requestGuestOrderCancel = async (req, res) => {
     }
 };
 
+const setPublicProfile = async (req, res) => {
+    try {
+        const current = res.locals.currentUser;
+        const raw = req.body && req.body.is_public_profile;
+        let on = false;
+        if (Array.isArray(raw)) {
+            on = raw.indexOf('1') !== -1;
+        } else {
+            on = raw === '1' || raw === 'on' || raw === 'true';
+        }
+
+        const ok = await UserModel.setPublicProfileById(current.user_id, on);
+        if (!ok) {
+            return respond(req, res, {
+                ok: false,
+                err_code: 'public_profile_failed',
+                message: 'Не вдалося оновити видимість профілю'
+            });
+        }
+
+        return respond(req, res, {
+            ok: true,
+            ok_code: on ? 'profile_public_on' : 'profile_public_off',
+            is_public_profile: on ? 1 : 0,
+            message: on
+                ? 'Профіль відкрито для інших користувачів'
+                : 'Профіль приховано. Інші його не бачать'
+        });
+    } catch (err) {
+        console.error('setPublicProfile:', err.message);
+        return respond(req, res, {
+            ok: false,
+            err_code: 'server',
+            message: 'Сталася помилка сервера'
+        });
+    }
+};
+
 module.exports = {
     uploadAvatarMiddleware,
     updateProfile,
@@ -824,5 +893,6 @@ module.exports = {
     requestOrderCancel,
     requestGuestOrderCancel,
     requestReviewEdit,
-    requestReviewDelete
+    requestReviewDelete,
+    setPublicProfile
 };

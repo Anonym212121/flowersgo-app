@@ -7,6 +7,9 @@ const registerValidator = require('../validators/registerValidator');
 const loginValidator = require('../validators/loginValidator');
 const googleAuthService = require('../services/googleAuthService');
 const { getBlockReasonText } = require('../constants/blockReasons');
+const { looksLikeSpam } = require('../utils/spamText');
+const cookieBase = require('../utils/cookieBase');
+const sanitizeUserText = require('../utils/sanitizeUserText');
 
 const parseGuestWishlist = (cookieHeader) => {
     if (!cookieHeader || typeof cookieHeader !== 'string') {
@@ -47,13 +50,30 @@ const buildAuthToken = (user) => {
     );
 };
 
+const cookieMaxAgeMs = () => {
+    const text = String(process.env.JWT_EXPIRES_IN || '7d').trim();
+    const match = text.match(/^(\d+)([smhd])$/i);
+    if (!match) {
+        return 7 * 24 * 60 * 60 * 1000;
+    }
+    const n = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    if (unit === 's') {
+        return n * 1000;
+    }
+    if (unit === 'm') {
+        return n * 60 * 1000;
+    }
+    if (unit === 'h') {
+        return n * 60 * 60 * 1000;
+    }
+    return n * 24 * 60 * 60 * 1000;
+};
+
 const setAuthCookie = (res, token) => {
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.cookie('token', token, cookieBase({
+        maxAge: cookieMaxAgeMs()
+    }));
 };
 
 const mergeGuestWishlist = async (req, res, userId) => {
@@ -219,9 +239,12 @@ const blockedMessage = async (req, res) => {
             return res.status(400).json({ message: validation.message });
         }
 
-        const message_text = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+        const message_text = sanitizeUserText(req.body.message, 2000);
         if (message_text.length < 5) {
             return res.status(400).json({ message: 'Повідомлення занадто коротке' });
+        }
+        if (looksLikeSpam(message_text)) {
+            return res.status(400).json({ message: 'Повідомлення схоже на спам' });
         }
 
         const found = await findUserForPasswordLogin(validation.data);

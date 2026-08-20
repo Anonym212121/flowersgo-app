@@ -1,0 +1,96 @@
+<%
+const closed = typeof publicProfileClosed !== 'undefined' && publicProfileClosed;
+const own = typeof isOwnPublicProfile !== 'undefined' && isOwnPublicProfile;
+const person = typeof publicProfile !== 'undefined' && publicProfile ? publicProfile : null;
+const reviews = typeof publicReviews !== 'undefined' && Array.isArray(publicReviews) ? publicReviews : [];
+const avatarUrl = person && person.avatar_url ? String(person.avatar_url).trim() : '';
+const fullName = person
+    ? (String(person.first_name || '').trim() + ' ' + String(person.last_name || '').trim()).trim()
+    : '';
+const firstName = person ? String(person.first_name || '').trim() : '';
+const lastName = person ? String(person.last_name || '').trim() : '';
+const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || '?';
+%>
+
+<section class="public-profile-page">
+    <% if (closed || !person) { %>
+        <div class="public-profile-closed">
+            <h1 class="catalog-hero__title">Профіль закритий</h1>
+            <p class="public-profile-closed__text">Користувач не відкрив свій профіль для перегляду. Показані лише дані, які він сам дозволив публікувати.</p>
+            <% if (own) { %>
+                <p class="public-profile-closed__text">Це ваш профіль. Відкрити його можна в кабінеті, у блоці «Публічний профіль».</p>
+                <a class="cabinet-mini-btn cabinet-mini-btn--primary" href="/cabinet?tab=profile">До кабінету</a>
+            <% } else { %>
+                <a class="cabinet-mini-btn" href="/">До каталогу</a>
+            <% } %>
+        </div>
+    <% } else { %>
+        <div class="public-profile-card">
+            <% if (avatarUrl) { %>
+                <button
+                    type="button"
+                    class="public-profile-avatar js-photo-preview"
+                    data-preview-src="<%= avatarUrl %>"
+                    data-preview-alt="<%= fullName %>"
+                    title="Розгорнути фото"
+                    aria-label="Розгорнути фото <%= fullName %>"
+                >
+                    <img class="public-profile-avatar__img" src="<%= avatarUrl %>" alt="" />
+                    <span class="public-profile-avatar__zoom" aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                            <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                        </svg>
+                    </span>
+                </button>
+            <% } else { %>
+                <div class="public-profile-avatar public-profile-avatar--empty" aria-hidden="true"><%= initials %></div>
+            <% } %>
+            <h1 class="public-profile-name"><%= fullName %></h1>
+            <% if (person.joined_label) { %>
+                <p class="public-profile-meta">На сайті з <%= person.joined_label %></p>
+            <% } %>
+            <% if (own) { %>
+                <p class="public-profile-own">Це ваш публічний профіль. Приховати його можна в <a href="/cabinet?tab=profile">кабінеті</a>.</p>
+            <% } %>
+        </div>
+
+        <div class="public-profile-reviews">
+            <h2 class="public-profile-reviews__title">Відгуки</h2>
+            <% if (reviews.length === 0) { %>
+                <p class="cabinet-empty">Поки немає опублікованих відгуків.</p>
+            <% } else { %>
+                <ul class="product-reviews-list">
+                    <% for (const rev of reviews) { %>
+                        <li class="product-review-item">
+                            <div class="product-review-item-head">
+                                <div class="product-review-item-meta">
+                                    <p class="product-review-author">
+                                        <a href="/product/<%= rev.product_id %>"><%= rev.product_name %></a>
+                                    </p>
+                                    <div class="product-review-item-sub">
+                                        <% const revRating = Number(rev.rating); %>
+                                        <% if (Number.isFinite(revRating) && revRating >= 1) { %>
+                                            <span class="star-rating star-rating--sm" title="Оцінка <%= revRating %> з 5">
+                                                <% for (let star = 1; star <= 5; star += 1) { %>
+                                                    <span class="star-icon <%= star <= revRating ? 'star-icon--on' : 'star-icon--off' %>">★</span>
+                                                <% } %>
+                                            </span>
+                                        <% } %>
+                                        <% const revDate = rev.createdAt || rev.createdat; %>
+                                        <% if (revDate) { %>
+                                            <span class="product-review-date"><%= new Date(revDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                            <% if (rev.comment && String(rev.comment).trim() !== '') { %>
+                                <p class="product-review-body"><%= String(rev.comment).trim() %></p>
+                            <% } %>
+                        </li>
+                    <% } %>
+                </ul>
+            <% } %>
+        </div>
+    <% } %>
+</section>

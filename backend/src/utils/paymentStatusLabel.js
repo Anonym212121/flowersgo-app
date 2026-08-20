@@ -18,7 +18,7 @@ const paymentStatusLabel = (status) => {
     if (s === 'success' || s === 'wait_accept') {
         return 'Оплачено онлайн';
     }
-    return s || '—';
+    return s || '-';
 };
 
 const paymentStatusLabelShort = (status) => {
@@ -41,7 +41,7 @@ const paymentStatusLabelShort = (status) => {
     if (s === 'success' || s === 'wait_accept') {
         return 'Оплачено';
     }
-    return s || '—';
+    return s || '-';
 };
 
 module.exports = {

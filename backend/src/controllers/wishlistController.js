@@ -2,6 +2,7 @@ const WishlistModel = require('../models/Wishlist');
 const ProductModel = require('../models/Product');
 const navCountsService = require('../services/navCountsService');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const cookieBase = require('../utils/cookieBase');
 const {
     respondWithMessage,
     respondServerError,
@@ -27,12 +28,9 @@ const writeGuestWishlist = (res, ids) => {
         .filter((id) => Number.isFinite(id) && id > 0)
         .slice(0, 100);
 
-    res.cookie('guest_wishlist', JSON.stringify(clean), {
-        httpOnly: true,
-        secure: false,
-        sameSite: 'lax',
+    res.cookie('guest_wishlist', JSON.stringify(clean), cookieBase({
         maxAge: 30 * 24 * 60 * 60 * 1000
-    });
+    }));
 };
 
 const getUserId = (res) => {
@@ -49,6 +47,23 @@ const wantsJson = (req) => {
     return accept.includes('application/json');
 };
 
+const safeBackUrl = (req, fallback) => {
+    const raw = req.get('Referer') || '';
+    const host = String(req.get('host') || '');
+    if (!raw || !host) {
+        return fallback;
+    }
+    try {
+        const url = new URL(raw);
+        if (url.host !== host) {
+            return fallback;
+        }
+        return url.pathname + url.search;
+    } catch {
+        return fallback;
+    }
+};
+
 const wishlistPage = async (req, res) => {
     try {
         let products = [];
@@ -61,7 +76,7 @@ const wishlistPage = async (req, res) => {
             products = await ProductModel.productsByIds(ids);
         }
 
-        return renderLayout(res, 'Обране', 'pages/wishlist', { products });
+        return renderLayout(res, res.locals.t ? res.locals.t('page.wishlist') : 'Обране', 'pages/wishlist', { products });
     } catch (err) {
         console.error('wishlistPage:', err.message);
         return respondServerError(req, res, { title: 'Обране', actions: defaultWishlistActions() });
@@ -83,25 +98,30 @@ const addProduct = async (req, res) => {
         }
 
         const userId = getUserId(res);
+        let count = 0;
         if (userId) {
             await WishlistModel.add(userId, productId);
+            count = await WishlistModel.countForUser(userId);
         } else {
             const ids = readGuestWishlist(req);
             if (!ids.includes(productId)) {
                 ids.push(productId);
             }
             writeGuestWishlist(res, ids);
+            count = ids.length;
         }
 
         if (wantsJson(req)) {
-            const count = userId
-                ? await WishlistModel.countForUser(userId)
-                : readGuestWishlist(req).length;
-            return res.status(200).json({ ok: true, message: 'Додано в обране', count });
+            return res.status(200).json({
+                ok: true,
+                message: 'Додано в обране',
+                count: count,
+                product_id: productId,
+                in_wishlist: true
+            });
         }
 
-        const back = req.get('Referer') || '/';
-        return res.redirect(back);
+        return res.redirect(safeBackUrl(req, '/'));
     } catch (err) {
         console.error('addProduct:', err.message);
         if (wantsJson(req)) {
@@ -126,22 +146,27 @@ const removeProduct = async (req, res) => {
         }
 
         const userId = getUserId(res);
+        let count = 0;
         if (userId) {
             await WishlistModel.remove(userId, productId);
+            count = await WishlistModel.countForUser(userId);
         } else {
             const ids = readGuestWishlist(req).filter((id) => id !== productId);
             writeGuestWishlist(res, ids);
+            count = ids.length;
         }
 
         if (wantsJson(req)) {
-            const count = userId
-                ? await WishlistModel.countForUser(userId)
-                : readGuestWishlist(req).length;
-            return res.status(200).json({ ok: true, message: 'Прибрано з обраного', count });
+            return res.status(200).json({
+                ok: true,
+                message: 'Прибрано з обраного',
+                count: count,
+                product_id: productId,
+                in_wishlist: false
+            });
         }
 
-        const back = req.get('Referer') || '/wishlist';
-        return res.redirect(back);
+        return res.redirect(safeBackUrl(req, '/wishlist'));
     } catch (err) {
         console.error('removeProduct:', err.message);
         if (wantsJson(req)) {

@@ -19,10 +19,13 @@ const canCompletePickup =
     o.status_name === 'ready_for_pickup' &&
     !hasCancel;
 let shippedStatusId = '';
+let readyStatusId = '';
 for (const s of safeStatuses) {
     if (s.status_name === 'shipped') {
         shippedStatusId = String(s.id);
-        break;
+    }
+    if (s.status_name === 'ready_for_pickup') {
+        readyStatusId = String(s.id);
     }
 }
 
@@ -32,11 +35,11 @@ const methodNames = {
     express: 'Експрес',
     pickup: 'Самовивіз'
 };
-const methodText = methodNames[o.delivery_method || ''] || '—';
+const methodText = methodNames[o.delivery_method || ''] || '-';
 
 const formatLogTime = (value) => {
     if (!value) {
-        return '—';
+        return '-';
     }
     const d = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(d.getTime())) {
@@ -71,19 +74,21 @@ const logWorkerName = (row) => {
         <div class="warehouse-order-top">
             <div class="warehouse-order-top-main">
                 <span class="warehouse-order-no">№<%= o.id %></span>
-                <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+                <span class="warehouse-order-when"><%= o.delivery_display || '-' %></span>
             </div>
             <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
         </div>
 
         <div class="warehouse-order-badges">
-            <span class="warehouse-badge warehouse-badge--status"><%= o.status_label || o.status_name || '—' %></span>
+            <span class="warehouse-badge warehouse-badge--status"><%= o.status_label || o.status_name || '-' %></span>
             <% if (o.payment_status === 'paid') { %>
                 <span class="warehouse-badge pay-ok">Оплачено</span>
             <% } else if (o.payment_status === 'cod') { %>
                 <span class="warehouse-badge pay-cod">При отриманні</span>
             <% } %>
             <span class="warehouse-badge warehouse-badge--method <%= o.is_express ? 'warehouse-badge--express' : '' %>"><%= methodText %></span>
+            <% if (o.do_not_call_recipient) { %><span class="warehouse-badge warehouse-badge--surprise">Сюрприз — не дзвонити</span><% } %>
+            <% if (o.assembled_photo_url) { %><span class="warehouse-badge warehouse-badge--photo">Є фото букета</span><% } %>
             <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
             <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
             <% if (hasCancel) { %><span class="warehouse-badge pay-no">Скасування</span><% } %>
@@ -118,7 +123,7 @@ const logWorkerName = (row) => {
         <div class="warehouse-order-details">
             <div class="warehouse-order-detail">
                 <span class="warehouse-order-detail-label">Кому</span>
-                <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+                <span class="warehouse-order-detail-value"><%= o.receiver_name || '-' %></span>
             </div>
             <% if (receiverPhone) { %>
                 <div class="warehouse-order-detail">
@@ -132,12 +137,18 @@ const logWorkerName = (row) => {
             </div>
             <div class="warehouse-order-detail warehouse-order-detail--full">
                 <span class="warehouse-order-detail-label">Адреса</span>
-                <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+                <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '-' %></span>
             </div>
             <% if (o.recipient_note) { %>
                 <div class="warehouse-order-detail warehouse-order-detail--full">
                     <span class="warehouse-order-detail-label">Примітка</span>
                     <span class="warehouse-order-detail-value"><%= o.recipient_note %></span>
+                </div>
+            <% } %>
+            <% if (o.do_not_call_recipient) { %>
+                <div class="warehouse-order-detail warehouse-order-detail--full">
+                    <span class="warehouse-order-detail-label">Сюрприз</span>
+                    <span class="warehouse-order-detail-value">Не дзвонити одержувачу. Уточнення — лише замовнику.</span>
                 </div>
             <% } %>
             <% if (hasCancel && o.cancel_request_note) { %>
@@ -170,11 +181,46 @@ const logWorkerName = (row) => {
         <p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p>
     <% } %>
 
+    <% const assembledPhoto = o.assembled_photo_url ? String(o.assembled_photo_url).trim() : ''; %>
+    <div class="warehouse-assembled no-print">
+        <h2 class="warehouse-assembled-title">Фото зібраного букета</h2>
+        <% if (assembledPhoto) { %>
+            <img src="<%= assembledPhoto %>" alt="Зібраний букет №<%= o.id %>" class="warehouse-assembled-img" />
+        <% } else { %>
+            <p class="warehouse-handoff-hint">Зроби фото готового букета — клієнт побачить його в кабінеті.</p>
+        <% } %>
+        <% if (o.status_name !== 'cancelled' && o.status_name !== 'rejected') { %>
+            <form
+                method="post"
+                action="/warehouse/orders/<%= o.id %>/assembled-photo"
+                enctype="multipart/form-data"
+                class="warehouse-assembled-form"
+            >
+                <label class="warehouse-status-label">
+                    <%= assembledPhoto ? 'Замінити фото' : 'Додати фото' %>
+                    <input class="auth-input" type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" required />
+                </label>
+                <button type="submit" class="auth-button warehouse-status-save">Зберегти фото</button>
+            </form>
+        <% } %>
+    </div>
+
     <div class="warehouse-order-foot no-print">
         <% if (hasCancel) { %>
-            <p class="warehouse-order-cancel-msg">Запит на скасування — не комплектуй, чекай адміна.</p>
+            <p class="warehouse-order-cancel-msg">Запит на скасування - не комплектуй, чекай адміна.</p>
         <% } else { %>
-            <% if (canHandoff && shippedStatusId) { %>
+            <% if (o.status_name === 'processing' && readyStatusId) { %>
+                <div class="warehouse-handoff-block">
+                    <p class="warehouse-handoff-hint">
+                        Збери букет, за бажанням додай фото вище, тоді натисни «Готово».
+                    </p>
+                    <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
+                        <input type="hidden" name="return_to" value="detail" />
+                        <input type="hidden" name="status_id" value="<%= readyStatusId %>" />
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Букет зібрано - готово до видачі</button>
+                    </form>
+                </div>
+            <% } else if (canHandoff && shippedStatusId) { %>
                 <div class="warehouse-handoff-block">
                     <p class="warehouse-handoff-hint">
                         Букет готовий. Кур'єр <strong><%= o.courier_name %></strong> забере замовлення зі складу.
@@ -183,7 +229,7 @@ const logWorkerName = (row) => {
                     <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
                         <input type="hidden" name="return_to" value="detail" />
                         <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
-                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру — в дорозі</button>
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру - в дорозі</button>
                     </form>
                 </div>
             <% } else if (canCompletePickup) { %>
@@ -199,33 +245,36 @@ const logWorkerName = (row) => {
                                 Оплату отримано на касі
                             </label>
                         <% } %>
-                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту — завершити</button>
+                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту - завершити</button>
                     </form>
                 </div>
             <% } else if (o.status_name === 'ready_for_pickup' && o.delivery_method !== 'pickup' && !(o.courier_name || '').trim()) { %>
-                <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено — замовлення збережеться на складі, поки адмін або система не підбере доставщика.</p>
+                <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено - замовлення збережеться на складі, поки адмін або система не підбере доставщика.</p>
             <% } else if (o.needs_courier && o.status_name === 'processing') { %>
-                <p class="warehouse-order-hint">Йде збірка. Кур'єра можна призначити заздалегідь — після «Готове» спрацює автопризначення.</p>
+                <p class="warehouse-order-hint">Йде збірка. Кур'єр підхопить сам, якщо хтось на зміні.</p>
             <% } %>
-            <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
-                <input type="hidden" name="return_to" value="detail" />
-                <label class="warehouse-status-label">
-                    Статус
-                    <select name="status_id" class="auth-input warehouse-status-select">
-                        <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
-                        <% const currentId = Number(o.status_id); %>
-                        <% for (const s of safeStatuses) { %>
-                            <% const sid = Number(s.id); %>
-                            <% const isCurrent = sid === currentId; %>
-                            <% const canChoose = isCurrent || nextIds.includes(sid); %>
-                            <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
-                                <%= s.label_uk || s.status_name %>
-                            </option>
-                        <% } %>
-                    </select>
-                </label>
-                <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
-            </form>
+            <details class="warehouse-status-details">
+                <summary class="warehouse-status-details__summary">Інший статус</summary>
+                <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-status-form">
+                    <input type="hidden" name="return_to" value="detail" />
+                    <label class="warehouse-status-label">
+                        Статус
+                        <select name="status_id" class="auth-input warehouse-status-select">
+                            <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
+                            <% const currentId = Number(o.status_id); %>
+                            <% for (const s of safeStatuses) { %>
+                                <% const sid = Number(s.id); %>
+                                <% const isCurrent = sid === currentId; %>
+                                <% const canChoose = isCurrent || nextIds.includes(sid); %>
+                                <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
+                                    <%= s.label_uk || s.status_name %>
+                                </option>
+                            <% } %>
+                        </select>
+                    </label>
+                    <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
+                </form>
+            </details>
         <% } %>
     </div>
 
@@ -236,8 +285,8 @@ const logWorkerName = (row) => {
         <% } else { %>
             <ul class="warehouse-status-log-list">
                 <% for (const log of safeLogs) { %>
-                    <% const fromText = log.from_label || log.from_name || '—'; %>
-                    <% const toText = log.to_label || log.to_name || '—'; %>
+                    <% const fromText = log.from_label || log.from_name || '-'; %>
+                    <% const toText = log.to_label || log.to_name || '-'; %>
                     <li class="warehouse-status-log-item">
                         <span class="warehouse-status-log-time"><%= formatLogTime(log.createdAt) %></span>
                         <span class="warehouse-status-log-change"><%= fromText %> → <%= toText %></span>

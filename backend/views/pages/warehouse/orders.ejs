@@ -78,10 +78,13 @@ const statusBadgeClass = (statusName) => {
 };
 
 let shippedStatusId = '';
+let readyStatusId = '';
 for (const s of safeStatuses) {
     if (s.status_name === 'shipped') {
         shippedStatusId = String(s.id);
-        break;
+    }
+    if (s.status_name === 'ready_for_pickup') {
+        readyStatusId = String(s.id);
     }
 }
 %>
@@ -133,7 +136,7 @@ for (const s of safeStatuses) {
     </div>
 
     <p class="warehouse-poll-hint" id="warehousePollHint" hidden>
-        Є зміни в списку —
+        Є зміни в списку -
         <button type="button" class="warehouse-poll-refresh" id="warehousePollRefresh">оновити</button>
     </p>
     <% } %>
@@ -191,11 +194,11 @@ for (const s of safeStatuses) {
             <% for (const o of safeOrders) { %>
                 <% const pay = paymentBadge(o.payment_status); %>
                 <% const methodKey = o.delivery_method || ''; %>
-                <% const methodText = methodNames[methodKey] || '—'; %>
-                <% const deliveryText = o.delivery_display || '—'; %>
+                <% const methodText = methodNames[methodKey] || '-'; %>
+                <% const deliveryText = o.delivery_display || '-'; %>
                 <% const hasCancel = !!o.cancel_request_at; %>
                 <% const isExpress = methodKey === 'express'; %>
-                <% const statusText = o.status_label || o.status_name || '—'; %>
+                <% const statusText = o.status_label || o.status_name || '-'; %>
                 <% const phoneLinks = o.phone_links && o.phone_links.ok ? o.phone_links : null; %>
                 <% const cardUrgency = o.is_overdue ? 'warehouse-order-card--overdue' : (o.is_soon ? 'warehouse-order-card--soon' : ''); %>
                 <article class="warehouse-order-card <%= hasCancel ? 'warehouse-order-card--cancel' : '' %> <%= cardUrgency %>">
@@ -213,6 +216,12 @@ for (const s of safeStatuses) {
                         <span class="warehouse-badge <%= statusBadgeClass(o.status_name) %>"><%= statusText %></span>
                         <span class="warehouse-badge <%= pay.cls %>"><%= pay.text %></span>
                         <span class="warehouse-badge warehouse-badge--method <%= isExpress ? 'warehouse-badge--express' : '' %>"><%= methodText %></span>
+                        <% if (o.do_not_call_recipient) { %>
+                            <span class="warehouse-badge warehouse-badge--surprise">Сюрприз — не дзвонити</span>
+                        <% } %>
+                        <% if (o.assembled_photo_url) { %>
+                            <span class="warehouse-badge warehouse-badge--photo">Є фото букета</span>
+                        <% } %>
                         <% if (o.is_soon) { %>
                             <span class="warehouse-badge warehouse-badge--soon">Скоро</span>
                         <% } %>
@@ -229,20 +238,20 @@ for (const s of safeStatuses) {
 
                     <div class="warehouse-order-products">
                         <span class="warehouse-order-products-label">Зібрати:</span>
-                        <%= o.products_summary || '—' %>
+                        <%= o.products_summary || '-' %>
                     </div>
 
                     <div class="warehouse-order-details">
                         <div class="warehouse-order-detail">
                             <span class="warehouse-order-detail-label">Кому</span>
                             <span class="warehouse-order-detail-value">
-                                <%= o.receiver_name || '—' %>
+                                <%= o.receiver_name || '-' %>
                             </span>
                         </div>
                         <div class="warehouse-order-detail">
                             <span class="warehouse-order-detail-label">Клієнт</span>
                             <span class="warehouse-order-detail-value warehouse-orders-email">
-                                <%= (o.customer_name || '').trim() || '—' %>
+                                <%= (o.customer_name || '').trim() || '-' %>
                             </span>
                         </div>
                         <div class="warehouse-order-detail">
@@ -253,7 +262,7 @@ for (const s of safeStatuses) {
                         </div>
                         <div class="warehouse-order-detail warehouse-order-detail--full">
                             <span class="warehouse-order-detail-label">Адреса</span>
-                            <span class="warehouse-order-detail-value warehouse-order-address"><%= o.delivery_place_display || '—' %></span>
+                            <span class="warehouse-order-detail-value warehouse-order-address"><%= o.delivery_place_display || '-' %></span>
                         </div>
                     </div>
 
@@ -263,7 +272,7 @@ for (const s of safeStatuses) {
                         <% } %>
 
                         <% if (hasCancel) { %>
-                            <p class="warehouse-order-cancel-msg">Запит на скасування — не комплектуй, чекай адміна.</p>
+                            <p class="warehouse-order-cancel-msg">Запит на скасування - не комплектуй, чекай адміна.</p>
                         <% } else { %>
                             <% const canHandoff =
                                 o.status_name === 'ready_for_pickup' &&
@@ -271,14 +280,24 @@ for (const s of safeStatuses) {
                                 !!(o.courier_name || '').trim(); %>
                             <% const canCompletePickup =
                                 methodKey === 'pickup' && o.status_name === 'ready_for_pickup'; %>
-                            <% if (canHandoff && shippedStatusId) { %>
+                            <% if (o.status_name === 'processing' && readyStatusId) { %>
+                                <div class="warehouse-handoff-block warehouse-quick-action">
+                                    <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
+                                        <input type="hidden" name="return_day" value="<%= dayFilter %>" />
+                                        <input type="hidden" name="return_status" value="<%= statusFilter %>" />
+                                        <input type="hidden" name="return_tab" value="<%= tabFilter %>" />
+                                        <input type="hidden" name="status_id" value="<%= readyStatusId %>" />
+                                        <button type="submit" class="auth-button warehouse-handoff-btn">Букет зібрано - готово</button>
+                                    </form>
+                                </div>
+                            <% } else if (canHandoff && shippedStatusId) { %>
                                 <div class="warehouse-handoff-block warehouse-quick-action">
                                     <form method="post" action="/warehouse/orders/<%= o.id %>/status" class="warehouse-handoff-form">
                                         <input type="hidden" name="return_day" value="<%= dayFilter %>" />
                                         <input type="hidden" name="return_status" value="<%= statusFilter %>" />
                                         <input type="hidden" name="return_tab" value="<%= tabFilter %>" />
                                         <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
-                                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру — в дорозі</button>
+                                        <button type="submit" class="auth-button warehouse-handoff-btn">Передано кур'єру - в дорозі</button>
                                     </form>
                                 </div>
                             <% } else if (canCompletePickup) { %>
@@ -293,11 +312,11 @@ for (const s of safeStatuses) {
                                                 Оплату отримано на касі
                                             </label>
                                         <% } %>
-                                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту — завершити</button>
+                                        <button type="submit" class="auth-button warehouse-handoff-btn">Видано клієнту - завершити</button>
                                     </form>
                                 </div>
                             <% } else if (o.needs_courier && o.status_name === 'processing') { %>
-                                <p class="warehouse-order-hint">Йде збірка. Адмін може призначити кур'єра заздалегідь — після «Готове до видачі» спрацює автопризначення.</p>
+                                <p class="warehouse-order-hint">Йде збірка. Кур'єр підхопить сам, якщо хтось на зміні.</p>
                             <% } else if (o.needs_courier) { %>
                                 <p class="warehouse-order-cancel-msg">Кур'єра ще не призначено. Переконайся, що хтось на зміні, або звернись до адміна.</p>
                             <% } %>

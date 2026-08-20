@@ -33,13 +33,35 @@ describe('bouquetPreviewService', () => {
         expect(result.prompt).toContain('5× Троянди (червоний)');
         expect(result.prompt).toContain('5 red rose');
         expect(result.prompt).toContain('Total 8 stems');
+        expect(result.prompt).toContain('simple floral wrapping paper');
         expect(result.preview_key).toMatch(/^[a-f0-9]{20}$/);
+    });
+
+    test('без упаковки просить голі квіти', () => {
+        const result = bouquetPreviewService.buildPreviewForCalc({
+            ok: true,
+            summary: 'Троянди (червоний) ×5',
+            packaging: { label: 'Без упаковки' },
+            lines: [
+                {
+                    product_id: 1,
+                    quantity: 5,
+                    category_name: 'Троянди',
+                    name: 'Троянда',
+                    flower_color: 'червоний'
+                }
+            ]
+        });
+
+        expect(result.ok).toBe(true);
+        expect(result.prompt).toContain('no wrapping paper');
+        expect(result.prompt).not.toContain('wrap:');
     });
 });
 
 describe('bouquetFlowerLexicon', () => {
     test('перекладає назви з каталогу', () => {
         expect(lexicon.flowerEnglishName('Хризантеми', '')).toBe('chrysanthemum');
-        expect(lexicon.colorEnglishName('рожевий')).toBe('pink');
+        expect(lexicon.packagingEnglish('Без упаковки')).toBe('no wrapping');
     });
 });

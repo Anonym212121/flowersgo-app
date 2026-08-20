@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const lexicon = require('../utils/bouquetFlowerLexicon');
 const constructorService = require('./constructorService');
+const cloudinaryService = require('./cloudinaryService');
 
 const PREVIEW_DIR = path.join(__dirname, '../../public/uploads/bouquet-previews');
 const PREVIEW_COOKIE = 'constructor_bouquet_preview';
@@ -27,13 +28,27 @@ const readCookie = (cookieHeader, name) => {
     return '';
 };
 
+const isAllowedPreviewUrl = (url) => {
+    if (!url || typeof url !== 'string') {
+        return false;
+    }
+    const value = url.trim();
+    if (value.startsWith('/uploads/bouquet-previews/')) {
+        return true;
+    }
+    if (value.startsWith('https://res.cloudinary.com/')) {
+        return true;
+    }
+    return false;
+};
+
 const getPreviewFromRequest = (req) => {
     const raw = readCookie(req.headers.cookie, PREVIEW_COOKIE);
     if (!raw || typeof raw !== 'string') {
         return '';
     }
     const url = raw.trim();
-    if (!url.startsWith('/uploads/bouquet-previews/')) {
+    if (!isAllowedPreviewUrl(url)) {
         return '';
     }
     return url;
@@ -82,11 +97,15 @@ const buildImagePrompt = (rows, packagingLabel) => {
         stemTotal += row.quantity;
     }
 
-    const wrap = lexicon.packagingEnglish(packagingLabel);
     let prompt = 'Photo of one flower bouquet, light background. ';
     prompt += 'Ukrainian order: ' + ukParts.join(', ') + '. ';
     prompt += 'Flowers: ' + enParts.join(', ') + '. ';
-    prompt += 'Total ' + stemTotal + ' stems, wrap: ' + wrap + '. ';
+    prompt += 'Total ' + stemTotal + ' stems. ';
+    if (lexicon.isNoPackagingLabel(packagingLabel)) {
+        prompt += 'Bare stems only: no wrapping paper, no kraft paper, no box, no ribbon, no vase. ';
+    } else {
+        prompt += 'Wrap: ' + lexicon.packagingEnglish(packagingLabel) + '. ';
+    }
     prompt += 'Only listed flowers, no text or logo.';
 
     return prompt;
@@ -118,11 +137,10 @@ const readCachedImage = (hash) => {
     return null;
 };
 
-const saveImageBase64 = (hash, b64) => {
+const saveImageBase64 = async (hash, b64) => {
     if (!isValidPreviewKey(hash)) {
         return null;
     }
-    ensurePreviewDir();
     const buf = Buffer.from(b64, 'base64');
     if (
         buf.length < 8 ||
@@ -133,9 +151,25 @@ const saveImageBase64 = (hash, b64) => {
     ) {
         return null;
     }
+
+    const localUrl = '/uploads/bouquet-previews/' + hash + '.png';
+    if (cloudinaryService.isConfigured()) {
+        const uploaded = await cloudinaryService.storeBuffer(
+            buf,
+            'flowersgo/previews',
+            hash + '.png',
+            localUrl
+        );
+        if (!uploaded.ok) {
+            return null;
+        }
+        return uploaded.url;
+    }
+
+    ensurePreviewDir();
     const filePath = path.join(PREVIEW_DIR, hash + '.png');
     fs.writeFileSync(filePath, buf);
-    return '/uploads/bouquet-previews/' + hash + '.png';
+    return localUrl;
 };
 
 const parseImagePayload = (raw) => {
@@ -180,7 +214,7 @@ const buildPreviewForCalc = (calcResult) => {
     };
 };
 
-const savePreviewImage = (previewKey, imagePayload) => {
+const savePreviewImage = async (previewKey, imagePayload) => {
     if (!isValidPreviewKey(previewKey)) {
         return { ok: false, message: 'Невірний ключ превʼю' };
     }
@@ -194,7 +228,7 @@ const savePreviewImage = (previewKey, imagePayload) => {
         return { ok: false, message: 'Зображення занадто велике' };
     }
 
-    const imageUrl = saveImageBase64(previewKey, b64);
+    const imageUrl = await saveImageBase64(previewKey, b64);
     if (!imageUrl) {
         return { ok: false, message: 'Не вдалося зберегти превʼю' };
     }
@@ -220,7 +254,7 @@ const setPreviewKeyCookie = (res, previewKey) => {
 
 const applyPreviewUrl = (res, rawUrl) => {
     const url = typeof rawUrl === 'string' ? rawUrl.trim() : '';
-    if (url && url.startsWith('/uploads/bouquet-previews/')) {
+    if (isAllowedPreviewUrl(url)) {
         res.cookie(PREVIEW_COOKIE, url, {
             httpOnly: false,
             sameSite: 'lax',

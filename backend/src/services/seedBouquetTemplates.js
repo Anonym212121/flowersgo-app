@@ -45,7 +45,7 @@ const seedDefaultBouquetTemplates = async () => {
     if (roseId && redVariantId) {
         await BouquetTemplateModel.create(
             {
-                name: 'Класика — 11 червоних троянд',
+                name: 'Класика - 11 червоних троянд',
                 description: 'Готовий рецепт романтичного букета. Можна одразу купити або змінити кількість і колір у конструкторі.',
                 packaging_product_id: packCraftId || packStandardId,
                 sort_order: 1,
@@ -58,7 +58,7 @@ const seedDefaultBouquetTemplates = async () => {
     if (tulipId) {
         await BouquetTemplateModel.create(
             {
-                name: 'Весняний — 15 тюльпанів',
+                name: 'Весняний - 15 тюльпанів',
                 description: 'Свіжий весняний букет з тюльпанів. Завантаж у конструктор і підлаштуй під себе.',
                 packaging_product_id: packStandardId,
                 sort_order: 2,

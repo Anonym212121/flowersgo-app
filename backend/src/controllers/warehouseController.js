@@ -1,5 +1,11 @@
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const ProductModel = require('../models/Product');
+const OrderModel = require('../models/Order');
 const StockAdjustmentModel = require('../models/StockAdjustment');
+const cloudinaryService = require('../services/cloudinaryService');
+const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const { LOW_STOCK_LIMIT } = require('../utils/warehouseOrderView');
 const { respondServerError, defaultWarehouseActions } = require('../utils/pageMessage');
 
@@ -115,6 +121,138 @@ const warehouseStockAdjust = async (req, res) => {
     }
 };
 
+const assembledDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'assembled');
+
+const ensureAssembledDir = () => {
+    if (!fs.existsSync(assembledDir)) {
+        fs.mkdirSync(assembledDir, { recursive: true });
+    }
+};
+
+const assembledStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        ensureAssembledDir();
+        cb(null, assembledDir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname || '').toLowerCase();
+        const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+        const safeExt = allowedExt.includes(ext) ? ext : '.jpg';
+        const name = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${safeExt}`;
+        cb(null, name);
+    }
+});
+
+const assembledFileFilter = (req, file, cb) => {
+    const allowedMime = /^(image\/jpeg|image\/jpg|image\/png|image\/gif|image\/webp)$/;
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const allowedExt = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    if (allowedMime.test(file.mimetype || '') || allowedExt.includes(ext)) {
+        return cb(null, true);
+    }
+    cb(new Error('Дозволені лише зображення: jpeg, png, gif, webp'));
+};
+
+const assembledUpload = multer({
+    storage: assembledStorage,
+    limits: { fileSize: 8 * 1024 * 1024 },
+    fileFilter: assembledFileFilter
+});
+
+const uploadAssembledPhotoMiddleware = assembledUpload.single('photo');
+
+const removeLocalAssembled = (publicUrl) => {
+    if (!publicUrl || typeof publicUrl !== 'string') {
+        return;
+    }
+    if (!publicUrl.startsWith('/uploads/assembled/')) {
+        return;
+    }
+    const oldPath = path.join(__dirname, '..', '..', 'public', publicUrl.replace('/uploads/', 'uploads/'));
+    if (fs.existsSync(oldPath)) {
+        try {
+            fs.unlinkSync(oldPath);
+        } catch {
+        }
+    }
+};
+
+const redirectAssembledPhoto = (res, orderId, query) => {
+    return res.redirect('/warehouse/orders/' + orderId + '?' + query);
+};
+
+const uploadAssembledPhoto = async (req, res) => {
+    const orderId = Number(req.params.id);
+    const unlinkCurrent = () => {
+        if (req.file && req.file.path) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch {
+            }
+        }
+    };
+
+    try {
+        if (!Number.isFinite(orderId) || orderId <= 0) {
+            unlinkCurrent();
+            return res.redirect('/warehouse/orders?err=server');
+        }
+
+        const order = await OrderModel.getByIdForWarehouse(orderId);
+        if (!order) {
+            unlinkCurrent();
+            return redirectAssembledPhoto(res, orderId, 'err=photo_order');
+        }
+
+        const statusName = String(order.status_name || '');
+        if (statusName === 'cancelled' || statusName === 'rejected') {
+            unlinkCurrent();
+            return redirectAssembledPhoto(res, orderId, 'err=photo_closed');
+        }
+
+        if (!req.file) {
+            return redirectAssembledPhoto(res, orderId, 'err=photo_empty');
+        }
+
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/assembled',
+            '/uploads/assembled/' + req.file.filename
+        );
+        if (!stored.ok) {
+            unlinkCurrent();
+            return redirectAssembledPhoto(res, orderId, 'err=photo_save');
+        }
+
+        const saved = await OrderModel.updateAssembledPhotoUrl(orderId, stored.url);
+        if (!saved.ok) {
+            unlinkCurrent();
+            return redirectAssembledPhoto(res, orderId, 'err=photo_save');
+        }
+
+        if (saved.previousUrl && saved.previousUrl !== stored.url) {
+            removeLocalAssembled(saved.previousUrl);
+        }
+
+        if (saved.wasEmpty) {
+            try {
+                await orderWarehouseNotifyService.notifyCustomerAssembledPhoto(orderId);
+            } catch (notifyErr) {
+                console.error('notifyCustomerAssembledPhoto:', notifyErr.message);
+            }
+        }
+
+        return redirectAssembledPhoto(res, orderId, 'ok=photo');
+    } catch (err) {
+        console.error('uploadAssembledPhoto:', err.message);
+        unlinkCurrent();
+        if (Number.isFinite(orderId) && orderId > 0) {
+            return redirectAssembledPhoto(res, orderId, 'err=server');
+        }
+        return res.redirect('/warehouse/orders?err=server');
+    }
+};
+
 const warehouseStockPoll = async (req, res) => {
     try {
         const summary = await ProductModel.summarizeStockForWarehouse(LOW_STOCK_LIMIT);
@@ -128,5 +266,7 @@ const warehouseStockPoll = async (req, res) => {
 module.exports = {
     warehouseStockPage,
     warehouseStockAdjust,
-    warehouseStockPoll
+    warehouseStockPoll,
+    uploadAssembledPhotoMiddleware,
+    uploadAssembledPhoto
 };

@@ -1,5 +1,6 @@
 const ProductModel = require('../models/Product');
 const ReviewModel = require('../models/Review');
+const checkUserContent = require('../utils/userContentGuard');
 const {
     respondWithMessage,
     respondServerError,
@@ -28,8 +29,24 @@ const createPageReview = async (req, res) => {
 
         const user = res.locals.currentUser;
 
-        const bodyRaw = req.body.comment;
-        const comment = typeof bodyRaw === 'string' ? bodyRaw.trim() : '';
+        const check = checkUserContent(req.body.comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
+            return respondWithMessage(req, res, 400, check.message, {
+                title: 'Відгук',
+                messageTitle: 'Відгук не прийнято',
+                actions: [{ label: 'Назад до товару', href: '/product/' + productId, primary: true }]
+            });
+        }
+        const comment = check.text;
+
+        const recent = await ReviewModel.countRecentByUser(user.user_id, 10);
+        if (recent >= 3) {
+            return respondWithMessage(req, res, 429, 'Забагато відгуків за короткий час. Спробуйте пізніше.', {
+                title: 'Відгук',
+                messageTitle: 'Зачекайте трохи',
+                actions: [{ label: 'Назад до товару', href: '/product/' + productId, primary: true }]
+            });
+        }
 
         const ratingRaw = req.body.rating;
 

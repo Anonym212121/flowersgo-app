@@ -6,6 +6,7 @@ const courierAssignService = require('../services/courierAssignService');
 
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
+const orderDispatchService = require('../services/orderDispatchService');
 
 const formatDelivery = require('../utils/formatDelivery');
 
@@ -67,19 +68,19 @@ const approveForAdmin = async (req, res) => {
 
 
 
-        const result = await OrderModel.approveForAdmin(id);
+        const result = await orderDispatchService.dispatchToWarehouse(id);
 
         if (!result.ok) {
 
             if (result.code === 'no_stock') {
 
-                return res.status(400).json({ message: 'Недостатньо товару на складі — оновіть залишки або відхиліть замовлення' });
+                return res.status(400).json({ message: 'Недостатньо товару на складі - оновіть залишки або відхиліть замовлення' });
 
             }
 
             if (result.code === 'not_paid') {
 
-                return res.status(400).json({ message: 'Замовлення ще не оплачене — дочекайтеся оплати або відхиліть його' });
+                return res.status(400).json({ message: 'Замовлення ще не оплачене - дочекайтеся оплати або відхиліть його' });
 
             }
 
@@ -92,20 +93,6 @@ const approveForAdmin = async (req, res) => {
             }
 
             return res.status(404).json({ message: 'Замовлення не знайдено або вже оброблене' });
-
-        }
-
-
-
-        try {
-
-            await orderRoleNotifyService.onOrderApprovedForWarehouse(id);
-
-            await orderWarehouseNotifyService.notifyCustomerOrderConfirmed(id);
-
-        } catch (hookErr) {
-
-            console.error('approveForAdmin hooks:', hookErr.message);
 
         }
 
@@ -332,7 +319,7 @@ const rejectCancelForAdmin = async (req, res) => {
             console.error('notifyCustomerCancelRejected:', notifyErr.message);
         }
 
-        return res.status(200).json({ message: 'Запит на скасування відхилено — замовлення залишається активним' });
+        return res.status(200).json({ message: 'Запит на скасування відхилено - замовлення залишається активним' });
 
     } catch (err) {
 
@@ -371,7 +358,7 @@ const markRefundCompleteForAdmin = async (req, res) => {
         try {
             await orderWarehouseNotifyService.notifyCustomerRefundProcessed(
                 id,
-                'Кошти повернено на вашу картку. Зазвичай банк зараховує їх протягом 3–10 банківських днів.'
+                'Кошти повернено на вашу картку. Зазвичай банк зараховує їх протягом 3-10 банківських днів.'
             );
         } catch (notifyErr) {
             console.error('markRefundComplete notify:', notifyErr.message);
@@ -444,6 +431,7 @@ const getDetailForAdmin = async (req, res) => {
         data.order.recipient_note_display = orderDeliveryFields.recipientNoteFromRow(data.order);
         data.order.bouquet_note_display = orderDeliveryFields.bouquetNoteFromRow(data.order);
         data.order.greeting_card_text_display = orderDeliveryFields.greetingCardTextFromRow(data.order);
+        data.order.do_not_call_recipient = orderDeliveryFields.doNotCallRecipientFromRow(data.order);
 
         return res.status(200).json(data);
 

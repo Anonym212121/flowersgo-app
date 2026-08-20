@@ -79,7 +79,7 @@ describe('email notifications', () => {
     test('клієнту надсилається лист при підтвердженні адміном', async () => {
         await orderWarehouseNotifyService.notifyCustomerOrderConfirmed(80);
         expect(sentMails.length).toBe(1);
-        expect(sentMails[0].subject).toContain('підтверджено');
+        expect(sentMails[0].subject).toContain('у роботі');
     });
 
     test('адміну надсилається лист про нове замовлення', async () => {

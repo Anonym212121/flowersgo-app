@@ -38,11 +38,14 @@ const checkoutAuthNext = isCartMode
 %>
 
 <section class="catalog-content checkout-page">
-    <h1 class="checkout-page-title">Оформлення замовлення</h1>
+    <h1 class="checkout-page-title"><%= t('page.checkout') %></h1>
+    <% if (typeof lang === 'string' && lang === 'en' && t('money.uahNote')) { %>
+        <p class="locale-money-note"><%= t('money.uahNote') %></p>
+    <% } %>
 
     <% if (bouquetNote) { %>
         <div class="constructor-cart-note constructor-cart-note--checkout">
-            <strong>Ваш букет:</strong>
+            <strong><%= t('cart.bouquet') %></strong>
             <span><%= bouquetNote %></span>
             <% if (bouquetPreview) { %>
                 <div class="constructor-cart-preview">
@@ -127,6 +130,11 @@ const checkoutAuthNext = isCartMode
                         Коментар до доставки (необов'язково)
                         <textarea class="auth-input" name="recipient_note" rows="2"></textarea>
                     </label>
+                    <label class="checkout-radio-label">
+                        <input type="checkbox" name="do_not_call_recipient" value="1" id="doNotCallRecipient" />
+                        Не дзвонити одержувачу (сюрприз)
+                    </label>
+                    <p class="checkout-payment-hint">Кур'єр не телефонуватиме заздалегідь, щоб не зіпсувати сюрприз. Якщо треба уточнити дорогу — подзвонить вам.</p>
                 </div>
             </div>
 
@@ -134,7 +142,7 @@ const checkoutAuthNext = isCartMode
                 <h2 class="checkout-step-heading">Листівка</h2>
                 <label class="checkout-radio-label">
                     <input type="checkbox" name="want_greeting_card" value="1" id="wantGreetingCard" />
-                    Додати листівку (+<%= Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50) %> грн)
+                    Додати листівку (+<%= formatMoney(Number(typeof greetingCardFee !== 'undefined' ? greetingCardFee : 50)) %>)
                 </label>
                 <div id="greetingCardFields" hidden>
                     <label class="auth-label">
@@ -159,19 +167,19 @@ const checkoutAuthNext = isCartMode
                     <legend class="sr-only">Спосіб доставки</legend>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="standard" checked />
-                        Стандартна — 2-годинне вікно · безкоштовно
+                        Стандартна - 2-годинне вікно · безкоштовно
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="exact" />
-                        В точний час · +99 грн
+                        В точний час · +<%= formatMoney(99) %>
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="express" />
-                        Експрес — якнайшвидше · +99 грн
+                        Експрес - якнайшвидше · +<%= formatMoney(99) %>
                     </label>
                     <label class="checkout-radio-label">
                         <input type="radio" name="delivery_method" value="pickup" />
-                        Самовивіз (9:00–19:00) · безкоштовно
+                        Самовивіз (9:00-19:00) · безкоштовно
                     </label>
                 </fieldset>
 
@@ -216,7 +224,7 @@ const checkoutAuthNext = isCartMode
                     </label>
 
                     <p id="deliveryExpressNote" class="checkout-express-note" hidden>
-                        Зберемо й доставимо якнайшвидше — протягом приблизно години.
+                        Зберемо й доставимо якнайшвидше - протягом приблизно години.
                     </p>
                 </div>
 
@@ -237,14 +245,15 @@ const checkoutAuthNext = isCartMode
                     </label>
                 </fieldset>
                 <p class="checkout-payment-hint" id="checkoutPaymentHintCard">
-                    Оплата карткою: після оформлення у вас буде <strong>10 хвилин</strong> на оплату в LiqPay. Якщо не встигнете — замовлення скасується автоматично.
+                    Оплата карткою: після оформлення у вас буде <strong>10 хвилин</strong> на оплату в LiqPay. Якщо не встигнете - замовлення скасується автоматично.
                 </p>
                 <p class="checkout-payment-hint checkout-payment-hint--cod" id="checkoutPaymentHintCod" hidden>
-                    Оплата при отриманні: замовлення потрапить на перевірку адміну після підтвердження способу оплати. Готівку або термінал — кур'єру або на касі при самовивозі.
+                    Оплата при отриманні: букет одразу піде на склад. Готівку або термінал - кур'єру або на касі при самовивозі.
                 </p>
             </div>
 
             <div id="checkoutFormError" class="checkout-form-error" hidden></div>
+            <%- include('../partials/honeypot') %>
             <button type="submit" class="auth-button checkout-submit-btn" id="checkoutSubmitOrder">Оформити замовлення</button>
         </div>
 
@@ -252,7 +261,7 @@ const checkoutAuthNext = isCartMode
             <div class="checkout-summary-card">
                 <div class="checkout-summary-head">
                     <span class="checkout-summary-title">Ваші товари</span>
-                    <strong class="checkout-summary-total" id="checkoutLineTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                    <strong class="checkout-summary-total" id="checkoutLineTotal"><%= formatMoney(initialTotal) %></strong>
                 </div>
 
                 <% if (isCartMode) { %>
@@ -265,9 +274,9 @@ const checkoutAuthNext = isCartMode
                                 <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
                             <% } %>
                             <div class="checkout-summary-body">
-                                <p class="checkout-summary-name"><%= row.product.name %></p>
+                                <p class="checkout-summary-name"><%= locName(row.product) %></p>
                                 <p class="checkout-summary-unit">
-                                    <%= Number(row.unit_price || 0).toLocaleString('uk-UA') %> грн / <%= row.product.unit_type || 'шт' %>
+                                    <%= formatMoney(Number(row.unit_price || 0)) %> / <%= translateUnit(row.product.unit_type || 'шт') %>
                                 </p>
                                 <input class="auth-input checkout-qty-input" type="number" min="1" max="<%= Number(row.product.stock_quantity || row.quantity || 1) %>" value="<%= Number(row.quantity || 1) %>" />
                             </div>
@@ -281,9 +290,9 @@ const checkoutAuthNext = isCartMode
                             <div class="checkout-summary-img checkout-summary-img--placeholder" aria-hidden="true"></div>
                         <% } %>
                         <div class="checkout-summary-body">
-                            <p class="checkout-summary-name"><%= product.name %></p>
+                            <p class="checkout-summary-name"><%= locName(product) %></p>
                             <p class="checkout-summary-unit">
-                                <%= checkoutUnitPrice.toLocaleString('uk-UA') %> грн / <%= product.unit_type || 'шт' %>
+                                <%= formatMoney(checkoutUnitPrice) %> / <%= translateUnit(product.unit_type || 'шт') %>
                             </p>
                             <div class="checkout-qty-stepper">
                                 <button type="button" class="checkout-qty-btn" id="checkoutQtyMinus" aria-label="Зменшити кількість">−</button>
@@ -306,15 +315,15 @@ const checkoutAuthNext = isCartMode
                     <h3 class="checkout-summary-extra-title">Додатково</h3>
                     <div class="checkout-summary-row">
                         <span>Доставка</span>
-                        <span class="checkout-summary-row-value" id="checkoutDeliveryFee">Безкоштовно</span>
+                        <span class="checkout-summary-row-value" id="checkoutDeliveryFee"><%= t('money.free') %></span>
                     </div>
                     <div class="checkout-summary-row" id="checkoutGreetingCardRow" hidden>
                         <span>Листівка</span>
-                        <span class="checkout-summary-row-value" id="checkoutGreetingCardFee">0 грн</span>
+                        <span class="checkout-summary-row-value" id="checkoutGreetingCardFee"><%= formatMoney(0) %></span>
                     </div>
                     <div class="checkout-summary-row checkout-summary-row--total">
                         <span>Разом до сплати</span>
-                        <strong id="checkoutGrandTotal"><%= initialTotal.toLocaleString('uk-UA') %> грн</strong>
+                        <strong id="checkoutGrandTotal"><%= formatMoney(initialTotal) %></strong>
                     </div>
                 </div>
 
@@ -326,9 +335,9 @@ const checkoutAuthNext = isCartMode
                                 <% const up = Number(u.sale_price || 0); %>
                                 <% const st = Number(u.stock_quantity || 0); %>
                                 <li class="checkout-upsell-item">
-                                    <span class="checkout-upsell-name"><%= u.name %></span>
+                                    <span class="checkout-upsell-name"><%= locName(u) %></span>
                                     <span class="checkout-upsell-meta">
-                                        <%= up.toLocaleString('uk-UA') %> грн
+                                        <%= formatMoney(up) %>
                                         <% if (st <= 0) { %>
                                             · немає в наявності
                                         <% } %>
@@ -336,7 +345,7 @@ const checkoutAuthNext = isCartMode
                                     <% if (st > 0) { %>
                                         <a class="checkout-upsell-link" href="/product/<%= u.id %>">Переглянути</a>
                                     <% } else { %>
-                                        <span class="checkout-upsell-na">—</span>
+                                        <span class="checkout-upsell-na">-</span>
                                     <% } %>
                                 </li>
                             <% } %>
@@ -364,6 +373,18 @@ var checkoutPageConfig = JSON.parse(document.getElementById('checkoutPageConfig'
 var DELIVERY_CONFIG = checkoutPageConfig.deliveryConfig;
 var GREETING_CARD_FEE = Number(checkoutPageConfig.greetingCardFee) || 50;
 var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
+function money(uah) {
+    if (typeof window.formatMoney === 'function') {
+        return window.formatMoney(uah);
+    }
+    return (Number(uah) || 0).toLocaleString('uk-UA') + ' грн';
+}
+function tt(key) {
+    if (typeof window.t === 'function') {
+        return window.t(key);
+    }
+    return key;
+}
 (function () {
     var form = document.getElementById('checkoutOrderForm');
     var q = document.getElementById('checkoutQty');
@@ -387,7 +408,7 @@ var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
         if (n > maxQ) n = maxQ;
         q.value = String(n);
         var lineTotal = n * unit;
-        out.textContent = lineTotal.toLocaleString('uk-UA') + ' грн';
+        out.textContent = money(lineTotal);
         hidTotal.value = String(lineTotal);
         hidItems.value = JSON.stringify([{ product_id: pid, quantity: n, unit_price: unit }]);
     }
@@ -416,7 +437,7 @@ var SAVED_PROFILE_ADDRESS = checkoutPageConfig.profileAddress;
             items.push(item);
             total += qty * lineUnit;
         });
-        out.textContent = total.toLocaleString('uk-UA') + ' грн';
+        out.textContent = money(total);
         hidTotal.value = String(total);
         hidItems.value = JSON.stringify(items);
     }
@@ -563,7 +584,7 @@ function applyProfileAddressIfNeeded() {
     function addEmptyOption(sel) {
         var none = document.createElement('option');
         none.value = '';
-        none.textContent = 'На сьогодні вільного часу немає — оберіть іншу дату';
+        none.textContent = 'На сьогодні вільного часу немає - оберіть іншу дату';
         sel.appendChild(none);
     }
 
@@ -593,7 +614,7 @@ function applyProfileAddressIfNeeded() {
             }
             var opt = document.createElement('option');
             opt.value = pad(h) + ':00';
-            opt.textContent = pad(h) + ':00 – ' + pad(h + cfg.slotHours) + ':00';
+            opt.textContent = pad(h) + ':00 - ' + pad(h + cfg.slotHours) + ':00';
             slotSelect.appendChild(opt);
         }
         if (slotSelect.options.length === 0) {
@@ -655,7 +676,7 @@ function applyProfileAddressIfNeeded() {
         var chosen = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2]), hh, mm, 0, 0);
         var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
         if (chosen.getTime() < todayStart.getTime()) {
-            setExactMsg('Дата в минулому — оберіть сьогодні або пізніше', 'err');
+            setExactMsg('Дата в минулому - оберіть сьогодні або пізніше', 'err');
             hiddenTime.value = '';
             return false;
         }
@@ -664,13 +685,13 @@ function applyProfileAddressIfNeeded() {
             var earliest = new Date(now.getTime() + cfg.standardBufferMin * 60000);
             if (chosen.getTime() < earliest.getTime()) {
                 var human = pad(earliest.getDate()) + '.' + pad(earliest.getMonth() + 1) + ' о ' + pad(earliest.getHours()) + ':' + pad(earliest.getMinutes());
-                setExactMsg('Зарано — потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
+                setExactMsg('Зарано - потрібен час на складання й дорогу. Найраніше: ' + human, 'err');
                 hiddenTime.value = '';
                 return false;
             }
         }
 
-        setExactMsg('Час доступний — можна замовити', 'ok');
+        setExactMsg('Час доступний - можна замовити', 'ok');
         hiddenTime.value = val;
         return true;
     }
@@ -718,17 +739,17 @@ function applyProfileAddressIfNeeded() {
         var fee = currentFee();
         var cardFee = currentCardFee();
         if (feeOut) {
-            feeOut.textContent = fee > 0 ? fee.toLocaleString('uk-UA') + ' грн' : 'Безкоштовно';
+            feeOut.textContent = fee > 0 ? money(fee) : tt('money.free');
         }
         if (cardFeeRow) {
             cardFeeRow.hidden = cardFee <= 0;
         }
         if (cardFeeOut) {
-            cardFeeOut.textContent = cardFee.toLocaleString('uk-UA') + ' грн';
+            cardFeeOut.textContent = money(cardFee);
         }
         if (grandOut) {
             var grand = getItemsTotal() + fee + cardFee;
-            grandOut.textContent = grand.toLocaleString('uk-UA') + ' грн';
+            grandOut.textContent = money(grand);
         }
     }
 
@@ -893,7 +914,7 @@ function applyProfileAddressIfNeeded() {
             return true;
         }
         if (!pattern.test(value)) {
-            setMsg('Невірний формат — приклад: name@example.com', 'err');
+            setMsg('Невірний формат - приклад: name@example.com', 'err');
             return false;
         }
         setMsg('Email коректний', 'ok');
@@ -1142,6 +1163,8 @@ function applyProfileAddressIfNeeded() {
         data.payment_method = getRadio('payment_method');
         var wantCard = document.getElementById('wantGreetingCard');
         data.want_greeting_card = !!(wantCard && wantCard.checked);
+        var doNotCall = document.getElementById('doNotCallRecipient');
+        data.do_not_call_recipient = !!(doNotCall && doNotCall.checked);
         data.last_step = lastFocusedStep;
         var dateEl = document.getElementById('deliveryDate');
         if (dateEl) {
@@ -1198,6 +1221,11 @@ function applyProfileAddressIfNeeded() {
             }
         }
 
+        var doNotCall = document.getElementById('doNotCallRecipient');
+        if (doNotCall) {
+            doNotCall.checked = data.do_not_call_recipient === true || data.do_not_call_recipient === '1';
+        }
+
         var dateEl = document.getElementById('deliveryDate');
         if (dateEl && data.delivery_date) {
             var today = new Date();
@@ -1249,7 +1277,7 @@ function applyProfileAddressIfNeeded() {
             }, 120);
         }
 
-        var stepMessage = 'Продовжуємо оформлення — крок ' + step + ': ' + stepNames[step - 1];
+        var stepMessage = 'Продовжуємо оформлення - крок ' + step + ': ' + stepNames[step - 1];
         var fieldSteps = buildCheckoutFieldSteps(step, data);
 
         if (fieldSteps.length && typeof window.resumeFormFields === 'function') {
@@ -1359,7 +1387,7 @@ function applyProfileAddressIfNeeded() {
             var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailPattern.test(email.value.trim())) {
                 e.preventDefault();
-                showErr('Невірний формат email — приклад: name@example.com');
+                showErr('Невірний формат email - приклад: name@example.com');
                 email.focus();
                 return;
             }
@@ -1407,7 +1435,7 @@ function applyProfileAddressIfNeeded() {
         if (deliveryMethod === 'standard' || deliveryMethod === 'pickup') {
             if (!hiddenTime || !hiddenTime.value) {
                 e.preventDefault();
-                showErr('Оберіть період доставки. Якщо на сьогодні немає вільних слотів — оберіть завтра');
+                showErr('Оберіть період доставки. Якщо на сьогодні немає вільних слотів - оберіть завтра');
                 return;
             }
         }
@@ -1422,7 +1450,7 @@ function applyProfileAddressIfNeeded() {
             }
             if (!hiddenTime || !hiddenTime.value) {
                 e.preventDefault();
-                showErr('Обраний час недоступний — оберіть пізніший');
+                showErr('Обраний час недоступний - оберіть пізніший');
                 if (exactInput) exactInput.focus();
                 return;
             }
@@ -1431,7 +1459,17 @@ function applyProfileAddressIfNeeded() {
         try {
             localStorage.removeItem('checkoutDraft');
         } catch (err) {
+        }
+
+        if (form.dataset.sent === '1') {
+            e.preventDefault();
             return;
+        }
+        form.dataset.sent = '1';
+        var submitBtn = document.getElementById('checkoutSubmitOrder');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Оформлюємо…';
         }
     });
 })();
@@ -1476,6 +1514,10 @@ async function initAddressAutocomplete() {
     var autocomplete = new places.PlaceAutocompleteElement({
         includedRegionCodes: ['ua']
     });
+    autocomplete.style.width = '100%';
+    autocomplete.style.maxWidth = '100%';
+    autocomplete.style.minWidth = '0';
+    autocomplete.style.boxSizing = 'border-box';
     box.appendChild(autocomplete);
 
     autocomplete.addEventListener('gmp-select', async function (event) {

@@ -9,6 +9,9 @@ const fullName = `${firstName} ${lastName}`.trim() || 'Покупець';
 const commentText = rev.comment && String(rev.comment).trim() !== '' ? String(rev.comment).trim() : '';
 const dateLabel = revDate ? new Date(revDate).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 const avatarUrl = rev.avatar_url && String(rev.avatar_url).trim() !== '' ? String(rev.avatar_url).trim() : '';
+const authorUserId = Number(rev.user_id);
+const authorPublic = Number(rev.is_public_profile) === 1 && Number.isFinite(authorUserId) && authorUserId > 0;
+const authorHasId = Number.isFinite(authorUserId) && authorUserId > 0;
 %>
 <li class="product-review-item">
     <div class="product-review-item-head">
@@ -18,7 +21,27 @@ const avatarUrl = rev.avatar_url && String(rev.avatar_url).trim() !== '' ? Strin
             <span class="product-review-avatar" aria-hidden="true"><%= initials %></span>
         <% } %>
         <div class="product-review-item-meta">
-            <p class="product-review-author"><%= fullName %></p>
+            <% if (authorPublic) { %>
+                <p class="product-review-author">
+                    <a
+                        class="product-review-author-link"
+                        href="/u/<%= authorUserId %>"
+                        data-soft-nav="false"
+                        title="Відкрити публічний профіль"
+                    ><%= fullName %></a>
+                </p>
+            <% } else if (authorHasId) { %>
+                <p class="product-review-author">
+                    <button
+                        type="button"
+                        class="product-review-author-link product-review-author-link--closed"
+                        title="Акаунт закритий"
+                        data-profile-closed="1"
+                    ><%= fullName %></button>
+                </p>
+            <% } else { %>
+                <p class="product-review-author"><%= fullName %></p>
+            <% } %>
             <div class="product-review-item-sub">
                 <% if (hasStars) { %>
                     <span class="star-rating star-rating--sm" title="Оцінка <%= revRating %> з 5">

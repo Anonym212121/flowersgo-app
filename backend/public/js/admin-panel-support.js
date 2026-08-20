@@ -14,6 +14,9 @@
     let activeChatId = null;
     let lastMessageId = 0;
     let chatPollActive = false;
+    let pollBusy = false;
+    let refreshBusy = false;
+    let sendBusy = false;
 
     const escapeHtml = (value) => {
         return String(value == null ? '' : value)
@@ -43,12 +46,12 @@
 
     const formatDate = (iso) => {
         if (!iso) {
-            return '—';
+            return '-';
         }
         try {
             return new Date(iso).toLocaleString('uk-UA');
         } catch (e) {
-            return '—';
+            return '-';
         }
     };
 
@@ -163,7 +166,7 @@
             }
             const meta = m.sender_label ? '<span class="admin-support-msg__who">' + escapeHtml(m.sender_label) + '</span>' : '';
             return (
-                '<div class="admin-support-msg ' + cls + '">' +
+                '<div class="admin-support-msg ' + cls + '" data-msg-id="' + m.id + '">' +
                 meta +
                 escapeHtml(m.body) +
                 '<span class="admin-support-msg__time">' + formatDate(m.createdAt) + '</span>' +
@@ -251,14 +254,14 @@
 
     const renderChatDetail = (api, chat, messages, canReply) => {
         const statusText = chat.status === 'open'
-            ? 'В черзі — візьміть чат, щоб відповідати'
-            : (chat.status === 'assigned' ? 'В роботі' : 'Архів — лише перегляд');
+            ? 'В черзі - візьміть чат, щоб відповідати'
+            : (chat.status === 'assigned' ? 'В роботі' : 'Архів - лише перегляд');
 
         content.innerHTML =
             '<div class="admin-support-chat-head">' +
             '<button type="button" class="admin-secondary-btn" id="support-back-list">← До списку</button>' +
             '<div class="admin-support-chat-info">' +
-            '<strong>Чат №' + chat.id + '</strong> — ' + escapeHtml(chat.client_name) +
+            '<strong>Чат №' + chat.id + '</strong> - ' + escapeHtml(chat.client_name) +
             '<br><small>' + escapeHtml(chat.guest_email || '') + ' ' + escapeHtml(chat.guest_phone || '') + '</small>' +
             '<br><small>Статус: ' + statusText + '</small>' +
             (chat.status === 'closed' && chat.closed_at
@@ -326,9 +329,10 @@
                 e.preventDefault();
                 const input = document.getElementById('admin-support-input');
                 const text = input && input.value ? input.value.trim() : '';
-                if (!text || !activeChatId) {
+                if (!text || !activeChatId || sendBusy) {
                     return;
                 }
+                sendBusy = true;
                 try {
                     const res = await api.apiFetch('/api/admin/support/chats/' + activeChatId + '/message', {
                         method: 'POST',
@@ -348,29 +352,37 @@
                     input.value = '';
                 } catch (err) {
                     api.showMessage(err.message, true);
+                } finally {
+                    sendBusy = false;
                 }
             });
         }
     };
 
     const pollChat = async (api) => {
-        if (!activeChatId) {
+        if (!activeChatId || pollBusy) {
             return;
         }
+        pollBusy = true;
         try {
             const url = '/api/admin/support/chats/' + activeChatId + '/poll?since_id=' + lastMessageId;
             const data = await api.apiFetch(url);
             const incoming = Array.isArray(data.messages) ? data.messages : [];
             if (incoming.length > 0) {
+                const box = document.getElementById('admin-support-messages');
                 incoming.forEach((m) => {
-                    if (m.id > lastMessageId) {
+                    if (m && m.id > lastMessageId) {
                         lastMessageId = m.id;
                     }
                 });
-                const box = document.getElementById('admin-support-messages');
                 if (box) {
-                    box.insertAdjacentHTML('beforeend', renderMessages(incoming));
-                    box.scrollTop = box.scrollHeight;
+                    const fresh = incoming.filter((m) => {
+                        return m && m.id && !box.querySelector('[data-msg-id="' + m.id + '"]');
+                    });
+                    if (fresh.length > 0) {
+                        box.insertAdjacentHTML('beforeend', renderMessages(fresh));
+                        box.scrollTop = box.scrollHeight;
+                    }
                 }
                 try {
                     await api.apiFetch('/api/admin/support/chats/' + activeChatId + '/read', { method: 'POST' });
@@ -384,6 +396,8 @@
                 renderChatDetail(api, detail.chat, detail.messages, false);
             }
         } catch (e) {
+        } finally {
+            pollBusy = false;
         }
     };
 
@@ -392,10 +406,70 @@
         pollChat(api);
     };
 
+    const appendLiveAdminMessage = (api, message) => {
+        if (!message || !message.id) {
+            return;
+        }
+        if (message.id > lastMessageId) {
+            lastMessageId = message.id;
+        }
+        const box = document.getElementById('admin-support-messages');
+        if (!box) {
+            return;
+        }
+        if (box.querySelector('[data-msg-id="' + message.id + '"]')) {
+            return;
+        }
+        box.insertAdjacentHTML('beforeend', renderMessages([message]));
+        box.scrollTop = box.scrollHeight;
+        api.apiFetch('/api/admin/support/chats/' + activeChatId + '/read', { method: 'POST' }).then(() => {
+            updateBadge(api);
+        }).catch(() => {});
+    };
+
+    const applyLiveSupport = (api, data) => {
+        const chatId = Number(data.chat_id);
+        if (!Number.isFinite(chatId) || chatId <= 0) {
+            return;
+        }
+
+        if (activeChatId && Number(activeChatId) === chatId) {
+            if (data.message) {
+                appendLiveAdminMessage(api, data.message);
+            }
+            if (data.event === 'closed' || (data.chat && data.chat.status === 'closed')) {
+                stopPoll();
+                api.apiFetch('/api/admin/support/chats/' + chatId).then((detail) => {
+                    renderChatDetail(api, detail.chat, detail.messages, false);
+                }).catch(() => {});
+            }
+            updateBadge(api);
+            return;
+        }
+
+        updateBadge(api);
+        if (!activeChatId && content.querySelector('[data-support-tab]')) {
+            if (data.event === 'started' || data.event === 'closed' || data.event === 'claimed') {
+                loadSupportList(api).catch(() => {});
+            }
+        }
+    };
+
     const refreshAdminSupport = async (api) => {
-        await updateBadge(api);
-        if (chatPollActive && activeChatId) {
-            await pollChat(api);
+        if (refreshBusy || document.hidden) {
+            return;
+        }
+        refreshBusy = true;
+        try {
+            await updateBadge(api);
+            if (window.__realtimeLive) {
+                return;
+            }
+            if (chatPollActive && activeChatId) {
+                await pollChat(api);
+            }
+        } finally {
+            refreshBusy = false;
         }
     };
 
@@ -497,6 +571,14 @@
                 window.SiteAlerts.setInitialCount('adminSupport', Number(data.unread_count) || 0);
             }).catch(() => {});
         }
+
+        document.addEventListener('realtime:message', (event) => {
+            const data = event.detail;
+            if (!data || data.type !== 'support_chat') {
+                return;
+            }
+            applyLiveSupport(api, data);
+        });
     }
 
     window.adminPanelSupport = {

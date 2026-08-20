@@ -23,6 +23,78 @@ const bouquetTemplateController = require('../controllers/bouquetTemplateControl
 const paymentController = require('../controllers/paymentController');
 const warehouseController = require('../controllers/warehouseController');
 const supportChatController = require('../controllers/supportChatController');
+const createRateLimit = require('../middleware/rateLimit');
+const honeypot = require('../middleware/honeypot');
+
+const reviewLimit = createRateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+    scope: 'review',
+    message: 'Забагато відгуків. Спробуйте пізніше.'
+});
+
+const supportStartLimit = createRateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 5,
+    scope: 'support-start',
+    message: 'Забагато нових чатів. Спробуйте пізніше.'
+});
+
+const supportWriteLimit = createRateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 20,
+    scope: 'support-write',
+    message: 'Забагато повідомлень. Спробуйте трохи пізніше.'
+});
+
+const supportPollLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'support-poll',
+    message: 'Забагато запитів до чату. Спробуйте трохи пізніше.'
+});
+
+const previewLimit = createRateLimit({
+    windowMs: 2 * 60 * 1000,
+    max: 8,
+    scope: 'constructor-preview',
+    message: 'Забагато запитів превʼю. Зачекайте хвилину.'
+});
+
+const orderLimit = createRateLimit({
+    windowMs: 10 * 60 * 1000,
+    max: 8,
+    scope: 'orders',
+    message: 'Забагато замовлень за короткий час. Спробуйте пізніше.'
+});
+
+const cartWriteLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'cart-write',
+    message: 'Забагато змін у кошику. Зачекайте секунду.'
+});
+
+const wishlistWriteLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'wishlist-write',
+    message: 'Забагато змін в обраному. Зачекайте секунду.'
+});
+
+const emailCodeLimit = createRateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    scope: 'cabinet-email-code',
+    message: 'Забагато кодів на пошту. Спробуйте пізніше.'
+});
+
+const emailCodeConfirmLimit = createRateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    scope: 'cabinet-email-confirm',
+    message: 'Забагато спроб коду. Спробуйте пізніше.'
+});
 
 const wrapProductImageUpload = (req, res, next) => {
     productImageController.uploadMiddleware(req, res, (err) => {
@@ -59,7 +131,9 @@ const wrapCategoryImageUpload = (req, res, next) => {
 const router = express.Router();
 const pageNavCounts = require('../middleware/pageNavCounts');
 const pageRequireConstructorEnabled = require('../middleware/pageRequireConstructorEnabled');
+const supportGuestCookie = require('../middleware/supportGuestCookie');
 router.use(pageAuthContext);
+router.use(supportGuestCookie);
 router.use(pageNavCounts);
 
 router.get('/', pagesController.home);
@@ -68,46 +142,49 @@ router.get('/api/support/config', supportChatController.getConfig);
 router.get('/api/support/active', supportChatController.getActive);
 router.get('/api/support/archive', supportChatController.listArchive);
 router.get('/api/support/archive/:id', supportChatController.getArchiveChat);
-router.get('/api/support/poll', supportChatController.pollMessages);
-router.post('/api/support/start', supportChatController.startChat);
-router.post('/api/support/message', supportChatController.sendMessage);
+router.get('/api/support/poll', supportPollLimit, supportChatController.pollMessages);
+router.post('/api/support/start', supportStartLimit, honeypot, supportChatController.startChat);
+router.post('/api/support/message', supportWriteLimit, honeypot, supportChatController.sendMessage);
 router.get('/api/support/unread-count', supportChatController.getUnreadCount);
 router.post('/api/support/read', supportChatController.markRead);
 router.get('/product/:id', pagesController.productPage);
-router.post('/product/:id/reviews', pageRequireLogin, reviewController.createPageReview);
+router.get('/u/:id', pagesController.publicProfilePage);
+router.post('/product/:id/reviews', pageRequireLogin, reviewLimit, honeypot, reviewController.createPageReview);
 router.get('/login', pagesController.loginPage);
 router.get('/account-blocked', pagesController.accountBlockedPage);
 router.get('/register', pagesController.registerPage);
 router.get('/privacy', pagesController.privacyPage);
 router.get('/delivery-terms', pagesController.deliveryTermsPage);
 router.get('/logout', pagesController.logout);
+router.post('/logout', pagesController.logout);
 router.get('/cart', pagesController.cartPage);
 router.get('/constructor', constructorController.constructorPage);
 router.get('/api/constructor/templates', pageRequireConstructorEnabled, bouquetTemplateController.listJson);
 router.get('/api/constructor/templates/:slug', pageRequireConstructorEnabled, bouquetTemplateController.getJson);
 router.post('/constructor/templates/:slug/add', pageRequireConstructorEnabled, bouquetTemplateController.addTemplateToCart);
 router.post('/constructor/calc', pageRequireConstructorEnabled, constructorController.calcJson);
-router.post('/constructor/preview', pageRequireConstructorEnabled, constructorController.previewJson);
-router.post('/constructor/preview-save', pageRequireConstructorEnabled, constructorController.savePreviewJson);
+router.post('/constructor/preview', pageRequireConstructorEnabled, previewLimit, constructorController.previewJson);
+router.post('/constructor/preview-save', pageRequireConstructorEnabled, previewLimit, constructorController.savePreviewJson);
 router.post('/constructor/preview-clear', constructorController.previewClearJson);
 router.post('/constructor/add', pageRequireConstructorEnabled, constructorController.addToCart);
-router.post('/cart/add', cartController.add);
-router.post('/cart/update', cartController.update);
-router.post('/cart/remove', cartController.remove);
+router.post('/cart/add', cartWriteLimit, cartController.add);
+router.post('/cart/update', cartWriteLimit, cartController.update);
+router.post('/cart/remove', cartWriteLimit, cartController.remove);
 router.post('/cart/clear', cartController.clear);
 router.get('/cabinet', pageRequireLogin, pagesController.cabinetPage);
+router.post('/cabinet/public-profile', pageRequireLogin, cabinetController.setPublicProfile);
 router.post('/cabinet/profile', pageRequireLogin, cabinetController.updateProfile);
 router.post('/cabinet/avatar', pageRequireLogin, cabinetController.uploadAvatarMiddleware, cabinetController.updateAvatar);
-router.post('/cabinet/password/request-email', pageRequireLogin, cabinetController.requestPasswordEmailCode);
-router.post('/cabinet/password/confirm-email', pageRequireLogin, cabinetController.confirmPasswordByEmailCode);
-router.post('/cabinet/email/request-code', pageRequireLogin, cabinetController.requestEmailVerifyCode);
-router.post('/cabinet/email/confirm-code', pageRequireLogin, cabinetController.confirmEmailVerifyCode);
+router.post('/cabinet/password/request-email', pageRequireLogin, emailCodeLimit, cabinetController.requestPasswordEmailCode);
+router.post('/cabinet/password/confirm-email', pageRequireLogin, emailCodeConfirmLimit, cabinetController.confirmPasswordByEmailCode);
+router.post('/cabinet/email/request-code', pageRequireLogin, emailCodeLimit, cabinetController.requestEmailVerifyCode);
+router.post('/cabinet/email/confirm-code', pageRequireLogin, emailCodeConfirmLimit, cabinetController.confirmEmailVerifyCode);
 router.post('/cabinet/orders/:id/archive', pageRequireLogin, cabinetController.archiveOrder);
 router.post('/cabinet/orders/:id/cancel-request', pageRequireLogin, cabinetController.requestOrderCancel);
-router.post('/cabinet/reviews/:id/edit-request', pageRequireLogin, cabinetController.requestReviewEdit);
+router.post('/cabinet/reviews/:id/edit-request', pageRequireLogin, honeypot, cabinetController.requestReviewEdit);
 router.post('/cabinet/reviews/:id/delete-request', pageRequireLogin, cabinetController.requestReviewDelete);
 router.get('/checkout', pagesController.checkoutPage);
-router.post('/orders', orderController.createOrder);
+router.post('/orders', orderLimit, honeypot, orderController.createOrder);
 router.get('/order/success/:orderId', pageRequireLoginOrPayToken, pagesController.orderSuccessPage);
 router.post('/order/success/:orderId/cancel-request', cabinetController.requestGuestOrderCancel);
 router.post('/payment/liqpay/callback', paymentController.callback);
@@ -121,6 +198,25 @@ router.get('/warehouse/orders/poll', pageRequireWarehousePage, pagesController.w
 router.get('/warehouse/orders/:id', pageRequireWarehousePage, pagesController.warehouseOrderDetailPage);
 router.post('/warehouse/orders/:id/status', pageRequireWarehousePage, orderController.updateOrderStatusForWarehouse);
 router.post('/warehouse/orders/:id/pickup-complete', pageRequireWarehousePage, orderController.completePickupByWarehouse);
+router.post(
+    '/warehouse/orders/:id/assembled-photo',
+    pageRequireWarehousePage,
+    (req, res, next) => {
+        warehouseController.uploadAssembledPhotoMiddleware(req, res, (err) => {
+            const id = Number(req.params.id);
+            const back =
+                Number.isFinite(id) && id > 0 ? '/warehouse/orders/' + id : '/warehouse/orders';
+            if (err) {
+                if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+                    return res.redirect(back + '?err=photo_big');
+                }
+                return res.redirect(back + '?err=photo_type');
+            }
+            next();
+        });
+    },
+    warehouseController.uploadAssembledPhoto
+);
 router.get('/warehouse/stock', pageRequireWarehousePage, warehouseController.warehouseStockPage);
 router.post('/warehouse/stock/adjust', pageRequireWarehousePage, warehouseController.warehouseStockAdjust);
 router.get('/warehouse/stock/poll', pageRequireWarehousePage, warehouseController.warehouseStockPoll);
@@ -138,9 +234,9 @@ router.post('/api/notifications/:id/read', pageRequireLogin, notificationControl
 router.post('/api/notifications/read-all', pageRequireLogin, notificationController.markAllRead);
 router.get('/wishlist', wishlistController.wishlistPage);
 router.get('/api/wishlist/ids', wishlistController.listProductIdsJson);
-router.post('/wishlist/add', wishlistController.addProduct);
-router.post('/wishlist/remove', wishlistController.removeProduct);
-router.post('/wishlist/delete', wishlistController.removeProduct);
+router.post('/wishlist/add', wishlistWriteLimit, wishlistController.addProduct);
+router.post('/wishlist/remove', wishlistWriteLimit, wishlistController.removeProduct);
+router.post('/wishlist/delete', wishlistWriteLimit, wishlistController.removeProduct);
 router.post(
     '/products/upload-image',
     requireAdminJson,

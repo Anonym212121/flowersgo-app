@@ -5,6 +5,7 @@ const orderStatusService = require('../services/orderStatusService');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const courierAssignService = require('../services/courierAssignService');
+const orderDispatchService = require('../services/orderDispatchService');
 const paymentToken = require('../utils/paymentToken');
 const deliveryService = require('../services/deliveryService');
 const DeliverySettings = require('../models/DeliverySettings');
@@ -226,6 +227,12 @@ const createOrder = async (req, res) => {
             greeting_card_fee = orderPriceService.resolveGreetingCardFee(true);
         }
 
+        const do_not_call_recipient =
+            recipient_mode === 'other' &&
+            (req.body.do_not_call_recipient === '1' ||
+                req.body.do_not_call_recipient === 'on' ||
+                req.body.do_not_call_recipient === true);
+
         let receiver_name = '';
         let receiver_phone = '';
         if (recipient_mode === 'other' && recFirst && recLast && recPhone) {
@@ -258,6 +265,7 @@ const createOrder = async (req, res) => {
             recipient_note: recipient_mode === 'other' ? recNote || null : null,
             bouquet_note: bouquetNote || null,
             greeting_card_text,
+            do_not_call_recipient,
             delivery_method,
             delivery_datetime,
             total_price,
@@ -279,11 +287,14 @@ const createOrder = async (req, res) => {
             } catch (notifyErr) {
                 console.error('onNewOrderForAdmin:', notifyErr.message);
             }
+            const dispatched = await orderDispatchService.dispatchToWarehouse(orderId);
+            const placedNote = dispatched.ok
+                ? 'Оплата при отриманні. Букет уже на складі, флорист збирає замовлення.'
+                : dispatched.code === 'no_stock'
+                    ? 'Оплата при отриманні. Адмін перевірить наявність товару і відправить замовлення на склад.'
+                    : 'Оплата при отриманні. Очікуйте підтвердження.';
             try {
-                await orderWarehouseNotifyService.notifyCustomerOrderPlaced(
-                    orderId,
-                    'Оплата при отриманні. Очікуйте підтвердження адміністратора.'
-                );
+                await orderWarehouseNotifyService.notifyCustomerOrderPlaced(orderId, placedNote);
             } catch (notifyErr) {
                 console.error('notifyCustomerOrderPlaced:', notifyErr.message);
             }

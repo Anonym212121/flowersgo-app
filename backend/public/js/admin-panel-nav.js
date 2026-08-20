@@ -8,12 +8,13 @@
         create: { title: 'Новий товар', subtitle: 'Додавання позиції в каталог' },
         categories: { title: 'Категорії', subtitle: 'Структура каталогу' },
         constructor: { title: 'Конструктор', subtitle: 'Квіти, кольори та шаблони букетів' },
-        orders: { title: 'Модерація замовлень', subtitle: 'Нові замовлення на підтвердження' },
+        orders: { title: 'Потребують уваги', subtitle: 'Немає залишку, скасування та винятки' },
         'orders-awaiting': { title: 'Очікують оплату', subtitle: 'Замовлення без оплати в термін' },
         ordersAll: { title: 'Усі замовлення', subtitle: 'Повний список замовлень' },
         reviews: { title: 'Відгуки', subtitle: 'Модерація відгуків клієнтів' },
-        users: { title: 'Користувачі', subtitle: 'Облікові записи та блокування' },
+        users: { title: 'Користувачі', subtitle: 'Облікові записи, персонал і блокування' },
         support: { title: 'Підтримка', subtitle: 'Чати з клієнтами' },
+        shop: { title: 'Магазин', subtitle: 'Конструктор, телефони та привітання в чаті' },
         delivery: { title: 'Доставка', subtitle: 'Тарифи та правила доставки' },
         couriers: { title: "Кур'єри", subtitle: 'Команда доставки' },
         legal: { title: 'Юридичні сторінки', subtitle: 'Політика конфіденційності та умови' }
@@ -30,6 +31,7 @@
         reviews: 'clients',
         users: 'clients',
         support: 'clients',
+        shop: 'settings',
         delivery: 'settings',
         couriers: 'settings',
         legal: 'settings'

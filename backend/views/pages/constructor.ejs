@@ -16,11 +16,11 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
         <div class="catalog-hero__content">
 
-            <p class="catalog-hero__eyebrow">✿ Збери свій букет</p>
+            <p class="catalog-hero__eyebrow"><%= t('constructor.eyebrow') %></p>
 
-            <h1 class="catalog-hero__title">Конструктор букета</h1>
+            <h1 class="catalog-hero__title"><%= t('constructor.title') %></h1>
 
-            <p class="catalog-hero__lead">Обери квіти, колір та кількість — ми зберемо букет перед відправкою. Мінімум <%= minStemsVal %> квіток.</p>
+            <p class="catalog-hero__lead"><%= t('constructor.lead', { count: minStemsVal }) %></p>
 
         </div>
 
@@ -30,17 +30,17 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
     <% if (safeGroups.length === 0) { %>
 
-        <p class="catalog-empty">Немає квітів для конструктора. <a href="/">Каталог</a></p>
+        <p class="catalog-empty"><%= t('constructor.empty') %> <a href="/"><%= t('nav.catalog') %></a></p>
 
     <% } else { %>
 
-        <section class="constructor-library" id="constructorLibrary" aria-label="Готові букети">
+        <section class="constructor-library" id="constructorLibrary" aria-label="<%= t('constructor.ideasAria') %>">
             <div class="constructor-library__head">
-                <h2 class="checkout-step-heading">Готові ідеї</h2>
-                <p class="constructor-library__lead">Обери шаблон — редагуй у конструкторі або купуй одразу.</p>
+                <h2 class="checkout-step-heading"><%= t('constructor.ideas') %></h2>
+                <p class="constructor-library__lead"><%= t('constructor.ideasLead') %></p>
             </div>
             <div class="constructor-library__grid" id="constructorLibraryGrid">
-                <p class="constructor-library__loading">Завантаження шаблонів…</p>
+                <p class="constructor-library__loading"><%= t('constructor.loading') %></p>
             </div>
         </section>
 
@@ -48,7 +48,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
             <div class="constructor-flowers">
 
-                <h2 class="checkout-step-heading">Квіти</h2>
+                <h2 class="checkout-step-heading"><%= t('constructor.flowers') %></h2>
 
                 <div class="constructor-grid" id="constructorGrid">
 
@@ -74,7 +74,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                             data-stock="<%= Number(active.stock_quantity || 0) %>"
 
-                            data-name="<%= group.title %>"
+                            data-name="<%= locName(group.title) %>"
 
                             <% if (multiColor) { %>data-multi-color="1"<% } %>
 
@@ -84,7 +84,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                                 <% if (active.image_url) { %>
 
-                                    <img class="product-image constructor-card__image" src="<%= active.image_url %>" alt="<%= group.title %>">
+                                    <img class="product-image constructor-card__image" src="<%= active.image_url %>" alt="<%= locName(group.title) %>">
 
                                 <% } else { %>
 
@@ -94,7 +94,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                             </div>
 
-                            <h3 class="product-title"><%= group.title %></h3>
+                            <h3 class="product-title"><%= locName(group.title) %></h3>
 
                             <% if (showColors) { %>
 
@@ -130,7 +130,7 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                                             style="--swatch-color: <%= swatch %>"
 
-                                            title="<%= colorTitle %><%= inStock ? '' : ' — немає на складі' %>"
+                                            title="<%= colorTitle %><%= inStock ? '' : ' - немає на складі' %>"
 
                                             aria-label="<%= colorTitle %>"
 
@@ -142,17 +142,17 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                                 </div>
 
-                                <p class="constructor-card__color-label"><%= active.flower_color || 'Обери колір' %></p>
+                                <p class="constructor-card__color-label"><%= locName(active.flower_color) || t('constructor.pickColor') %></p>
 
                             <% } %>
 
                             <p class="product-price constructor-card__price">
 
-                                <strong><%= Number(active.sale_price || 0).toLocaleString('uk-UA') %> грн / шт</strong>
+                                <strong><%= t('constructor.perStem', { price: formatMoney(Number(active.sale_price || 0)) }) %></strong>
 
                             </p>
 
-                            <p class="constructor-card__stock">В наявності: <span class="constructor-card__stock-value"><%= Number(active.stock_quantity || 0) %></span> шт</p>
+                            <p class="constructor-card__stock"><%= t('catalog.inStock') %>: <span class="constructor-card__stock-value"><%= Number(active.stock_quantity || 0) %></span> <%= translateUnit('шт') %></p>
 
                             <div class="constructor-qty">
 
@@ -208,27 +208,21 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                         Упаковка
 
-                        <% if (safePackaging.length === 0) { %>
-
-                            <span class="constructor-hint">Немає упаковки</span>
-
-                        <% } else { %>
-
                         <select class="auth-input" id="constructorPackaging">
+
+                            <option value="" data-price="0">Без упаковки</option>
 
                             <% for (const pack of safePackaging) { %>
 
                                 <option value="<%= pack.id %>" data-price="<%= Number(pack.price || 0) %>">
 
-                                    <%= pack.label %><% if (Number(pack.price) > 0) { %> (+<%= Number(pack.price).toLocaleString('uk-UA') %> грн)<% } %>
+                                    <%= locName(pack.label) %><% if (Number(pack.price) > 0) { %> (+<%= formatMoney(Number(pack.price)) %>)<% } %>
 
                                 </option>
 
                             <% } %>
 
                         </select>
-
-                        <% } %>
 
                     </label>
 
@@ -244,9 +238,9 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                     <p class="checkout-summary-row checkout-summary-row--total constructor-total-row--big">
 
-                        <span>Разом:</span>
+                        <span><%= t('cart.total') %></span>
 
-                        <strong class="checkout-summary-total" id="constructorTotal">0 грн</strong>
+                        <strong class="checkout-summary-total" id="constructorTotal"><%= formatMoney(0) %></strong>
 
                     </p>
 
@@ -266,11 +260,11 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
                     <button type="button" class="auth-button constructor-add-btn" id="constructorAddBtn" disabled>
 
-                        Додати в кошик
+                        <%= t('catalog.addCart') %>
 
                     </button>
 
-                    <a href="/" class="constructor-back-link">← До каталогу</a>
+                    <a href="/" class="constructor-back-link"><%= t('product.backCatalog') %></a>
 
                 </div>
 
@@ -280,11 +274,11 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
         <div class="constructor-mobile-bar" id="constructorMobileBar" hidden>
             <div class="constructor-mobile-bar__info">
-                <strong class="constructor-mobile-bar__total" id="constructorMobileTotal">0 грн</strong>
-                <span class="constructor-mobile-bar__stems" id="constructorMobileStems">0 квіток</span>
+                <strong class="constructor-mobile-bar__total" id="constructorMobileTotal"><%= formatMoney(0) %></strong>
+                <span class="constructor-mobile-bar__stems" id="constructorMobileStems"><%= t('constructor.stems', { count: 0 }) %></span>
             </div>
             <button type="button" class="auth-button constructor-add-btn constructor-mobile-bar__btn" id="constructorMobileAddBtn" disabled>
-                Додати в кошик
+                <%= t('catalog.addCart') %>
             </button>
         </div>
 
@@ -292,12 +286,23 @@ const minStemsVal = Number(typeof minStems !== 'undefined' ? minStems : 5);
 
 </section>
 
+<div class="constructor-confirm" id="constructorEvenConfirm" hidden aria-hidden="true">
+    <div class="constructor-confirm__backdrop" data-even-confirm-close></div>
+    <div class="constructor-confirm__dialog" role="dialog" aria-modal="true" aria-labelledby="constructorEvenConfirmTitle">
+        <h2 class="constructor-confirm__title" id="constructorEvenConfirmTitle">Парна кількість квітів</h2>
+        <p class="constructor-confirm__text" id="constructorEvenConfirmText"></p>
+        <div class="constructor-confirm__actions">
+            <button type="button" class="constructor-clear-btn" data-even-confirm-close>Скасувати</button>
+            <button type="button" class="auth-button" id="constructorEvenConfirmOk">Так, продовжити</button>
+        </div>
+    </div>
+</div>
+
 
 
 <script src="https://js.puter.com/v2/"></script>
-<script>
-window.constructorConfig = {
-    minStems: <%= minStemsVal %>,
+<script type="application/json" id="constructor-config"><%- JSON.stringify({
+    minStems: minStemsVal,
     calcUrl: '/constructor/calc',
     previewUrl: '/constructor/preview',
     previewSaveUrl: '/constructor/preview-save',
@@ -306,10 +311,12 @@ window.constructorConfig = {
     puterQuality: 'medium',
     addUrl: '/constructor/add',
     templatesUrl: '/api/constructor/templates',
-    templateSlug: <%- JSON.stringify(typeof templateSlug !== 'undefined' ? templateSlug : '') %>,
+    templateSlug: typeof templateSlug !== 'undefined' ? templateSlug : '',
     draftStorageKey: 'flowersgo_constructor_draft',
     previewStorageKey: 'flowersgo_constructor_preview'
-};
+}) %></script>
+<script>
+window.constructorConfig = JSON.parse(document.getElementById('constructor-config').textContent);
 </script>
 
 <script src="/js/constructor-library.js" defer></script>

@@ -6,15 +6,29 @@ const safeTransitions = typeof statusTransitions !== 'undefined' && statusTransi
 const phoneLinks = o.phone_links && o.phone_links.ok ? o.phone_links : null;
 const mapsHref = typeof mapsUrl === 'string' ? mapsUrl : '';
 const shiftOn = !!onShift;
+const surprise = !!o.do_not_call_recipient;
+const callLinks = surprise
+    ? (o.buyer_phone_links && o.buyer_phone_links.ok ? o.buyer_phone_links : null)
+    : phoneLinks;
+let shippedStatusId = '';
+let deliveredStatusId = '';
+for (const s of safeStatuses) {
+    if (s.status_name === 'shipped') {
+        shippedStatusId = String(s.id);
+    }
+    if (s.status_name === 'delivered') {
+        deliveredStatusId = String(s.id);
+    }
+}
 %>
 
-<div class="warehouse-page courier-page">
+<div class="warehouse-page courier-page courier-detail-page">
     <p class="warehouse-back-link"><a href="/courier/orders">← До списку</a></p>
 
     <div class="warehouse-order-top">
         <div class="warehouse-order-top-main">
             <span class="warehouse-order-no">№<%= o.id %></span>
-            <span class="warehouse-order-when"><%= o.delivery_display || '—' %></span>
+            <span class="warehouse-order-when"><%= o.delivery_display || '-' %></span>
         </div>
         <span class="warehouse-order-sum"><%= Number(o.total_price || 0).toLocaleString('uk-UA') %> грн</span>
     </div>
@@ -24,6 +38,8 @@ const shiftOn = !!onShift;
         <% if (o.payment_status === 'cod') { %><span class="warehouse-badge pay-cod">При отриманні</span><% } %>
         <% if (o.is_soon) { %><span class="warehouse-badge warehouse-badge--soon">Скоро</span><% } %>
         <% if (o.is_overdue) { %><span class="warehouse-badge pay-no">Прострочено</span><% } %>
+        <% if (surprise) { %><span class="warehouse-badge warehouse-badge--surprise">Сюрприз — не дзвонити</span><% } %>
+        <% if (o.assembled_photo_url) { %><span class="warehouse-badge warehouse-badge--photo">Є фото букета</span><% } %>
     </div>
 
     <ul class="warehouse-items-list">
@@ -35,16 +51,22 @@ const shiftOn = !!onShift;
     <div class="warehouse-order-details">
         <div class="warehouse-order-detail warehouse-order-detail--full">
             <span class="warehouse-order-detail-label">Кому</span>
-            <span class="warehouse-order-detail-value"><%= o.receiver_name || '—' %></span>
+            <span class="warehouse-order-detail-value"><%= o.receiver_name || '-' %></span>
         </div>
         <div class="warehouse-order-detail warehouse-order-detail--full">
             <span class="warehouse-order-detail-label">Адреса</span>
-            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '—' %></span>
+            <span class="warehouse-order-detail-value"><%= o.delivery_place_display || '-' %></span>
         </div>
         <% if (o.recipient_note) { %>
             <div class="warehouse-order-detail warehouse-order-detail--full">
                 <span class="warehouse-order-detail-label">Примітка</span>
                 <span class="warehouse-order-detail-value"><%= o.recipient_note %></span>
+            </div>
+        <% } %>
+        <% if (surprise) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Сюрприз</span>
+                <span class="warehouse-order-detail-value">Не телефонуй одержувачу. Подзвони замовнику, якщо треба уточнити адресу. На місці — дзвінок у двері.</span>
             </div>
         <% } %>
         <% if (o.greeting_card_text) { %>
@@ -53,11 +75,22 @@ const shiftOn = !!onShift;
                 <span class="warehouse-order-detail-value">(+50 грн) <%= o.greeting_card_text %></span>
             </div>
         <% } %>
+        <% if (o.assembled_photo_url) { %>
+            <div class="warehouse-order-detail warehouse-order-detail--full">
+                <span class="warehouse-order-detail-label">Букет</span>
+                <span class="warehouse-order-detail-value">
+                    <img src="<%= o.assembled_photo_url %>" alt="Зібраний букет №<%= o.id %>" class="warehouse-assembled-img warehouse-assembled-img--courier" />
+                </span>
+            </div>
+        <% } %>
     </div>
 
     <div class="warehouse-detail-actions">
-        <% if (phoneLinks) { %>
-            <%- include('../../partials/warehouse-phone-actions', { phoneLinks: phoneLinks }) %>
+        <% if (callLinks) { %>
+            <%- include('../../partials/warehouse-phone-actions', {
+                phoneLinks: callLinks,
+                phoneActionsHint: surprise ? 'Дзвонити замовнику, не одержувачу' : ''
+            }) %>
         <% } %>
         <% if (mapsHref) { %>
             <a class="warehouse-phone-btn warehouse-phone-btn--tg" href="<%= mapsHref %>" target="_blank" rel="noopener noreferrer" data-soft-nav="false">Маршрут</a>
@@ -70,48 +103,40 @@ const shiftOn = !!onShift;
     <% if (errorText) { %><p class="warehouse-feedback warehouse-feedback--error"><%= errorText %></p><% } %>
 
     <% if (!shiftOn) { %>
-        <p class="warehouse-order-cancel-msg">Зміна вимкнена — <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
+        <p class="warehouse-order-cancel-msg">Зміна вимкнена - <a href="/courier/shift">увімкни</a> для зміни статусу.</p>
     <% } else if (o.status_name === 'accepted') { %>
-        <p class="warehouse-feedback warehouse-feedback--ok">Замовлення завершено і закрито.</p>
+        <p class="warehouse-feedback warehouse-feedback--ok">Доставку завершено.</p>
+    <% } else if (o.status_name === 'processing') { %>
+        <p class="warehouse-order-hint">Склад ще збирає букет. Як тільки буде «Готово» - забереш і натиснеш «В дорозі».</p>
+    <% } else if (o.status_name === 'ready_for_pickup' && shippedStatusId) { %>
+        <div class="courier-finish-block">
+            <p class="courier-finish-hint">Наступний крок: забери букет на складі.</p>
+            <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                <input type="hidden" name="return_to" value="detail" />
+                <input type="hidden" name="status_id" value="<%= shippedStatusId %>" />
+                <button type="submit" class="auth-button courier-finish-btn">Забрав на складі - в дорозі</button>
+            </form>
+        </div>
+    <% } else if (o.status_name === 'shipped' && deliveredStatusId) { %>
+        <div class="courier-finish-block">
+            <p class="courier-finish-hint">Наступний крок: віддай букет одержувачу.</p>
+            <form method="post" action="/courier/orders/<%= o.id %>/status" class="courier-finish-form">
+                <input type="hidden" name="return_to" value="detail" />
+                <input type="hidden" name="status_id" value="<%= deliveredStatusId %>" />
+                <button type="submit" class="auth-button courier-finish-btn">Доставлено клієнту</button>
+            </form>
+        </div>
     <% } else if (o.status_name === 'delivered') { %>
         <div class="courier-finish-block">
-            <p class="courier-finish-hint">Крок 1 виконано — статус «Доставлено». Далі підтверди оплату та закрий замовлення.</p>
             <% if (o.payment_status === 'cod') { %>
+                <p class="courier-finish-hint">Візьми оплату. Після цього замовлення закриється само.</p>
                 <form method="post" action="/courier/orders/<%= o.id %>/cod-paid" class="courier-finish-form">
                     <input type="hidden" name="return_to" value="detail" />
-                    <button type="submit" class="auth-button courier-finish-btn">Крок 2: оплату отримано</button>
+                    <button type="submit" class="auth-button courier-finish-btn">Оплату отримано</button>
                 </form>
-            <% } else if (o.payment_status === 'paid') { %>
-                <p class="warehouse-feedback warehouse-feedback--ok">Оплату вже зафіксовано (картка).</p>
-            <% } %>
-            <% if (o.payment_status === 'paid') { %>
-                <form method="post" action="/courier/orders/<%= o.id %>/close" class="courier-finish-form">
-                    <input type="hidden" name="return_to" value="detail" />
-                    <button type="submit" class="auth-button courier-finish-btn courier-finish-btn--close">Крок 3: завершити замовлення</button>
-                </form>
+            <% } else { %>
+                <p class="warehouse-feedback warehouse-feedback--ok">Оплату вже зафіксовано. Замовлення закриється автоматично.</p>
             <% } %>
         </div>
-    <% } else if (o.status_name === 'processing') { %>
-        <p class="warehouse-order-cancel-msg">Замовлення ще збирають на складі. Після статусу «Готово до видачі» зможеш забрати букет і відмітити «В дорозі».</p>
-    <% } else { %>
-        <form method="post" action="/courier/orders/<%= o.id %>/status" class="warehouse-status-form">
-            <input type="hidden" name="return_to" value="detail" />
-            <label class="warehouse-status-label">
-                Статус
-                <select name="status_id" class="auth-input warehouse-status-select">
-                    <% const nextIds = (safeTransitions[String(o.status_id)] || []).map((id) => Number(id)); %>
-                    <% const currentId = Number(o.status_id); %>
-                    <% for (const s of safeStatuses) { %>
-                        <% const sid = Number(s.id); %>
-                        <% const isCurrent = sid === currentId; %>
-                        <% const canChoose = isCurrent || nextIds.includes(sid); %>
-                        <option value="<%= s.id %>" <%= isCurrent ? 'selected' : '' %> <%= canChoose ? '' : 'disabled' %>>
-                            <%= s.label_uk || s.status_name %>
-                        </option>
-                    <% } %>
-                </select>
-            </label>
-            <button type="submit" class="auth-button warehouse-status-save">Зберегти</button>
-        </form>
     <% } %>
 </div>

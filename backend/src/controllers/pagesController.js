@@ -18,6 +18,7 @@ const orderDeliveryFields = require('../utils/orderDeliveryFields');
 const { mapOrderForWarehouse, buildWarehouseStats, filterWarehouseOrdersByTab, LOW_STOCK_LIMIT } = require('../utils/warehouseOrderView');
 const OrderStatusLogModel = require('../models/OrderStatusLog');
 const paymentToken = require('../utils/paymentToken');
+const cookieBase = require('../utils/cookieBase');
 const paymentSyncService = require('../services/paymentSyncService');
 const DeliverySettings = require('../models/DeliverySettings');
 const LegalPageModel = require('../models/LegalPage');
@@ -26,6 +27,7 @@ const sanitizeLegalHtml = require('../utils/sanitizeLegalHtml');
 const homeCatalogService = require('../services/homeCatalogService');
 const recentDeliveryService = require('../services/recentDeliveryService');
 const buildPageLayoutLocals = require('../utils/pageLayoutLocals');
+const i18n = require('../utils/i18n');
 const {
     respondWithMessage,
     renderPageMessage,
@@ -79,7 +81,7 @@ const home = async (req, res) => {
 
         const recentDelivery = await recentDeliveryService.loadRecentDeliveryHighlight();
 
-        return renderLayout(res, 'Каталог товарів', 'pages/home', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.catalog') : 'Каталог товарів', 'pages/home', {
             categories,
             products,
             hitProducts,
@@ -99,7 +101,7 @@ const loginPage = (req, res) => {
         return res.redirect('/');
     }
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '';
-    return renderLayout(res, 'Вхід', 'pages/login', {
+    return renderLayout(res, res.locals.t ? res.locals.t('page.login') : 'Вхід', 'pages/login', {
         authNext: next,
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
@@ -114,7 +116,7 @@ const registerPage = (req, res) => {
         return res.redirect('/');
     }
     const next = typeof req.query.next === 'string' && req.query.next.startsWith('/') ? req.query.next : '';
-    return renderLayout(res, 'Реєстрація', 'pages/register', {
+    return renderLayout(res, res.locals.t ? res.locals.t('page.register') : 'Реєстрація', 'pages/register', {
         authNext: next,
         googleClientId: process.env.GOOGLE_CLIENT_ID || ''
     });
@@ -169,7 +171,7 @@ const deliveryTermsPage = async (req, res) => {
 };
 
 const logout = (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', cookieBase());
     return res.redirect('/');
 };
 
@@ -227,12 +229,14 @@ const cabinetPage = async (req, res) => {
             email_verified: 'Пошту підтверджено',
             email_already_verified: 'Пошта вже підтверджена',
             password_changed: 'Пароль успішно змінено',
-            order_created: 'Замовлення оформлено. Очікує підтвердження адміністратора.',
-            payment_paid: 'Оплату зафіксовано. Замовлення перейшло в статус «Підтверджено».',
+            order_created: 'Замовлення оформлено. Флорист уже збирає букет.',
+            payment_paid: 'Оплату зафіксовано. Букет збирають на складі.',
             order_archived: 'Замовлення переміщено в архів',
             review_edit_sent: 'Запит на редагування відгуку надіслано адміну',
             review_delete_sent: 'Запит на видалення відгуку надіслано адміну',
-            cancel_request_sent: 'Запит на скасування надіслано адміну'
+            cancel_request_sent: 'Запит на скасування надіслано адміну',
+            profile_public_on: 'Профіль відкрито для інших користувачів',
+            profile_public_off: 'Профіль приховано. Інші його не бачать'
         };
 
         const errMap = {
@@ -252,7 +256,7 @@ const cabinetPage = async (req, res) => {
             verify_email_code_not_saved: 'Не вдалося створити код підтвердження пошти',
             bad_email_code_format: 'Код з листа має містити 6 цифр',
             bad_verify_email_code_format: 'Код з листа має містити 6 цифр',
-            bad_new_password: 'Новий пароль має бути не менше 6 символів',
+            bad_new_password: 'Новий пароль має бути не менше 8 символів',
             password_confirm_mismatch: 'Підтвердження пароля не збігається',
             email_code_expired: 'Код протермінований або неактивний',
             verify_email_code_expired: 'Код протермінований або неактивний',
@@ -263,23 +267,25 @@ const cabinetPage = async (req, res) => {
             verify_email_mismatch: 'Email у профілі змінився. Надішли код ще раз',
             email_not_verified: 'Не вдалося підтвердити пошту',
             password_not_updated: 'Не вдалося змінити пароль',
+            public_profile_failed: 'Не вдалося оновити видимість профілю',
             payment_expired: 'Час на оплату вичерпано. Зверніться до підтримки.',
-            payment_rejected: 'Це замовлення відхилено адміністратором — оплатити його не можна. Оформіть нове.',
+            payment_rejected: 'Це замовлення відхилено адміністратором - оплатити його не можна. Оформіть нове.',
             payment_not_needed: 'Це замовлення не потребує онлайн-оплати.',
             payment_access_denied:
                 'Немає доступу до оплати цього замовлення. Перевірте email у кабінеті (має збігатися з акаунтом оформлення) або створіть нове замовлення.',
             archive_failed: 'Не вдалося архівувати замовлення',
             review_request_pending: 'Запит вже очікує рішення адміна',
+            review_spam: 'Текст схожий на спам. Приберіть зайві посилання і спробуйте ще раз.',
             review_edit_failed: 'Не вдалося надіслати запит на редагування',
             review_delete_failed: 'Не вдалося надіслати запит на видалення',
             cancel_not_allowed: 'Скасування зараз недоступне для цього замовлення',
             cancel_request_failed: 'Не вдалося надіслати запит на скасування',
             order_not_found: 'Замовлення не знайдено',
-            cancel_pending: 'Очікує рішення адміна щодо скасування — оплата недоступна',
+            cancel_pending: 'Очікує рішення адміна щодо скасування - оплата недоступна',
             server: 'Сталася помилка сервера'
         };
 
-        return renderLayout(res, 'Мій кабінет', 'pages/cabinet', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.cabinet') : 'Мій кабінет', 'pages/cabinet', {
             profile,
             myReviews,
             orders,
@@ -302,13 +308,67 @@ const cabinetPage = async (req, res) => {
     }
 };
 
+const isCustomerRole = (roleName) => {
+    return roleName === 'user' || roleName === 'client' || roleName === 'customer';
+};
+
+const publicProfilePage = async (req, res) => {
+    try {
+        const userId = Number(req.params.id);
+        const row = await UserModel.findPublicProfileById(userId);
+        const current = res.locals.currentUser || null;
+        const isOwner = current && Number(current.user_id) === userId;
+
+        const closed = () => {
+            return renderLayout(res, res.locals.t ? res.locals.t('page.profileClosed') : 'Профіль закритий', 'pages/public-profile', {
+                publicProfile: null,
+                publicReviews: [],
+                publicProfileClosed: true,
+                isOwnPublicProfile: isOwner
+            });
+        };
+
+        if (!row || Number(row.is_blocked) === 1 || !isCustomerRole(row.role_name)) {
+            return closed();
+        }
+        if (Number(row.is_public_profile) !== 1) {
+            return closed();
+        }
+
+        const publicReviews = await ReviewModel.listVisiblePublicByUserId(row.id);
+        const joinedAt = row.createdAt
+            ? new Date(row.createdAt).toLocaleDateString('uk-UA', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            })
+            : '';
+
+        return renderLayout(res, row.first_name + ' ' + row.last_name, 'pages/public-profile', {
+            publicProfile: {
+                id: row.id,
+                first_name: row.first_name,
+                last_name: row.last_name,
+                avatar_url: row.avatar_url,
+                joined_label: joinedAt
+            },
+            publicReviews,
+            publicProfileClosed: false,
+            isOwnPublicProfile: isOwner
+        });
+    } catch (err) {
+        console.error('publicProfilePage:', err.message);
+        return pageServerError(req, res, 'Профіль користувача');
+    }
+};
+
 const cartPage = async (req, res) => {
     try {
         const items = cartService.getCartFromRequest(req);
         const details = await cartService.buildCartDetails(items);
         const constructorNote = constructorService.getNoteFromRequest(req);
         const constructorPreview = bouquetPreviewService.getPreviewFromRequest(req);
-        return renderLayout(res, 'Кошик', 'pages/cart', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.cart') : 'Кошик', 'pages/cart', {
             cartLines: details.lines,
             cartTotal: details.total,
             cartCount: details.lines.reduce((sum, row) => sum + Number(row.quantity || 0), 0),
@@ -338,7 +398,7 @@ const checkoutPage = async (req, res) => {
                 return res.redirect('/cart');
             }
 
-            return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {
+            return renderLayout(res, res.locals.t ? res.locals.t('page.checkout') : 'Оформлення замовлення', 'pages/checkout', {
                 product: cartDetails.lines[0].product,
                 upsells: [],
                 cartMode: true,
@@ -392,7 +452,7 @@ const checkoutPage = async (req, res) => {
             .filter((n) => Number.isFinite(n) && n > 0);
         const upsells = await ProductModel.listForCheckoutUpsells(id, upsellIdList);
 
-        return renderLayout(res, 'Оформлення замовлення', 'pages/checkout', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.checkout') : 'Оформлення замовлення', 'pages/checkout', {
             product,
             upsells,
             googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
@@ -516,7 +576,7 @@ const productPage = async (req, res) => {
         await ReviewModel.syncAverageForProduct(id);
         const productFresh = await ProductModel.findById(id);
 
-        return renderLayout(res, productFresh.name, 'pages/product', {
+        return renderLayout(res, res.locals.locName ? res.locals.locName(productFresh) : productFresh.name, 'pages/product', {
             product: productFresh,
             reviews
         });
@@ -587,11 +647,11 @@ const warehouseOrdersPage = async (req, res) => {
             status_unavailable: 'Статус недоступний',
             invalid_transition: 'Недопустимий перехід статусу',
             no_courier: 'Спочатку призначте кур\'єра (авто або адмін)',
-            cancel_pending: 'Замовлення на скасуванні — чекайте рішення адміна',
+            cancel_pending: 'Замовлення на скасуванні - чекайте рішення адміна',
             pickup_not_ready: 'Самовивіз можна завершити лише для готового замовлення',
             pickup_need_cod: 'Підтвердіть отримання оплати при видачі',
             pickup_not_paid: 'Замовлення не оплачене',
-            use_pickup_complete: 'Для самовивозу скористайтеся кнопкою «Видано клієнту — завершити»',
+            use_pickup_complete: 'Для самовивозу скористайтеся кнопкою «Видано клієнту - завершити»',
             update_failed: 'Не вдалося оновити статус',
             server: 'Помилка сервера'
         };
@@ -692,12 +752,18 @@ const warehouseOrderDetailPage = async (req, res) => {
             status_unavailable: 'Статус недоступний',
             invalid_transition: 'Недопустимий перехід статусу',
             no_courier: 'Спочатку призначте кур\'єра (авто або адмін)',
-            cancel_pending: 'Замовлення на скасуванні — чекайте рішення адміна',
+            cancel_pending: 'Замовлення на скасуванні - чекайте рішення адміна',
             pickup_not_ready: 'Самовивіз можна завершити лише для готового замовлення',
             pickup_need_cod: 'Підтвердіть отримання оплати при видачі',
             pickup_not_paid: 'Замовлення не оплачене',
-            use_pickup_complete: 'Для самовивозу скористайтеся кнопкою «Видано клієнту — завершити»',
+            use_pickup_complete: 'Для самовивозу скористайтеся кнопкою «Видано клієнту - завершити»',
             update_failed: 'Не вдалося оновити статус',
+            photo_empty: 'Оберіть фото букета',
+            photo_big: 'Файл завеликий (до 8 МБ)',
+            photo_type: 'Потрібне зображення: jpeg, png, gif або webp',
+            photo_save: 'Не вдалося зберегти фото',
+            photo_order: 'Замовлення недоступне для фото',
+            photo_closed: 'Це замовлення вже закрите',
             server: 'Помилка сервера'
         };
 
@@ -706,6 +772,8 @@ const warehouseOrderDetailPage = async (req, res) => {
             successMessage = 'Статус оновлено';
         } else if (req.query.ok === 'pickup_done') {
             successMessage = 'Самовивіз завершено';
+        } else if (req.query.ok === 'photo') {
+            successMessage = 'Фото букета збережено. Клієнт побачить його в кабінеті.';
         }
 
         return renderLayout(res, 'Замовлення №' + orderId, 'pages/warehouse/order-detail', {
@@ -773,7 +841,8 @@ const catalogProductsJson = async (req, res) => {
             products = await ProductModel.allProducts(selectedCategoryId, searchQuery);
         }
 
-        return res.json({ products, hitProducts, homeSections });
+        const lang = res.locals.lang || 'uk';
+        return res.json(i18n.localizeCatalogPayload(lang, { products, hitProducts, homeSections }));
     } catch (err) {
         return res.status(500).json({ message: 'Не вдалося завантажити товари' });
     }
@@ -790,6 +859,7 @@ module.exports = {
     deliveryTermsPage,
     logout,
     cabinetPage,
+    publicProfilePage,
     cartPage,
     checkoutPage,
     orderSuccessPage,

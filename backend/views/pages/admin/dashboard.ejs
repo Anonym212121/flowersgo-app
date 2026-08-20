@@ -37,7 +37,7 @@
                 </button>
                 <div class="admin-nav-group__items">
                     <button type="button" id="admin-show-orders-pending" class="admin-nav-sub" data-nav-mode="orders">
-                        <span class="admin-nav-label">Модерація</span>
+                        <span class="admin-nav-label">Винятки</span>
                         <span class="admin-nav-sub__badges">
                             <span class="admin-nav-badge" id="admin-badge-orders-pending" hidden></span>
                             <span class="admin-nav-badge admin-nav-badge--warn" id="admin-badge-orders-cancel" hidden title="Запити на скасування"></span>
@@ -75,6 +75,7 @@
                     <span class="admin-nav-group__chevron" aria-hidden="true"></span>
                 </button>
                 <div class="admin-nav-group__items">
+                    <button type="button" id="admin-show-shop" class="admin-nav-sub" data-nav-mode="shop">Магазин</button>
                     <button type="button" id="admin-show-delivery" class="admin-nav-sub" data-nav-mode="delivery">Доставка та тарифи</button>
                     <button type="button" id="admin-show-couriers" class="admin-nav-sub" data-nav-mode="couriers">
                         <span class="admin-nav-label">Кур'єри</span>
@@ -88,9 +89,26 @@
 
     <section class="admin-panel-workspace">
         <header class="admin-panel-workspace__head">
-            <nav class="admin-panel-workspace__crumb" id="adminWorkspaceCrumb" hidden aria-label="Контекст"></nav>
-            <h1 class="admin-panel-workspace__title" id="adminWorkspaceTitle">Огляд</h1>
-            <p class="admin-panel-workspace__subtitle" id="adminWorkspaceSubtitle">Статистика та швидкі дії</p>
+            <div class="admin-panel-workspace__titles">
+                <nav class="admin-panel-workspace__crumb" id="adminWorkspaceCrumb" hidden aria-label="Контекст"></nav>
+                <h1 class="admin-panel-workspace__title" id="adminWorkspaceTitle">Огляд</h1>
+                <p class="admin-panel-workspace__subtitle" id="adminWorkspaceSubtitle">Статистика та швидкі дії</p>
+            </div>
+            <div class="admin-global-search" id="adminGlobalSearch">
+                <label class="admin-global-search__label" for="admin-global-search-input">Пошук по панелі</label>
+                <input
+                    type="search"
+                    id="admin-global-search-input"
+                    class="admin-global-search__input"
+                    placeholder="Замовлення, товар, клієнт"
+                    autocomplete="off"
+                    aria-autocomplete="list"
+                    aria-controls="admin-global-search-results"
+                    aria-expanded="false"
+                />
+                <span class="admin-global-search__hint" aria-hidden="true">Ctrl+K</span>
+                <div class="admin-global-search__results" id="admin-global-search-results" hidden role="listbox"></div>
+            </div>
         </header>
 
         <div id="admin-panel-message" class="admin-panel-message" aria-live="polite"></div>
@@ -105,4 +123,5 @@
 <script src="/js/admin-panel-stats.js" defer></script>
 <script src="/js/admin-panel-support.js" defer></script>
 <script src="/js/admin-panel-extra.js" defer></script>
+<script src="/js/admin-panel-search.js" defer></script>
 <script src="/js/admin-panel-bouquet-templates.js" defer></script>

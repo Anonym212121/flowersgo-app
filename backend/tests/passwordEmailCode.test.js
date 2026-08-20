@@ -62,8 +62,8 @@ describe('password email code flow', () => {
 
     test('надсилає код на email після валідного пароля', async () => {
         const res = await requestPasswordEmailCode({
-            new_password: 'secret1',
-            new_password_confirm: 'secret1'
+            new_password: 'secret12',
+            new_password_confirm: 'secret12'
         });
 
         expect(res.statusCode).toBe(200);
@@ -78,10 +78,21 @@ describe('password email code flow', () => {
         );
     });
 
-    test('повертає помилку якщо паролі не збігаються', async () => {
+    test('повертає помилку якщо пароль коротший за 8 символів', async () => {
         const res = await requestPasswordEmailCode({
             new_password: 'secret1',
-            new_password_confirm: 'other1'
+            new_password_confirm: 'secret1'
+        });
+
+        expect(res.statusCode).toBe(400);
+        expect(res.payload.err_code).toBe('bad_new_password');
+        expect(emailService.sendEmail).not.toHaveBeenCalled();
+    });
+
+    test('повертає помилку якщо паролі не збігаються', async () => {
+        const res = await requestPasswordEmailCode({
+            new_password: 'secret12',
+            new_password_confirm: 'other12'
         });
 
         expect(res.statusCode).toBe(400);
@@ -93,8 +104,8 @@ describe('password email code flow', () => {
         emailService.sendEmail.mockResolvedValueOnce({ ok: false, message: 'SMTP fail' });
 
         const res = await requestPasswordEmailCode({
-            new_password: 'secret1',
-            new_password_confirm: 'secret1'
+            new_password: 'secret12',
+            new_password_confirm: 'secret12'
         });
 
         expect(res.statusCode).toBe(400);

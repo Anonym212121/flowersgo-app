@@ -167,6 +167,57 @@
     background: rgba(244, 114, 182, 0.08);
 }
 
+.support-faq {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.support-faq__btn {
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    line-height: 1.35;
+}
+
+.support-faq__btn:hover {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.support-faq__admin {
+    margin-top: 0.35rem;
+}
+
+.support-faq-answer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.support-faq-answer__q {
+    margin: 0;
+    font-size: 1rem;
+    color: #f8fafc;
+    line-height: 1.35;
+}
+
+.support-faq-answer__a {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    border-radius: 0.75rem;
+    background: rgba(16, 185, 129, 0.12);
+    color: #d1fae5;
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
 .support-phones {
     list-style: none;
     margin: 0;
@@ -374,6 +425,18 @@
 
 body:has(.support-widget) .scroll-to-top {
     bottom: 5.25rem;
+}
+
+@media (max-width: 980px) {
+    body:has(.checkout-page) .support-widget,
+    body:has(.cart-page .cart-summary) .support-widget {
+        bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    body:has(.checkout-page) .scroll-to-top,
+    body:has(.cart-page .cart-summary) .scroll-to-top {
+        bottom: calc(9.6rem + env(safe-area-inset-bottom, 0px));
+    }
 }
 
 html.theme-light .support-panel {

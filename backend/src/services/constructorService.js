@@ -328,7 +328,25 @@ const resolvePackaging = async (packagingProductId) => {
 
             ok: true,
 
-            packaging: { id: null, label: '', price: 0 },
+            packaging: { id: null, label: 'Без упаковки', price: 0 },
+
+            packagingProduct: null
+
+        };
+
+    }
+
+
+
+    const rawPack = packagingProductId == null ? '' : String(packagingProductId).trim();
+
+    if (rawPack === '' || rawPack === 'none' || rawPack === '0') {
+
+        return {
+
+            ok: true,
+
+            packaging: { id: null, label: 'Без упаковки', price: 0 },
 
             packagingProduct: null
 
@@ -342,7 +360,15 @@ const resolvePackaging = async (packagingProductId) => {
 
     if (!Number.isFinite(targetId) || targetId <= 0) {
 
-        targetId = Number(rows[0].id);
+        return {
+
+            ok: true,
+
+            packaging: { id: null, label: 'Без упаковки', price: 0 },
+
+            packagingProduct: null
+
+        };
 
     }
 
@@ -364,7 +390,15 @@ const resolvePackaging = async (packagingProductId) => {
 
     if (!product) {
 
-        product = rows[0];
+        return {
+
+            ok: true,
+
+            packaging: { id: null, label: 'Без упаковки', price: 0 },
+
+            packagingProduct: null
+
+        };
 
     }
 
@@ -410,7 +444,7 @@ const buildBouquetNote = (summary, packagingLabel) => {
 
     let text = NOTE_PREFIX + ' ' + summary;
 
-    if (packagingLabel) {
+    if (packagingLabel && packagingLabel !== 'Без упаковки') {
 
         text += '. Упаковка: ' + packagingLabel;
 
@@ -668,6 +702,8 @@ const calcBouquet = async (rawItems, packagingProductId) => {
 
     const total = flowersSum + Number(packaging.price || 0);
 
+    const evenStems = stemTotal > 0 && stemTotal % 2 === 0;
+
 
 
     const calcPayload = {
@@ -681,6 +717,8 @@ const calcBouquet = async (rawItems, packagingProductId) => {
         summary,
 
         stemTotal,
+
+        evenStems,
 
         flowersSum,
 

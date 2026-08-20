@@ -14,6 +14,16 @@ const ensureAdminSchema = async () => {
 
     try {
         await db.execute(
+            'ALTER TABLE users ADD COLUMN is_public_profile TINYINT NOT NULL DEFAULT 0'
+        );
+    } catch (err) {
+        if (!err || err.code !== 'ER_DUP_FIELDNAME') {
+            console.error('ensureAdminSchema is_public_profile:', err.message);
+        }
+    }
+
+    try {
+        await db.execute(
             'ALTER TABLE users ADD COLUMN block_reason_key VARCHAR(50) NULL'
         );
     } catch (err) {
@@ -53,6 +63,48 @@ const ensureAdminSchema = async () => {
         await db.execute('INSERT IGNORE INTO delivery_settings (id) VALUES (1)');
     } catch (err) {
         console.error('ensureAdminSchema delivery_settings:', err.message);
+    }
+
+    try {
+        await db.execute(
+            `CREATE TABLE IF NOT EXISTS shop_settings (
+                id INT NOT NULL PRIMARY KEY DEFAULT 1,
+                constructor_enabled TINYINT NOT NULL DEFAULT 1,
+                constructor_min_stems INT NOT NULL DEFAULT 5,
+                support_phone_1 VARCHAR(32) NULL,
+                support_phone_1_label VARCHAR(80) NULL,
+                support_phone_2 VARCHAR(32) NULL,
+                support_phone_2_label VARCHAR(80) NULL,
+                support_phone_3 VARCHAR(32) NULL,
+                support_phone_3_label VARCHAR(80) NULL,
+                support_welcome VARCHAR(1000) NULL,
+                updatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )`
+        );
+        const ShopSettings = require('../models/ShopSettings');
+        const seed = ShopSettings.emptyRow();
+        await db.execute(
+            `INSERT IGNORE INTO shop_settings (
+                id, constructor_enabled, constructor_min_stems,
+                support_phone_1, support_phone_1_label,
+                support_phone_2, support_phone_2_label,
+                support_phone_3, support_phone_3_label,
+                support_welcome
+            ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+            [
+                seed.constructor_enabled,
+                seed.constructor_min_stems,
+                seed.support_phone_1 || null,
+                seed.support_phone_1_label || null,
+                seed.support_phone_2 || null,
+                seed.support_phone_2_label || null,
+                seed.support_phone_3 || null,
+                seed.support_phone_3_label || null
+            ]
+        );
+        await ShopSettings.warmCache();
+    } catch (err) {
+        console.error('ensureAdminSchema shop_settings:', err.message);
     }
 
     try {
@@ -618,6 +670,38 @@ const ensureAdminSchema = async () => {
         }
     }
 
+    try {
+        await db.execute('ALTER TABLE products MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema products image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE categories MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema categories image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE product_color_variants MODIFY image_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema variants image_url length:', err.message);
+        }
+    }
+
+    try {
+        await db.execute('ALTER TABLE users MODIFY avatar_url VARCHAR(500) NULL');
+    } catch (err) {
+        if (!err || err.code !== 'ER_BAD_FIELD_ERROR') {
+            console.error('ensureAdminSchema users avatar_url length:', err.message);
+        }
+    }
+
     await dropObsoleteTables();
     await upgradeOrdersTable();
     await dropProductLegacyColorColumns();
@@ -670,6 +754,16 @@ const upgradeOrdersTable = async () => {
     await addColumnIfMissing('orders', 'recipient_note VARCHAR(500) NULL', 'orders recipient_note');
     await addColumnIfMissing('orders', 'bouquet_note TEXT NULL', 'orders bouquet_note');
     await addColumnIfMissing('orders', 'greeting_card_text VARCHAR(500) NULL', 'orders greeting_card_text');
+    await addColumnIfMissing(
+        'orders',
+        'do_not_call_recipient TINYINT(1) NOT NULL DEFAULT 0',
+        'orders do_not_call_recipient'
+    );
+    await addColumnIfMissing(
+        'orders',
+        'assembled_photo_url VARCHAR(500) NULL',
+        'orders assembled_photo_url'
+    );
 
     const deadOrderColumns = [
         'order_number',

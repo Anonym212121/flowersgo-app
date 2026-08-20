@@ -5,6 +5,7 @@ const OrderStatusLogModel = require('../models/OrderStatusLog');
 const orderWarehouseNotifyService = require('../services/orderWarehouseNotifyService');
 const orderRoleNotifyService = require('../services/orderRoleNotifyService');
 const courierAssignService = require('../services/courierAssignService');
+const orderDispatchService = require('../services/orderDispatchService');
 const { mapOrderForWarehouse, buildWarehouseStats } = require('../utils/warehouseOrderView');
 const { buildMapsLink } = require('../utils/mapsLink');
 const {
@@ -114,7 +115,7 @@ const courierOrdersPage = async (req, res) => {
             invalid_transition: 'Недопустимий перехід статусу',
             cancel_pending: 'Замовлення на скасуванні',
             waiting_warehouse: 'Замовлення ще комплектується на складі',
-            need_shipped: 'Спочатку забери замовлення на складі — «В дорозі»',
+            need_shipped: 'Спочатку забери замовлення на складі - «В дорозі»',
             off_shift: 'Увімкни зміну, щоб працювати з доставками',
             update_failed: 'Не вдалося оновити статус',
             not_delivered: 'Спочатку відміть «Доставлено»',
@@ -233,7 +234,7 @@ const courierOrderDetailPage = async (req, res) => {
             invalid_transition: 'Недопустимий перехід статусу',
             cancel_pending: 'Замовлення на скасуванні',
             waiting_warehouse: 'Замовлення ще комплектується на складі',
-            need_shipped: 'Спочатку забери замовлення на складі — «В дорозі»',
+            need_shipped: 'Спочатку забери замовлення на складі - «В дорозі»',
             off_shift: 'Увімкни зміну',
             update_failed: 'Не вдалося оновити статус',
             not_delivered: 'Спочатку відміть «Доставлено»',
@@ -287,7 +288,7 @@ const courierShiftPage = async (req, res) => {
             if (onShift && Number.isFinite(assignedRaw) && assignedRaw > 0) {
                 successMessage = 'Зміну розпочато. Авто-призначено замовлень: ' + assignedRaw;
             } else if (onShift) {
-                successMessage = 'Ти на зміні — нові доставки можуть призначатися автоматично';
+                successMessage = 'Ти на зміні - нові доставки можуть призначатися автоматично';
             } else {
                 successMessage = 'Зміну завершено';
             }
@@ -297,7 +298,7 @@ const courierShiftPage = async (req, res) => {
         if (req.query.err === 'server') {
             errorMessage = 'Помилка сервера';
         } else if (req.query.err === 'active_orders') {
-            errorMessage = 'Спочатку заверши активні доставки — без цього зміну не можна закрити';
+            errorMessage = 'Спочатку заверши активні доставки - без цього зміну не можна закрити';
         }
 
         return renderLayout(res, 'Моя зміна', 'pages/courier/shift', {
@@ -468,6 +469,13 @@ const updateOrderStatusForCourier = async (req, res) => {
             }
         }
 
+        if (newStatusName === 'delivered' && currentOrder.payment_status === 'paid') {
+            const closed = await orderDispatchService.tryFinishCourierOrder(orderId, courierId);
+            if (closed.ok) {
+                return res.redirect(buildCourierRedirect(req, req.body, '?ok=closed'));
+            }
+        }
+
         return res.redirect(buildCourierRedirect(req, req.body, '?ok=1'));
     } catch (err) {
         console.error('updateOrderStatusForCourier:', err.message);
@@ -492,6 +500,11 @@ const confirmCodPayment = async (req, res) => {
         if (!result.ok) {
             const code = result.code || 'update_failed';
             return res.redirect(buildCourierRedirect(req, req.body, '?err=' + code));
+        }
+
+        const closed = await orderDispatchService.tryFinishCourierOrder(orderId, courierId);
+        if (closed.ok) {
+            return res.redirect(buildCourierRedirect(req, req.body, '?ok=closed'));
         }
 
         return res.redirect(buildCourierRedirect(req, req.body, '?ok=cod'));

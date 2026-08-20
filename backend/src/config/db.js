@@ -36,8 +36,10 @@ const pool = mysql.createPool({
     port: Number(process.env.DB_PORT) || 3306,
     ssl: buildSslConfig(),
     waitForConnections: true,
-    connectionLimit: 15,
-    queueLimit: 0
+    connectionLimit: 25,
+    queueLimit: 50,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
 });
 const checkSystemHealth = async () => {
     try {

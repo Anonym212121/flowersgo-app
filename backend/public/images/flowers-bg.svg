@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="1200" viewBox="0 0 960 1200">
+    <defs>
+        <!-- Троянда зверху — спіраль пелюсток -->
+        <g id="rose">
+            <path d="M50 4 C62 8 72 18 68 32 C82 36 84 52 70 58 C78 72 68 84 52 80 C48 94 32 94 26 80 C10 84 2 70 12 58 C-2 52 0 36 14 32 C10 18 20 8 32 4 C38 12 46 14 50 4Z"/>
+            <path d="M50 14 C58 16 64 24 62 34 C70 36 72 46 64 52 C68 60 62 68 52 66 C50 74 42 74 38 66 C28 68 22 60 26 52 C18 46 20 36 28 34 C26 24 32 16 40 14 C44 18 48 18 50 14Z"/>
+            <path d="M50 26 C54 28 58 34 56 42 C60 44 60 50 54 52 C56 58 50 62 44 58 C38 62 32 58 34 52 C28 50 28 44 32 42 C30 34 34 28 38 26 C42 30 46 30 50 26Z"/>
+            <circle cx="50" cy="42" r="6"/>
+        </g>
+
+        <!-- Тюльпан збоку -->
+        <g id="tulip">
+            <path d="M50 100 L50 54" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+            <path d="M50 72 C42 78 36 86 40 94 C44 88 47 84 50 82 C53 84 56 88 60 94 C64 86 58 78 50 72Z"/>
+            <path d="M50 18 C64 24 70 38 66 52 C64 58 58 56 50 54 C42 56 36 58 34 52 C30 38 36 24 50 18Z"/>
+            <path d="M50 22 C60 26 64 36 62 46 C60 50 56 48 50 48 C44 48 40 50 38 46 C36 36 40 26 50 22Z" opacity="0.5"/>
+            <path d="M42 52 C38 48 34 42 36 36 C40 40 44 46 46 52Z" opacity="0.35"/>
+            <path d="M58 52 C62 48 66 42 64 36 C60 40 56 46 54 52Z" opacity="0.35"/>
+        </g>
+
+        <!-- Ромашка -->
+        <g id="daisy">
+            <circle cx="50" cy="50" r="12"/>
+            <path d="M50 14 Q54 28 50 38 Q46 28 50 14Z"/>
+            <path d="M50 62 Q54 72 50 86 Q46 72 50 62Z"/>
+            <path d="M14 50 Q28 46 38 50 Q28 54 14 50Z"/>
+            <path d="M62 50 Q72 46 86 50 Q72 54 62 50Z"/>
+            <path d="M22 22 Q32 28 38 38 Q28 34 22 22Z"/>
+            <path d="M62 22 Q72 28 78 38 Q68 34 62 22Z"/>
+            <path d="M22 78 Q28 68 38 62 Q34 72 22 78Z"/>
+            <path d="M62 78 Q68 68 78 62 Q74 72 62 78Z"/>
+            <path d="M50 18 Q52 30 50 36 Q48 30 50 18Z" opacity="0.6"/>
+            <path d="M50 64 Q52 74 50 82 Q48 74 50 64Z" opacity="0.6"/>
+            <path d="M18 50 Q30 48 36 50 Q30 52 18 50Z" opacity="0.6"/>
+            <path d="M64 50 Q74 48 82 50 Q74 52 64 50Z" opacity="0.6"/>
+        </g>
+
+        <!-- Лілія -->
+        <g id="lily">
+            <path d="M50 96 L50 58" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M50 20 C44 30 42 44 44 54 L50 50 L56 54 C58 44 56 30 50 20Z"/>
+            <path d="M50 50 L32 66 C26 74 28 84 36 86 C40 78 44 70 50 64 L50 50Z"/>
+            <path d="M50 50 L68 66 C74 74 72 84 64 86 C60 78 56 70 50 64 L50 50Z"/>
+            <path d="M50 50 L50 72 C48 82 42 88 36 90 C38 82 44 74 50 68 L50 50Z"/>
+            <path d="M50 50 L24 56 C18 58 14 66 18 70 C24 66 32 62 40 58 L50 50Z"/>
+            <path d="M50 50 L76 56 C82 58 86 66 82 70 C76 66 68 62 60 58 L50 50Z"/>
+            <path d="M46 54 L44 62 M54 54 L56 62" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+        </g>
+
+        <!-- Вишневий / сакуровий цвіт -->
+        <g id="sakura">
+            <circle cx="50" cy="50" r="7"/>
+            <path d="M50 18 C52 28 50 36 50 40 C50 36 48 28 50 18Z"/>
+            <path d="M72 28 C66 34 60 38 56 40 C60 36 68 32 72 28Z"/>
+            <path d="M80 50 C70 50 62 52 58 54 C62 50 70 48 80 50Z"/>
+            <path d="M72 72 C68 62 62 56 58 54 C64 58 70 64 72 72Z"/>
+            <path d="M50 82 C48 72 50 64 50 60 C50 64 52 72 50 82Z"/>
+            <path d="M28 72 C32 62 38 56 42 54 C36 58 30 64 28 72Z"/>
+            <path d="M20 50 C30 50 38 52 42 54 C38 50 30 48 20 50Z"/>
+            <path d="M28 28 C34 32 40 36 42 40 C36 36 30 32 28 28Z"/>
+        </g>
+
+        <!-- Півонія — пухнастий бутон -->
+        <g id="peony">
+            <path d="M50 8 C58 10 66 18 64 28 C74 30 78 40 72 50 C80 58 76 70 64 72 C62 82 50 86 40 80 C28 84 20 74 24 62 C14 58 12 46 20 38 C16 28 24 18 34 16 C38 10 44 8 50 8Z"/>
+            <path d="M50 20 C56 22 60 28 58 36 C64 38 66 44 62 50 C66 56 62 62 54 62 C52 68 46 70 40 66 C34 70 28 66 30 58 C24 56 22 50 26 44 C22 38 26 32 32 30 C34 24 40 20 46 20 C48 22 50 22 50 20Z"/>
+            <path d="M50 32 C52 34 54 38 52 42 C54 44 54 48 50 48 C46 48 46 44 48 42 C46 38 48 34 50 32Z"/>
+        </g>
+
+        <!-- Гілочка з листям -->
+        <g id="sprig">
+            <path d="M50 92 C48 72 46 52 50 32" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M50 60 C36 54 28 46 32 36 C40 42 46 50 50 56Z"/>
+            <path d="M50 46 C64 40 72 32 68 22 C60 28 54 36 50 42Z"/>
+            <path d="M50 74 C44 70 40 64 42 58 C46 62 48 68 50 72Z" opacity="0.7"/>
+        </g>
+    </defs>
+
+    <g fill="#000000" color="#000000">
+        <g transform="translate(30,40) rotate(-8)" opacity="0.11"><use href="#rose" width="105" height="105"/></g>
+        <g transform="translate(250,55) rotate(5)" opacity="0.09"><use href="#tulip" width="82" height="102"/></g>
+        <g transform="translate(470,25) rotate(-3)" opacity="0.1"><use href="#daisy" width="92" height="92"/></g>
+        <g transform="translate(690,45) rotate(9)" opacity="0.08"><use href="#sakura" width="88" height="88"/></g>
+        <g transform="translate(850,15) rotate(-11)" opacity="0.09"><use href="#lily" width="78" height="98"/></g>
+
+        <g transform="translate(70,270) rotate(4)" opacity="0.09"><use href="#daisy" width="85" height="85"/></g>
+        <g transform="translate(310,285) rotate(-7)" opacity="0.11"><use href="#peony" width="108" height="108"/></g>
+        <g transform="translate(550,250) rotate(6)" opacity="0.08"><use href="#sprig" width="72" height="98"/></g>
+        <g transform="translate(770,275) rotate(-4)" opacity="0.1"><use href="#tulip" width="74" height="94"/></g>
+
+        <g transform="translate(15,490) rotate(-9)" opacity="0.09"><use href="#lily" width="88" height="108"/></g>
+        <g transform="translate(230,525) rotate(6)" opacity="0.08"><use href="#sakura" width="82" height="82"/></g>
+        <g transform="translate(455,475) rotate(-2)" opacity="0.1"><use href="#rose" width="98" height="98"/></g>
+        <g transform="translate(675,515) rotate(10)" opacity="0.09"><use href="#daisy" width="90" height="90"/></g>
+        <g transform="translate(875,485) rotate(-7)" opacity="0.08"><use href="#sprig" width="68" height="92"/></g>
+
+        <g transform="translate(55,735) rotate(5)" opacity="0.1"><use href="#tulip" width="80" height="100"/></g>
+        <g transform="translate(295,760) rotate(-6)" opacity="0.09"><use href="#daisy" width="94" height="94"/></g>
+        <g transform="translate(535,715) rotate(3)" opacity="0.11"><use href="#rose" width="102" height="102"/></g>
+        <g transform="translate(755,745) rotate(-8)" opacity="0.08"><use href="#peony" width="100" height="100"/></g>
+
+        <g transform="translate(90,975) rotate(-4)" opacity="0.09"><use href="#rose" width="96" height="96"/></g>
+        <g transform="translate(330,995) rotate(7)" opacity="0.08"><use href="#lily" width="82" height="102"/></g>
+        <g transform="translate(570,955) rotate(-5)" opacity="0.1"><use href="#tulip" width="78" height="98"/></g>
+        <g transform="translate(810,985) rotate(4)" opacity="0.09"><use href="#sakura" width="86" height="86"/></g>
+
+        <g transform="translate(170,1145) rotate(2)" opacity="0.08"><use href="#sprig" width="70" height="94"/></g>
+        <g transform="translate(470,1125) rotate(-3)" opacity="0.09"><use href="#peony" width="95" height="95"/></g>
+        <g transform="translate(715,1145) rotate(6)" opacity="0.08"><use href="#rose" width="90" height="90"/></g>
+    </g>
+</svg>

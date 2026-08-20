@@ -93,7 +93,7 @@
         }
 
         var target = opts.targetEl || null;
-        var message = opts.message || 'Продовжуємо — дані відновлено';
+        var message = opts.message || 'Продовжуємо - дані відновлено';
 
         if (target) {
             markCurrentStep(target);

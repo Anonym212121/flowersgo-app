@@ -26,7 +26,7 @@ const tryAutoAssign = async (orderId) => {
     if (order.delivery_method === 'pickup') {
         return false;
     }
-    if (order.status_name !== 'ready_for_pickup') {
+    if (order.status_name !== 'processing' && order.status_name !== 'ready_for_pickup') {
         return false;
     }
     if (order.courier_id) {
@@ -71,7 +71,7 @@ const assignCourierByAdmin = async (orderId, courierId) => {
         return { ok: false, message: 'Замовлення не знайдено або не готове до доставки' };
     }
     if (order.delivery_method === 'pickup') {
-        return { ok: false, message: 'Самовивіз — кур\'єр не потрібен' };
+        return { ok: false, message: 'Самовивіз - кур\'єр не потрібен' };
     }
     if (
         order.status_name !== 'processing' &&
@@ -99,7 +99,7 @@ const unassignCourierByAdmin = async (orderId, autoReassign) => {
         return { ok: false, message: 'Замовлення не знайдено' };
     }
     if (order.delivery_method === 'pickup') {
-        return { ok: false, message: 'Самовивіз — кур\'єр не потрібен' };
+        return { ok: false, message: 'Самовивіз - кур\'єр не потрібен' };
     }
     if (order.status_name !== 'processing' && order.status_name !== 'ready_for_pickup') {
         return { ok: false, message: 'Зняти кур\'єра можна лише до видачі зі складу' };

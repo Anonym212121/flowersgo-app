@@ -52,7 +52,7 @@
             if (!userIsEditing() && !document.hidden) {
                 window.location.reload();
             }
-        }, 4000);
+        }, 1200);
     }
 
     function pollOnce() {
@@ -97,10 +97,19 @@
 
     document.querySelectorAll('.courier-finish-form').forEach(function (form) {
         form.addEventListener('submit', function (e) {
+            if (form.dataset.sent === '1') {
+                e.preventDefault();
+                return;
+            }
             var btn = form.querySelector('button[type="submit"]');
             var label = btn ? btn.textContent.trim() : 'дію';
             if (!window.confirm('Підтвердити: ' + label + '?')) {
                 e.preventDefault();
+                return;
+            }
+            form.dataset.sent = '1';
+            if (btn) {
+                btn.disabled = true;
             }
         });
     });
@@ -120,4 +129,12 @@
 
     pollTimer = setInterval(pollOnce, 45000);
     setTimeout(pollOnce, 6000);
+
+    document.addEventListener('realtime:message', function (event) {
+        var data = event.detail;
+        if (!data || data.type !== 'courier_order') {
+            return;
+        }
+        showRefreshHint();
+    });
 })();

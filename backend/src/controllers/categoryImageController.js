@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const Category = require('../models/Category');
+const cloudinaryService = require('../services/cloudinaryService');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'categories');
 
@@ -58,7 +59,16 @@ const uploadCategoryImage = async (req, res) => {
             return res.status(400).json({ message: 'Невірний id категорії' });
         }
 
-        const publicUrl = `/uploads/categories/${req.file.filename}`;
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/categories',
+            '/uploads/categories/' + req.file.filename
+        );
+        if (!stored.ok) {
+            return res.status(500).json({ message: stored.message || 'Не вдалося зберегти фото' });
+        }
+
+        const publicUrl = stored.url;
         const updated = await Category.updateImageUrl(categoryId, publicUrl);
 
         if (!updated) {

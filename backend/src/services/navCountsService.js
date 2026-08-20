@@ -16,7 +16,11 @@ const parseCookies = (cookieHeader) => {
         const key = trimmed.slice(0, idx).trim();
         const val = trimmed.slice(idx + 1).trim();
         if (key) {
-            result[key] = decodeURIComponent(val);
+            try {
+                result[key] = decodeURIComponent(val);
+            } catch {
+                result[key] = val;
+            }
         }
     }
     return result;
@@ -39,6 +43,10 @@ const readGuestWishlistIds = (cookieHeader) => {
     } catch {
         return [];
     }
+};
+
+const getCartProductIds = (req) => {
+    return cartService.listProductIds(cartService.getCartFromRequest(req));
 };
 
 const getCartCount = (req) => {
@@ -66,6 +74,7 @@ const getWishlistProductIds = async (req, res) => {
 
 module.exports = {
     getCartCount,
+    getCartProductIds,
     getWishlistCount,
     getWishlistProductIds,
     readGuestWishlistIds

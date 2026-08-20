@@ -55,7 +55,7 @@ const formatDeliveryDisplay = (deliveryDate, deliveryTimeslot) => {
     const timeText = formatTimePart(deliveryTimeslot);
 
     if (!dateText) {
-        return '—';
+        return '-';
     }
     if (!timeText) {
         return dateText;

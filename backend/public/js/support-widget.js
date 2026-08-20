@@ -13,12 +13,22 @@
         return;
     }
 
+    const tt = (key) => {
+        if (typeof window.t === 'function') {
+            return window.t(key);
+        }
+        return key;
+    };
+
     const isLoggedIn = root.getAttribute('data-logged-in') === '1';
     const POLL_MS = 8000;
 
     let screen = 'menu';
     let phones = [];
-    let welcomeMessage = 'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити — оператор незабаром підключиться до чату.';
+    let faqItems = [];
+    let lastFaqQuestion = '';
+    let composeDraft = '';
+    let welcomeMessage = 'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
     let panelInitialized = false;
     let chat = null;
     let messages = [];
@@ -28,6 +38,8 @@
     let hasClosedChats = false;
     let hasActiveChat = false;
     let chatPollActive = false;
+    let pollInFlight = false;
+    let refreshInFlight = false;
 
     const setChatPanelMode = (enabled) => {
         if (enabled) {
@@ -122,9 +134,20 @@
     };
 
     const refreshSupport = async () => {
-        await pollUnread();
-        if (chatPollActive && chat && !isArchive && chat.status !== 'closed') {
-            await pollOnce();
+        if (refreshInFlight || document.hidden) {
+            return;
+        }
+        refreshInFlight = true;
+        try {
+            await pollUnread();
+            if (window.__realtimeLive) {
+                return;
+            }
+            if (chatPollActive && chat && !isArchive && chat.status !== 'closed') {
+                await pollOnce();
+            }
+        } finally {
+            refreshInFlight = false;
         }
     };
 
@@ -285,7 +308,7 @@
             try {
                 const data = await apiFetch('/api/support/message', {
                     method: 'POST',
-                    body: JSON.stringify({ chat_id: chat.id, message: text })
+                    body: JSON.stringify({ chat_id: chat.id, message: text, website: '' })
                 });
                 if (data.message) {
                     mergeMessages([data.message]);
@@ -348,28 +371,30 @@
 
     const showMenu = () => {
         screen = 'menu';
-        panelTitle.textContent = 'Підтримка';
+        panelTitle.textContent = tt('support.title');
         btnBack.hidden = true;
         setChatPanelMode(false);
 
-        const chatBtnLabel = hasActiveChat ? 'Мій чат' : 'Новий чат';
+        const chatBtnLabel = hasActiveChat ? tt('support.myChat') : tt('support.askAdmin');
         let menuHtml =
             '<div class="support-menu">' +
+            '<button type="button" class="support-menu__btn" id="support-go-faq">' + tt('support.faq') + '</button>' +
             '<button type="button" class="support-menu__btn" id="support-go-chat">' + chatBtnLabel + '</button>' +
-            '<button type="button" class="support-menu__btn" id="support-go-phones">Телефони</button>';
+            '<button type="button" class="support-menu__btn" id="support-go-phones">' + tt('support.phones') + '</button>';
 
         if (hasClosedChats) {
-            menuHtml += '<button type="button" class="support-menu__btn support-menu__btn--archive" id="support-go-archive">Архів чатів</button>';
+            menuHtml += '<button type="button" class="support-menu__btn support-menu__btn--archive" id="support-go-archive">' + tt('support.archive') + '</button>';
         }
 
-        menuHtml += '<div id="support-alert-settings" class="support-alert-settings"></div></div>';
+        menuHtml += '</div>';
         panelBody.innerHTML = menuHtml;
 
-        if (typeof window.renderAlertSettingsBtn === 'function') {
-            window.renderAlertSettingsBtn(document.getElementById('support-alert-settings'));
-        }
-
+        document.getElementById('support-go-faq').addEventListener('click', () => {
+            showFaqList();
+        });
         document.getElementById('support-go-chat').addEventListener('click', () => {
+            lastFaqQuestion = '';
+            composeDraft = '';
             openChatFlow();
         });
         document.getElementById('support-go-phones').addEventListener('click', () => {
@@ -410,7 +435,7 @@
                         '<li class="support-archive-list__item">' +
                         '<button type="button" class="support-archive-list__btn" data-archive-id="' + item.id + '">' +
                         '<span class="support-archive-list__title">Чат №' + item.id + '</span>' +
-                        '<span class="support-archive-list__date">' + escapeHtml(dateText || '—') + '</span>' +
+                        '<span class="support-archive-list__date">' + escapeHtml(dateText || '-') + '</span>' +
                         '<span class="support-archive-list__preview">' + escapeHtml((item.preview || '').slice(0, 80)) + '</span>' +
                         '</button></li>'
                     );
@@ -442,6 +467,104 @@
                 window.showToast(err.message, 'error');
             }
         }
+    };
+
+    const findFaqItem = (id) => {
+        let i = 0;
+        while (i < faqItems.length) {
+            if (faqItems[i].id === id) {
+                return faqItems[i];
+            }
+            i += 1;
+        }
+        return null;
+    };
+
+    const buildAdminDraft = (question) => {
+        if (question) {
+            return 'Потрібна допомога адміністратора. Питання зі списку: ' + question;
+        }
+        return 'Потрібна допомога адміністратора. Моє питання не зі списку.';
+    };
+
+    const requestAdminFromFaq = () => {
+        composeDraft = buildAdminDraft(lastFaqQuestion);
+        openChatFlow();
+    };
+
+    const showFaqList = () => {
+        screen = 'faq';
+        panelTitle.textContent = tt('support.faq');
+        btnBack.hidden = false;
+        setChatPanelMode(false);
+
+        let listHtml = '<p class="support-note">' + tt('support.faqLead') + '</p>';
+        if (faqItems.length === 0) {
+            listHtml += '<p class="support-note">' + tt('support.faqEmpty') + '</p>';
+        } else {
+            listHtml += '<div class="support-faq">';
+            let i = 0;
+            while (i < faqItems.length) {
+                const item = faqItems[i];
+                listHtml +=
+                    '<button type="button" class="support-faq__btn" data-faq-id="' + escapeHtml(item.id) + '">' +
+                    escapeHtml(item.question) +
+                    '</button>';
+                i += 1;
+            }
+            listHtml += '</div>';
+        }
+        listHtml +=
+            '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
+            tt('support.askAdmin') +
+            '</button>';
+
+        panelBody.innerHTML = listHtml;
+
+        panelBody.querySelectorAll('[data-faq-id]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                showFaqAnswer(btn.getAttribute('data-faq-id'));
+            });
+        });
+
+        const adminBtn = document.getElementById('support-faq-admin');
+        if (adminBtn) {
+            adminBtn.addEventListener('click', () => {
+                lastFaqQuestion = '';
+                requestAdminFromFaq();
+            });
+        }
+    };
+
+    const showFaqAnswer = (id) => {
+        const item = findFaqItem(id);
+        if (!item) {
+            showFaqList();
+            return;
+        }
+
+        screen = 'faq-answer';
+        lastFaqQuestion = item.question;
+        panelTitle.textContent = tt('support.answer');
+        btnBack.hidden = false;
+        setChatPanelMode(false);
+
+        panelBody.innerHTML =
+            '<div class="support-faq-answer">' +
+            '<h3 class="support-faq-answer__q">' + escapeHtml(item.question) + '</h3>' +
+            '<p class="support-faq-answer__a">' + escapeHtml(item.answer) + '</p>' +
+            '<button type="button" class="support-menu__btn" id="support-faq-back">' + tt('support.otherQ') + '</button>' +
+            '<button type="button" class="support-menu__btn support-faq__admin" id="support-faq-admin">' +
+            tt('support.notHelp') +
+            '</button>' +
+            '</div>';
+
+        document.getElementById('support-faq-back').addEventListener('click', () => {
+            showFaqList();
+        });
+        document.getElementById('support-faq-admin').addEventListener('click', () => {
+            requestAdminFromFaq();
+        });
     };
 
     const showPhones = () => {
@@ -487,6 +610,9 @@
             )
             : '';
 
+        const draft = composeDraft;
+        composeDraft = '';
+
         panelBody.innerHTML =
             '<p class="support-chat-status">Очікуємо ваше повідомлення…</p>' +
             '<div class="support-messages" id="support-messages">' +
@@ -498,6 +624,11 @@
             '<button type="submit">Надіслати</button>' +
             '</form>' +
             '<p class="support-error" id="support-start-error" hidden></p>';
+
+        const input = document.getElementById('support-message-input');
+        if (input && draft) {
+            input.value = draft;
+        }
 
         scrollMessagesDown();
         bindNewChatForm();
@@ -522,7 +653,7 @@
                 return;
             }
 
-            const body = { message: text };
+            const body = { message: text, website: '' };
 
             if (!isLoggedIn) {
                 body.guest_name = (document.getElementById('support-guest-name').value || '').trim();
@@ -610,9 +741,10 @@
     };
 
     const pollOnce = async () => {
-        if (!chat || chat.status === 'closed' || isArchive) {
+        if (!chat || chat.status === 'closed' || isArchive || pollInFlight) {
             return;
         }
+        pollInFlight = true;
         try {
             const url = '/api/support/poll?chat_id=' + encodeURIComponent(chat.id) +
                 '&since_id=' + encodeURIComponent(lastMessageId);
@@ -647,6 +779,8 @@
                 updateStatusLine();
             }
         } catch (err) {
+        } finally {
+            pollInFlight = false;
         }
     };
 
@@ -654,6 +788,61 @@
         chatPollActive = true;
         pollOnce();
     };
+
+    const applyLiveSupport = (data) => {
+        if (!data || Number(data.chat_id) <= 0) {
+            return;
+        }
+        const chatId = Number(data.chat_id);
+        const sameChat = chat && Number(chat.id) === chatId;
+
+        if (!sameChat) {
+            if (data.event === 'started' && data.chat && data.chat.status !== 'closed') {
+                hasActiveChat = true;
+            }
+            pollUnread();
+            return;
+        }
+
+        if (data.chat) {
+            chat = data.chat;
+        }
+
+        if (data.message) {
+            const beforeCount = messages.length;
+            mergeMessages([data.message]);
+            const newOnes = messages.slice(beforeCount);
+            if (newOnes.length > 0) {
+                appendMessagesToBox(newOnes);
+                if (isViewingActiveChat()) {
+                    markChatRead();
+                } else {
+                    pollUnread();
+                }
+            }
+        }
+
+        if (chat.status === 'closed' || data.event === 'closed') {
+            isArchive = true;
+            syncActiveFlag();
+            stopPoll();
+            panelTitle.textContent = 'Архів чату №' + chat.id;
+            refreshArchiveFlag();
+            renderChatScreen();
+            return;
+        }
+
+        syncActiveFlag();
+        updateStatusLine();
+    };
+
+    document.addEventListener('realtime:message', (event) => {
+        const data = event.detail;
+        if (!data || data.type !== 'support_chat') {
+            return;
+        }
+        applyLiveSupport(data);
+    });
 
     const openPanel = () => {
         panel.hidden = false;
@@ -686,8 +875,12 @@
     };
 
     btnBack.addEventListener('click', () => {
-        if (screen === 'phones' || screen === 'new-chat') {
+        if (screen === 'phones' || screen === 'new-chat' || screen === 'faq') {
             showMenu();
+            return;
+        }
+        if (screen === 'faq-answer') {
+            showFaqList();
             return;
         }
         if (screen === 'archive-list') {
@@ -729,6 +922,7 @@
         try {
             const cfg = await apiFetch('/api/support/config');
             phones = Array.isArray(cfg.phones) ? cfg.phones : [];
+            faqItems = Array.isArray(cfg.faq) ? cfg.faq : [];
             if (cfg.welcome_message && typeof cfg.welcome_message === 'string') {
                 welcomeMessage = cfg.welcome_message;
             }

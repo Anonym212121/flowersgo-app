@@ -26,7 +26,7 @@
         const stem = list.find((row) => Number(row.id) === Number(productId));
         const variants = stem && Array.isArray(stem.variants) ? stem.variants : [];
         if (variants.length === 0) {
-            return '<option value="">—</option>';
+            return '<option value="">-</option>';
         }
         return variants
             .map((v) => {
@@ -142,7 +142,7 @@
     const renderTemplatesList = (api, templates) => {
         const rows = (templates || [])
             .map((t) => {
-                const totalText = t.total != null ? `${Number(t.total).toFixed(0)} грн` : '—';
+                const totalText = t.total != null ? `${Number(t.total).toFixed(0)} грн` : '-';
                 return `
                     <tr>
                         <td>${t.id}</td>

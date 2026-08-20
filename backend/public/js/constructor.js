@@ -5,6 +5,19 @@
         return;
     }
 
+    function money(uah) {
+        if (typeof window.formatMoney === 'function') {
+            return window.formatMoney(uah);
+        }
+        return (Number(uah) || 0).toLocaleString('uk-UA') + ' грн';
+    }
+    function tt(key, vars) {
+        if (typeof window.t === 'function') {
+            return window.t(key, vars);
+        }
+        return key;
+    }
+
     var summaryList = document.getElementById('constructorSummaryList');
     var stemOut = document.getElementById('constructorStemCount');
     var totalOut = document.getElementById('constructorTotal');
@@ -23,7 +36,9 @@
     var mobileAddBtn = document.getElementById('constructorMobileAddBtn');
 
     var calcTimer = null;
+    var calcReqId = 0;
     var lastOk = false;
+    var lastStemTotal = 0;
     var draftStorageKey = cfg.draftStorageKey || 'flowersgo_constructor_draft';
     var previewStorageKey = cfg.previewStorageKey || draftStorageKey + '_preview';
     var savedPreviewUrl = '';
@@ -33,6 +48,59 @@
             window.showToast(text, ok ? 'ok' : 'error');
         }
     }
+
+    function isEvenStemCount(stems) {
+        var n = Number(stems);
+        return Number.isFinite(n) && n > 0 && n % 2 === 0;
+    }
+
+    var evenConfirmOnYes = null;
+
+    function evenStemConfirmText(stems) {
+        return 'У букеті парна кількість квітів (' + stems + '). Вас це влаштовує?';
+    }
+
+    function closeEvenStemConfirm() {
+        var modal = document.getElementById('constructorEvenConfirm');
+        if (modal) {
+            modal.hidden = true;
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        document.body.classList.remove('constructor-confirm-open');
+        evenConfirmOnYes = null;
+    }
+
+    function openEvenStemConfirm(stems, onYes) {
+        var modal = document.getElementById('constructorEvenConfirm');
+        var textEl = document.getElementById('constructorEvenConfirmText');
+        var okBtn = document.getElementById('constructorEvenConfirmOk');
+        if (!modal || !textEl) {
+            if (typeof onYes === 'function') {
+                onYes();
+            }
+            return;
+        }
+        evenConfirmOnYes = onYes;
+        textEl.textContent = evenStemConfirmText(stems);
+        modal.hidden = false;
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('constructor-confirm-open');
+        if (okBtn && okBtn.focus) {
+            okBtn.focus();
+        }
+    }
+
+    function confirmEvenStems(stems, onYes) {
+        if (!isEvenStemCount(stems)) {
+            if (typeof onYes === 'function') {
+                onYes();
+            }
+            return;
+        }
+        openEvenStemConfirm(stems, onYes);
+    }
+
+    window.confirmEvenStemBouquet = confirmEvenStems;
 
     function isMultiColorCard(card) {
         if (!card) {
@@ -357,10 +425,10 @@
         var hasItems = Number.isFinite(stems) && stems > 0;
         mobileBar.hidden = !hasItems;
         if (mobileTotal) {
-            mobileTotal.textContent = total.toLocaleString('uk-UA') + ' грн';
+            mobileTotal.textContent = money(total);
         }
         if (mobileStems) {
-            mobileStems.textContent = stems + ' квіток';
+            mobileStems.textContent = tt('constructor.stems', { count: stems });
         }
         if (mobileAddBtn) {
             mobileAddBtn.disabled = !(data && data.ok);
@@ -631,7 +699,7 @@
 
         var priceEl = card.querySelector('.constructor-card__price strong');
         if (priceEl) {
-            priceEl.textContent = price.toLocaleString('uk-UA') + ' грн / шт';
+            priceEl.textContent = tt('constructor.perStem', { price: money(price) });
         }
 
         var stockEl = card.querySelector('.constructor-card__stock-value');
@@ -673,13 +741,17 @@
         if (!data || (!data.ok && !hasLines)) {
             summaryList.innerHTML = '<li class="constructor-summary-empty">Поки нічого не обрано</li>';
             stemOut.textContent = '0';
-            totalOut.textContent = '0 грн';
+            totalOut.textContent = money(0);
             hintEl.textContent = data && data.message ? data.message : 'Мінімум ' + cfg.minStems + ' квіток';
+            if (hintEl) {
+                hintEl.classList.remove('constructor-hint--even');
+            }
             addBtn.disabled = true;
             if (previewBtn) {
                 previewBtn.disabled = true;
             }
             lastOk = false;
+            lastStemTotal = 0;
             updateClearBtn(0);
             updateMobileBar(null);
             return;
@@ -700,8 +772,8 @@
                 ' ×' +
                 Number(line.quantity || 0) +
                 ' — ' +
-                Number(line.line_total || 0).toLocaleString('uk-UA') +
-                ' грн</span>' +
+                money(line.line_total || 0) +
+                '</span>' +
                 '<button type="button" class="constructor-summary-remove" data-product-id="' +
                 String(line.product_id) +
                 '"' +
@@ -712,19 +784,30 @@
         if (Number(data.packagingPrice || 0) > 0) {
             html +=
                 '<li class="constructor-summary-item constructor-summary-item--pack">' +
-                '<span class="constructor-summary-item__text">Упаковка: ' +
-                escapeHtml(data.packagingLabel) +
-                ' — ' +
-                Number(data.packagingPrice).toLocaleString('uk-UA') +
-                ' грн</span></li>';
+                '<span class="constructor-summary-item__text">' +
+                escapeHtml(tt('constructor.packing', {
+                    name: data.packagingLabel,
+                    price: money(data.packagingPrice)
+                })) +
+                '</span></li>';
         }
-        summaryList.innerHTML = html || '<li class="constructor-summary-empty">Поки нічого не обрано</li>';
+        summaryList.innerHTML = html || '<li class="constructor-summary-empty">' + escapeHtml(tt('constructor.emptyPick')) + '</li>';
         stemOut.textContent = String(data.stemTotal || 0);
-        totalOut.textContent = Number(data.total || 0).toLocaleString('uk-UA') + ' грн';
+        totalOut.textContent = money(data.total || 0);
+        lastStemTotal = Number(data.stemTotal || 0);
+        var evenNow = data.evenStems === true || isEvenStemCount(lastStemTotal);
+        if (hintEl) {
+            hintEl.classList.toggle('constructor-hint--even', evenNow);
+        }
 
         if (data.ok) {
             lastOk = true;
-            hintEl.textContent = 'Готово — можна додати в кошик';
+            if (evenNow) {
+                hintEl.textContent =
+                    'У букеті парна кількість квітів. Вас це влаштовує? Якщо так - додайте в кошик.';
+            } else {
+                hintEl.textContent = 'Готово - можна додати в кошик';
+            }
             addBtn.disabled = false;
             if (previewBtn) {
                 previewBtn.disabled = false;
@@ -744,7 +827,10 @@
         var minHint = Number(data.minStems || cfg.minStems || 5);
         var stemNow = Number(data.stemTotal || 0);
         if (data.reason === 'min_stems' || (data.message && data.message.indexOf('мінімум') !== -1)) {
-            hintEl.textContent = 'Додано ' + stemNow + ' з ' + minHint + ' квіток — додайте ще';
+            hintEl.textContent = 'Додано ' + stemNow + ' з ' + minHint + ' квіток - додайте ще';
+            if (evenNow) {
+                hintEl.textContent += '. Кількість квітів парна. Вас це влаштовує?';
+            }
         } else {
             hintEl.textContent = data.message || ('Мінімум ' + minHint + ' квіток у букеті');
         }
@@ -790,11 +876,19 @@
 
         saveDraft();
 
+        calcReqId += 1;
+        var reqId = calcReqId;
         fetchCalc(buildRequestBody())
             .then(function (data) {
+                if (reqId !== calcReqId) {
+                    return;
+                }
                 renderSummary(data);
             })
             .catch(function (err) {
+                if (reqId !== calcReqId) {
+                    return;
+                }
                 renderSummary({ ok: false, message: err.message || 'Помилка розрахунку' });
             });
     }
@@ -871,7 +965,7 @@
     }
 
     function runPreview() {
-        if (!previewBtn) {
+        if (!previewBtn || previewBtn.disabled) {
             return;
         }
 
@@ -1050,10 +1144,14 @@
         clearBtn.addEventListener('click', clearBouquet);
     }
 
-    addBtn.addEventListener('click', function () {
-        if (!lastOk) {
+    var addingToCart = false;
+
+    function addBouquetToCart() {
+        if (addingToCart) {
             return;
         }
+        addingToCart = true;
+
         var items = getItems();
         var body = new URLSearchParams();
         body.set('items', JSON.stringify(items));
@@ -1094,12 +1192,48 @@
                 window.location.href = data.redirect || '/cart';
             })
             .catch(function (err) {
+                addingToCart = false;
                 msg(err.message || 'Не вдалося додати', false);
                 addBtn.disabled = !lastOk;
                 if (mobileAddBtn) {
                     mobileAddBtn.disabled = !lastOk;
                 }
             });
+    }
+
+    addBtn.addEventListener('click', function () {
+        if (!lastOk || addingToCart) {
+            return;
+        }
+        confirmEvenStems(lastStemTotal, addBouquetToCart);
+    });
+
+    var evenModal = document.getElementById('constructorEvenConfirm');
+    var evenOkBtn = document.getElementById('constructorEvenConfirmOk');
+    if (evenModal) {
+        evenModal.addEventListener('click', function (e) {
+            if (e.target && e.target.closest && e.target.closest('[data-even-confirm-close]')) {
+                closeEvenStemConfirm();
+            }
+        });
+    }
+    if (evenOkBtn) {
+        evenOkBtn.addEventListener('click', function () {
+            var fn = evenConfirmOnYes;
+            closeEvenStemConfirm();
+            if (typeof fn === 'function') {
+                fn();
+            }
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key !== 'Escape') {
+            return;
+        }
+        var modal = document.getElementById('constructorEvenConfirm');
+        if (modal && !modal.hidden) {
+            closeEvenStemConfirm();
+        }
     });
 
     if (mobileAddBtn) {

@@ -1,34 +1,154 @@
 const SupportChatModel = require('../models/SupportChat');
 const SupportMessageModel = require('../models/SupportMessage');
 const UserModel = require('../models/User');
+const ShopSettings = require('../models/ShopSettings');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
+const checkUserContent = require('../utils/userContentGuard');
+const realtimeService = require('./realtimeService');
 
 const WELCOME_MESSAGE =
-    'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити — оператор незабаром підключиться до чату.';
+    'Вітаємо в службі підтримки FlowersGo! Опишіть, будь ласка, чим можемо допомогити - оператор незабаром підключиться до чату.';
 
-const getWelcomeMessage = () => WELCOME_MESSAGE;
+const FAQ_ITEMS = [
+    {
+        id: 'order',
+        question: 'Як оформити замовлення?',
+        answer: 'Оберіть букет у каталозі або зберіть свій у конструкторі, додайте в кошик і перейдіть до оформлення. Вкажіть дані, адресу, дату й час доставки та спосіб оплати.'
+    },
+    {
+        id: 'delivery',
+        question: 'Як працює доставка?',
+        answer: 'Доставка кур\'єром або самовивіз - обираєте на кроці оформлення. Потрібна дата і період доставки. Якщо на сьогодні слотів немає, оберіть інший день.'
+    },
+    {
+        id: 'pay',
+        question: 'Як оплатити замовлення?',
+        answer: 'Оплата карткою через LiqPay після оформлення. На оплату є 10 хвилин. Якщо не встигнете, замовлення скасується автоматично.'
+    },
+    {
+        id: 'cancel',
+        question: 'Як скасувати замовлення?',
+        answer: 'У кабінеті відкрийте замовлення і натисніть «Скасувати», якщо кнопка ще доступна. Інакше залиште звернення адміністратору в цьому чаті.'
+    },
+    {
+        id: 'constructor',
+        question: 'Що таке конструктор букетів?',
+        answer: 'У конструкторі можна зібрати букет самостійно: обрати квіти, кількість і оформити як звичайне замовлення. Якщо конструктор вимкнений, користуйтесь каталогом.'
+    },
+    {
+        id: 'cabinet',
+        question: 'Де мої замовлення й профіль?',
+        answer: 'Після входу відкрийте «Кабінет»: там замовлення, відгуки, профіль і адреса доставки. Обране - окрема сторінка в меню.'
+    },
+    {
+        id: 'account',
+        question: 'Як зареєструватися або увійти?',
+        answer: 'Натисніть «Реєстрація» або «Увійти» в шапці сайту. Можна створити акаунт з email або увійти через Google.'
+    }
+];
+
+const FAQ_ITEMS_EN = [
+    {
+        id: 'order',
+        question: 'How do I place an order?',
+        answer: 'Pick a bouquet in the catalog or build one in the bouquet builder, add it to the cart and go to checkout. Enter your details, address, delivery date and time, and a payment method.'
+    },
+    {
+        id: 'delivery',
+        question: 'How does delivery work?',
+        answer: 'Courier delivery or pickup — you choose this at checkout. A date and delivery window are required. If there are no slots today, pick another day.'
+    },
+    {
+        id: 'pay',
+        question: 'How do I pay?',
+        answer: 'Card payment via LiqPay after checkout. You have 10 minutes to pay. If you miss the window, the order is cancelled automatically. Charged in UAH.'
+    },
+    {
+        id: 'cancel',
+        question: 'How do I cancel an order?',
+        answer: 'Open the order in your account and tap Cancel while the button is still available. Otherwise message an administrator in this chat.'
+    },
+    {
+        id: 'constructor',
+        question: 'What is the bouquet builder?',
+        answer: 'You can assemble a bouquet yourself: choose flowers and quantities, then check out as usual. If the builder is turned off, use the catalog.'
+    },
+    {
+        id: 'cabinet',
+        question: 'Where are my orders and profile?',
+        answer: 'After logging in, open Account: orders, reviews, profile and delivery address. Wishlist is a separate page in the menu.'
+    },
+    {
+        id: 'account',
+        question: 'How do I sign up or log in?',
+        answer: 'Use Sign up or Log in in the header. You can create an account with email or continue with Google.'
+    }
+];
+
+const WELCOME_MESSAGE_EN =
+    'Welcome to FlowersGo support! Describe how we can help — an operator will join the chat shortly.';
+
+const getFaqItems = (lang) => {
+    if (lang === 'en') {
+        return FAQ_ITEMS_EN.slice();
+    }
+    return FAQ_ITEMS.slice();
+};
+
+const pushPhone = (phones, label, number, fallbackLabel) => {
+    if (!number || !String(number).trim()) {
+        return;
+    }
+    phones.push({
+        label: label && String(label).trim() ? String(label).trim() : fallbackLabel,
+        number: String(number).trim()
+    });
+};
+
+const phonesFromEnv = () => {
+    const phones = [];
+    for (let i = 1; i <= 5; i += 1) {
+        pushPhone(
+            phones,
+            process.env['SUPPORT_PHONE_' + i + '_LABEL'],
+            process.env['SUPPORT_PHONE_' + i],
+            'Телефон ' + i
+        );
+    }
+    return phones;
+};
+
+const getWelcomeMessage = (lang) => {
+    if (lang === 'en') {
+        return WELCOME_MESSAGE_EN;
+    }
+    const row = ShopSettings.getCached();
+    if (row && row.support_welcome && String(row.support_welcome).trim()) {
+        return String(row.support_welcome).trim();
+    }
+    return WELCOME_MESSAGE;
+};
 
 const getSupportPhones = () => {
     const phones = [];
-    for (let i = 1; i <= 5; i += 1) {
-        const label = process.env['SUPPORT_PHONE_' + i + '_LABEL'];
-        const number = process.env['SUPPORT_PHONE_' + i];
-        if (number && String(number).trim()) {
-            phones.push({
-                label: label && String(label).trim() ? String(label).trim() : 'Телефон ' + i,
-                number: String(number).trim()
-            });
-        }
+    const row = ShopSettings.getCached();
+    if (row) {
+        pushPhone(phones, row.support_phone_1_label, row.support_phone_1, 'Телефон 1');
+        pushPhone(phones, row.support_phone_2_label, row.support_phone_2, 'Телефон 2');
+        pushPhone(phones, row.support_phone_3_label, row.support_phone_3, 'Телефон 3');
+        return phones;
     }
 
-    if (phones.length === 0) {
-        phones.push({
-            label: 'Магазин FlowersGo',
-            number: '+380671234567'
-        });
+    const fromEnv = phonesFromEnv();
+    if (fromEnv.length > 0) {
+        return fromEnv;
     }
 
+    phones.push({
+        label: 'Магазин FlowersGo',
+        number: '+380671234567'
+    });
     return phones;
 };
 
@@ -71,12 +191,12 @@ const notifyAdminsNewChat = async (chatId, chat) => {
         await NotificationModel.insertForUsers(adminIds, {
             ntype: 'support_chat_open',
             title: 'Новий чат підтримки',
-            body: name + ' — чат №' + chatId,
+            body: name + ' - чат №' + chatId,
             link_url: '/admin?support=' + chatId
         });
         await notificationEmailService.sendForUserIds(adminIds, {
             title: 'Новий чат підтримки',
-            body: name + ' — чат №' + chatId,
+            body: name + ' - чат №' + chatId,
             link_url: '/admin?support=' + chatId
         });
     } catch (err) {
@@ -197,6 +317,22 @@ const mapChatForClient = (chat) => {
     };
 };
 
+const pushChatLive = (chat, event, message) => {
+    if (!chat) {
+        return;
+    }
+    realtimeService.pushSupportChat({
+        event: event || 'message',
+        chat_id: chat.id,
+        chat: mapChatForClient(chat),
+        message: message || null,
+        user_id: chat.user_id,
+        guest_token: chat.guest_token,
+        admin_id: chat.assigned_admin_id,
+        to_admins: true
+    });
+};
+
 const mapChatForAdminList = (chat) => {
     if (!chat) {
         return null;
@@ -312,9 +448,19 @@ const getClientArchiveChat = async (chatId, ctx) => {
 };
 
 const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone, firstMessage }) => {
-    const text = typeof firstMessage === 'string' ? firstMessage.trim() : '';
-    if (!text) {
-        return { ok: false, message: 'Введіть повідомлення' };
+    const check = checkUserContent(firstMessage, { minLen: 1, maxLen: 2000 });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
+    }
+    const text = check.text;
+
+    let safeGuestName = guestName;
+    if (guestName) {
+        const nameCheck = checkUserContent(guestName, { minLen: 1, maxLen: 120 });
+        if (!nameCheck.ok) {
+            return { ok: false, message: nameCheck.message };
+        }
+        safeGuestName = nameCheck.text;
     }
 
     let chat = await getActiveChat({ userId, guestToken });
@@ -325,7 +471,7 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
     chat = await SupportChatModel.createChat({
         user_id: userId,
         guest_token: guestToken,
-        guest_name: guestName,
+        guest_name: safeGuestName,
         guest_email: guestEmail,
         guest_phone: guestPhone
     });
@@ -347,19 +493,21 @@ const startChat = async ({ userId, guestToken, guestName, guestEmail, guestPhone
         return { ok: false, message: 'Не вдалося надіслати повідомлення' };
     }
 
-    await addSystemMessage(chat.id, 'Дякуємо за звернення! Ваше повідомлення отримано — очікуйте відповіді оператора.');
+    await addSystemMessage(chat.id, 'Дякуємо за звернення! Ваше повідомлення отримано - очікуйте відповіді оператора.');
 
     const fullChat = await SupportChatModel.findById(chat.id);
     await notifyAdminsNewChat(chat.id, fullChat);
+    pushChatLive(fullChat, 'started', mapMessageForClient(msg));
 
     return { ok: true, chat: fullChat };
 };
 
 const sendClientMessage = async ({ chatId, userId, guestToken, body }) => {
-    const text = typeof body === 'string' ? body.trim() : '';
-    if (!text) {
-        return { ok: false, message: 'Порожнє повідомлення' };
+    const check = checkUserContent(body, { minLen: 1, maxLen: 2000 });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
     }
+    const text = check.text;
 
     const chat = await SupportChatModel.findById(chatId);
     if (!chat) {
@@ -403,6 +551,8 @@ const sendClientMessage = async ({ chatId, userId, guestToken, body }) => {
         );
     }
 
+    pushChatLive(chat, 'message', mapMessageForClient(msg));
+
     return { ok: true, message: mapMessageForClient(msg) };
 };
 
@@ -418,16 +568,24 @@ const claimChatForAdmin = async (chatId, adminId) => {
         adminName = ((admin.first_name || '') + ' ' + (admin.last_name || '')).trim() || adminName;
     }
 
-    await addSystemMessage(chatId, 'Оператор ' + adminName + ' підключився до чату.');
+    const sys = await addSystemMessage(chatId, 'Оператор ' + adminName + ' підключився до чату.');
+    const full = await SupportChatModel.findById(chatId);
+    pushChatLive(full, 'claimed', mapMessageForClient(sys));
 
     return { ok: true, chat: result.chat };
 };
 
 const sendAdminMessage = async (chatId, adminId, body) => {
-    const text = typeof body === 'string' ? body.trim() : '';
-    if (!text) {
-        return { ok: false, message: 'Порожнє повідомлення' };
+    const check = checkUserContent(body, {
+        minLen: 1,
+        maxLen: 2000,
+        skipProfanity: true,
+        skipSpam: true
+    });
+    if (!check.ok) {
+        return { ok: false, message: check.message };
     }
+    const text = check.text;
 
     const chat = await SupportChatModel.findById(chatId);
     if (!chat) {
@@ -459,6 +617,9 @@ const sendAdminMessage = async (chatId, adminId, body) => {
         });
     }
 
+    const liveChat = await SupportChatModel.findById(chat.id);
+    pushChatLive(liveChat, 'message', mapMessageForClient(msg));
+
     return { ok: true, message: mapMessageForAdmin(msg) };
 };
 
@@ -468,7 +629,9 @@ const closeChatForAdmin = async (chatId, adminId) => {
         return { ok: false, message: 'Не вдалося закрити чат' };
     }
 
-    await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову — відкрийте новий чат.');
+    const sys = await addSystemMessage(chatId, 'Діалог завершено. Дякуємо за звернення! Щоб написати знову - відкрийте новий чат.');
+    const full = await SupportChatModel.findById(chatId);
+    pushChatLive(full, 'closed', mapMessageForClient(sys));
 
     return { ok: true };
 };
@@ -566,6 +729,7 @@ const submitBlockedUserMessage = async (userId, email, messageText) => {
 
 module.exports = {
     getWelcomeMessage,
+    getFaqItems,
     getSupportPhones,
     clientDisplayName,
     mapMessageForClient,

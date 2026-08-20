@@ -69,4 +69,24 @@ describe('ReviewModel — мої відгуки в кабінеті', () => {
         expect(result).toBe(true);
         expect(db.execute).toHaveBeenCalledTimes(3);
     });
+
+    test('countRecentByUser рахує відгуки користувача', async () => {
+        db.execute.mockResolvedValue([[{ c: 2 }]]);
+
+        const count = await ReviewModel.countRecentByUser(4, 10);
+        expect(count).toBe(2);
+        expect(db.execute).toHaveBeenCalledTimes(1);
+    });
+
+    test('create не пускає спам у коментарі', async () => {
+        const ok = await ReviewModel.create({
+            user_id: 2,
+            product_id: 5,
+            rating: 5,
+            comment: 'Buy viagra https://a.com www.b.com'
+        });
+
+        expect(ok).toBe(false);
+        expect(db.execute).not.toHaveBeenCalled();
+    });
 });

@@ -4,6 +4,7 @@ const StatusModel = require('../models/Status');
 const OrderStatusLogModel = require('../models/OrderStatusLog');
 const orderRoleNotifyService = require('./orderRoleNotifyService');
 const orderWarehouseNotifyService = require('./orderWarehouseNotifyService');
+const orderDispatchService = require('./orderDispatchService');
 const paymentService = require('./paymentService');
 const liqpayService = require('./liqpayService');
 
@@ -151,6 +152,12 @@ const markOrderPaidFromLiqpay = async (order, payload) => {
         await orderWarehouseNotifyService.notifyCustomerPaymentSuccess(oid);
     } catch (notifyErr) {
         console.error('notifyCustomerPaymentSuccess:', notifyErr.message);
+    }
+
+    try {
+        await orderDispatchService.dispatchToWarehouse(oid);
+    } catch (dispatchErr) {
+        console.error('dispatchToWarehouse after pay:', dispatchErr.message);
     }
 
     return { ok: true, reason: 'paid' };

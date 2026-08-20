@@ -20,7 +20,7 @@ const redirectUrl = typeof successRedirectUrl === 'string' && successRedirectUrl
         <p>Статус оплати: <strong id="paymentResultStatus"><%= typeof paymentStatusText !== 'undefined' ? paymentStatusText : order.payment_status %></strong></p>
 
         <% if (paid) { %>
-            <p>Дякуємо! Оплату зафіксовано. Замовлення очікує підтвердження адміністратора.</p>
+            <p>Дякуємо! Оплату зафіксовано. Флорист уже збирає букет - статус можна дивитись у кабінеті.</p>
         <% } else { %>
             <p id="paymentResultHint">Перевіряємо статус у LiqPay… Якщо ви щойно оплатили, зачекайте кілька секунд.</p>
             <% if (showPayAgain) { %>

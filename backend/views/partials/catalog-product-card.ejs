@@ -5,28 +5,40 @@ const salePrice = Number(product.sale_price || 0);
 const hasDiscount = basePrice > 0 && salePrice > 0 && salePrice < basePrice;
 const discountPercent = hasDiscount ? Math.round(((basePrice - salePrice) / basePrice) * 100) : 0;
 const cardRating = Number(product.average_rating);
+const cardName = locName(product);
+const cardUnit = translateUnit(product.unit_type || 'шт');
 %>
 <article class="product-card">
-    <a href="/product/<%= product.id %>" class="product-card-link">
     <div class="product-image-wrap">
         <% if (discountPercent > 0) { %>
             <span class="discount-badge"><%= discountPercent %>%</span>
         <% } %>
         <% if (cardShowHit) { %>
-            <span class="hit-badge">Хіт продажів</span>
+            <span class="hit-badge"><%= t('catalog.hit') %></span>
         <% } %>
+        <a href="/product/<%= product.id %>" class="product-card-image-link" tabindex="-1">
+            <% if (product.image_url) { %>
+                <img src="<%= product.image_url %>" alt="<%= cardName %>" class="product-image" />
+            <% } else { %>
+                <div class="product-image product-image--placeholder"><%= t('catalog.noPhoto') %></div>
+            <% } %>
+        </a>
         <% if (product.image_url) { %>
-            <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
-        <% } else { %>
-            <div class="product-image product-image--placeholder">Немає фото</div>
+            <button type="button" class="product-preview-btn" data-preview-src="<%= product.image_url %>" data-preview-alt="<%= cardName %>" title="<%= t('catalog.preview') %>" aria-label="<%= t('catalog.preview') %> <%= cardName %>">
+                <svg class="product-preview-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                </svg>
+            </button>
         <% } %>
     </div>
 
-    <h4 class="product-title"><%= product.name %></h4>
+    <a href="/product/<%= product.id %>" class="product-card-link">
+    <h4 class="product-title"><%= cardName %></h4>
 
     <% if (Number.isFinite(cardRating) && cardRating > 0) { %>
         <p class="product-card-rating">
-            <span class="star-rating star-rating--sm" title="Середня оцінка <%= cardRating.toFixed(1) %> з 5">
+            <span class="star-rating star-rating--sm" title="<%= t('product.ratingOf', { value: cardRating.toFixed(1) }) %>">
                 <% for (let star = 1; star <= 5; star += 1) { %>
                     <span class="star-icon <%= star <= Math.round(cardRating) ? 'star-icon--on' : 'star-icon--off' %>">★</span>
                 <% } %>
@@ -37,16 +49,16 @@ const cardRating = Number(product.average_rating);
 
     <p class="product-price">
         <% if (hasDiscount) { %>
-            <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+            <span class="old-price"><%= formatMoney(basePrice) %></span>
         <% } %>
-        <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+        <strong><%= formatMoney(salePrice) %></strong>
     </p>
 
     <p class="product-stock">
         <% if (Number(product.stock_quantity) > 0) { %>
-            В наявності: <%= product.stock_quantity %> <%= product.unit_type || 'шт' %>
+            <%= t('catalog.inStockLine', { count: product.stock_quantity, unit: cardUnit }) %>
         <% } else { %>
-            Немає в наявності
+            <%= t('catalog.outStock') %>
         <% } %>
     </p>
     </a>
@@ -59,21 +71,24 @@ const cardRating = Number(product.average_rating);
     <div class="product-card-actions">
         <form method="post" action="<%= inWishlist ? '/wishlist/remove' : '/wishlist/add' %>" class="wishlist-form wishlist-ajax">
             <input type="hidden" name="product_id" value="<%= product.id %>" />
-            <button class="wishlist-star-btn<%= inWishlist ? ' wishlist-star-btn--active' : '' %>" type="submit" title="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>" aria-label="<%= inWishlist ? 'Прибрати з обраного' : 'Додати в обране' %>"><%= inWishlist ? '★' : '☆' %></button>
+            <button class="wishlist-star-btn<%= inWishlist ? ' wishlist-star-btn--active' : '' %>" type="submit" title="<%= inWishlist ? t('catalog.removeWish') : t('catalog.addWish') %>" aria-label="<%= inWishlist ? t('catalog.removeWish') : t('catalog.addWish') %>"><%= inWishlist ? '★' : '☆' %></button>
         </form>
         <% if (Number(product.stock_quantity) > 0) { %>
+            <% const inCart = (typeof cartProductIds !== 'undefined' && Array.isArray(cartProductIds))
+                ? cartProductIds.some((id) => Number(id) === cardProductId)
+                : false; %>
             <form method="post" action="/cart/add" class="cart-form cart-ajax">
                 <input type="hidden" name="product_id" value="<%= product.id %>" />
                 <input type="hidden" name="quantity" value="1" />
-                <button class="cart-icon-btn" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                <button class="cart-icon-btn<%= inCart ? ' cart-icon-btn--in-cart' : '' %>" type="submit" title="<%= inCart ? t('catalog.inCart') : t('catalog.addCart') %>" aria-label="<%= inCart ? t('catalog.inCart') : t('catalog.addCart') %>">🛒</button>
             </form>
         <% } else { %>
-            <button class="cart-icon-btn" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>
+            <button class="cart-icon-btn" type="button" disabled title="<%= t('catalog.outStock') %>" aria-label="<%= t('catalog.outStock') %>">🛒</button>
         <% } %>
         <% if (Number(product.stock_quantity) > 0) { %>
-            <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>">Замовити</a>
+            <a class="product-order-btn" href="/checkout?product_id=<%= product.id %>"><%= t('catalog.order') %></a>
         <% } else { %>
-            <button class="product-order-btn" type="button" disabled>Замовити</button>
+            <button class="product-order-btn" type="button" disabled><%= t('catalog.order') %></button>
         <% } %>
     </div>
 </article>

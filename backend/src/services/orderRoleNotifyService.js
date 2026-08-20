@@ -3,6 +3,7 @@ const OrderModel = require('../models/Order');
 const NotificationModel = require('../models/Notification');
 const notificationEmailService = require('./notificationEmailService');
 const orderNotifyMessages = require('./orderNotifyMessages');
+const realtimeService = require('./realtimeService');
 
 const loadOrder = async (orderId) => {
     return OrderModel.getRowForCustomerNotify(orderId);
@@ -23,6 +24,19 @@ const notifyUsers = async (userIds, payload) => {
     }
     const count = await NotificationModel.insertForUsers(ids, payload);
     await notificationEmailService.sendForUserIds(ids, payload);
+    for (let i = 0; i < ids.length; i++) {
+        realtimeService.pushNotification(ids[i], payload);
+        const link = payload && payload.link_url ? String(payload.link_url) : '';
+        if (link.indexOf('/warehouse/orders') === 0) {
+            realtimeService.sendToUser(ids[i], {
+                type: 'warehouse_order',
+                order_id: payload.order_id || null,
+                title: payload.title || 'Оновлення замовлення',
+                body: payload.body || '',
+                link_url: link
+            });
+        }
+    }
     return count;
 };
 
@@ -38,7 +52,12 @@ const notifyUser = async (userId, payload) => {
     }
     const ok = await NotificationModel.insertForUser({ user_id: uid, ...payload });
     await notificationEmailService.sendForUserId(uid, payload);
+    realtimeService.pushNotification(uid, payload);
     return ok;
+};
+
+const pushCourierOrder = (courierId, payload) => {
+    realtimeService.pushCourierOrder(courierId, payload);
 };
 
 const notifyRoleWithOrder = async (roleName, orderId, buildMsg) => {
@@ -53,6 +72,10 @@ const notifyRoleWithOrder = async (roleName, orderId, buildMsg) => {
 
 const onNewOrderForAdmin = async (orderId) => {
     await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.newOrder);
+};
+
+const onOrderStockProblemForAdmin = async (orderId) => {
+    await notifyRoleWithOrder('admin', orderId, orderNotifyMessages.admin.stockProblem);
 };
 
 const onOrderApprovedForWarehouse = async (orderId) => {
@@ -98,6 +121,13 @@ const onCourierBooked = async (orderId, courierId) => {
         const courier = await UserModel.getUserid(courierId);
         const msg = orderNotifyMessages.courier.booked(orderId, order, courierName(courier));
         await notifyUser(courierId, { order_id: orderId, ...msg });
+        pushCourierOrder(courierId, {
+            event: 'assigned',
+            order_id: orderId,
+            title: msg.title,
+            body: msg.body,
+            link_url: msg.link_url
+        });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -112,6 +142,13 @@ const onOrderReadyForCourier = async (orderId, courierId) => {
         const courier = await UserModel.getUserid(courierId);
         const msg = orderNotifyMessages.courier.readyForPickup(orderId, order, courierName(courier));
         await notifyUser(courierId, { order_id: orderId, ...msg });
+        pushCourierOrder(courierId, {
+            event: 'ready',
+            order_id: orderId,
+            title: msg.title,
+            body: msg.body,
+            link_url: msg.link_url
+        });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -156,6 +193,13 @@ const onOrderCancelledForCourier = async (orderId, courierId) => {
         const courier = await UserModel.getUserid(cid);
         const msg = orderNotifyMessages.courier.cancelled(orderId, order, courierName(courier));
         await notifyUser(cid, { order_id: orderId, ...msg });
+        pushCourierOrder(cid, {
+            event: 'cancelled',
+            order_id: orderId,
+            title: msg.title,
+            body: msg.body,
+            link_url: msg.link_url
+        });
     } catch (err) {
         console.error('orderRoleNotify:', err.message);
     }
@@ -176,6 +220,7 @@ const onReviewChangeRequestForAdmin = async (reviewId, requestType) => {
 
 module.exports = {
     onNewOrderForAdmin,
+    onOrderStockProblemForAdmin,
     onOrderApprovedForWarehouse,
     onCancelRequestForAdmin,
     onCancelRequestForWarehouse,

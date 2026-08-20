@@ -144,7 +144,7 @@ const buildPeriod = ({ mode, date, month, dateFrom, dateTo }) => {
             label:
                 'Період ' +
                 fromDay.split('-').reverse().join('.') +
-                ' — ' +
+                ' - ' +
                 toDay.split('-').reverse().join('.')
         };
     }

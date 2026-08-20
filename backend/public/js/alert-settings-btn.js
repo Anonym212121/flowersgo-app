@@ -33,7 +33,7 @@
         if (pushBlocked) {
             noteHtml = '<p class="alert-toggles__note">Push заблоковано в браузері. Дозвольте сповіщення в налаштуваннях сайту.</p>';
         } else if (perm !== 'granted') {
-            noteHtml = '<p class="alert-toggles__note">Увімкніть push — браузер запитає дозвіл.</p>';
+            noteHtml = '<p class="alert-toggles__note">Увімкніть push - браузер запитає дозвіл.</p>';
         }
 
         container.innerHTML =
@@ -70,7 +70,7 @@
                         window.SiteAlerts.setPushOn(false);
                         renderAlertSettings(container);
                         if (typeof window.showToast === 'function') {
-                            window.showToast('Push не увімкнено — перевірте дозволи браузера', 'error');
+                            window.showToast('Push не увімкнено - перевірте дозволи браузера', 'error');
                         }
                         return;
                     }
@@ -86,4 +86,58 @@
     };
 
     window.renderAlertSettingsBtn = renderAlertSettings;
+
+    const settingsBtn = document.getElementById('navSettingsBtn');
+    const settingsPanel = document.getElementById('navSettingsPanel');
+    const settingsBox = document.getElementById('navAlertSettings');
+    const settingsRoot = document.getElementById('navSettings');
+
+    if (!settingsBtn || !settingsPanel || !settingsRoot) {
+        return;
+    }
+
+    const closeSettings = () => {
+        settingsPanel.hidden = true;
+        settingsBtn.setAttribute('aria-expanded', 'false');
+    };
+
+    const openSettings = () => {
+        const notifyPanel = document.getElementById('navNotifyPanel');
+        const notifyBtn = document.getElementById('navNotifyBtn');
+        if (notifyPanel) {
+            notifyPanel.hidden = true;
+        }
+        if (notifyBtn) {
+            notifyBtn.setAttribute('aria-expanded', 'false');
+        }
+        settingsPanel.hidden = false;
+        settingsBtn.setAttribute('aria-expanded', 'true');
+        renderAlertSettings(settingsBox);
+    };
+
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (settingsPanel.hidden) {
+            openSettings();
+        } else {
+            closeSettings();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (settingsPanel.hidden) {
+            return;
+        }
+        if (e.target.closest && e.target.closest('#navSettings')) {
+            return;
+        }
+        closeSettings();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !settingsPanel.hidden) {
+            closeSettings();
+            settingsBtn.focus();
+        }
+    });
 })();

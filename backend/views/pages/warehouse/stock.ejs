@@ -27,7 +27,7 @@ const returnTo = buildReturnTo();
 
 const formatAdjTime = (value) => {
     if (!value) {
-        return '—';
+        return '-';
     }
     const d = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(d.getTime())) {
@@ -42,7 +42,7 @@ const formatAdjTime = (value) => {
         <div>
             <h1>Залишки на складі</h1>
             <p class="warehouse-count">
-                Списання — після підтвердження адміном · коригування фіксується в журналі
+                Списання - після підтвердження адміном · коригування фіксується в журналі
             </p>
         </div>
         <a class="warehouse-stock-link" href="/warehouse/orders">← Замовлення складу</a>
@@ -139,7 +139,7 @@ const formatAdjTime = (value) => {
                                     <span class="warehouse-badge pay-ok">Каталог</span>
                                 <% } %>
                             </td>
-                            <td><%= p.category_name || '—' %></td>
+                            <td><%= p.category_name || '-' %></td>
                             <td>
                                 <strong><%= qty %></strong> <%= p.unit_type || 'шт' %>
                                 <% if (isZero) { %>
@@ -152,7 +152,7 @@ const formatAdjTime = (value) => {
                                 <% if (pending > 0) { %>
                                     <span class="warehouse-badge pay-cod"><%= pending %></span>
                                 <% } else { %>
-                                    —
+                                    -
                                 <% } %>
                             </td>
                             <td>
@@ -205,7 +205,7 @@ const formatAdjTime = (value) => {
             <ul class="warehouse-stock-journal__list" data-list-pager data-list-pager-item="li">
                 <% for (const row of recentAdjustmentsList) { %>
                     <% const worker = ((row.first_name || '') + ' ' + (row.last_name || '')).trim(); %>
-                    <% const itemName = row.flower_color ? row.product_name + ' — ' + row.flower_color : row.product_name; %>
+                    <% const itemName = row.flower_color ? row.product_name + ' - ' + row.flower_color : row.product_name; %>
                     <li>
                         <span class="warehouse-stock-journal__time"><%= formatAdjTime(row.createdAt) %></span>
                         <strong><%= itemName %></strong>

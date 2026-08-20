@@ -4,7 +4,7 @@ const refundStatusLabel = require('../utils/refundStatusLabel');
 
 const baseUrl = () => String(process.env.APP_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
 
-const footer = () => '\n\n— FlowersGo';
+const footer = () => '\n\n- FlowersGo';
 
 const openLink = (path) => {
     if (!path) {
@@ -17,7 +17,7 @@ const openLink = (path) => {
 const money = (value) => {
     const n = Number(value);
     if (!Number.isFinite(n)) {
-        return '—';
+        return '-';
     }
     return n.toFixed(2) + ' грн';
 };
@@ -29,7 +29,7 @@ const paymentLabel = (status) => {
         unpaid: 'Очікує оплату',
         refunded: 'Кошти повернуто'
     };
-    return map[status] || status || '—';
+    return map[status] || status || '-';
 };
 
 const deliveryMethodLabel = (method) => {
@@ -57,12 +57,12 @@ const orderSummaryLines = (order) => {
     ];
 
     const when = formatDelivery.formatDeliveryDisplay(order.delivery_date, order.delivery_timeslot);
-    if (when && when !== '—') {
+    if (when && when !== '-') {
         lines.push('Дата та час: ' + when);
     }
 
     const place = orderDeliveryFields.formatDeliveryPlaceFromRow(order);
-    if (place && place !== '—') {
+    if (place && place !== '-') {
         lines.push('Адреса: ' + place);
     }
 
@@ -120,13 +120,13 @@ const customer = {
             subject: 'Оплату карткою за замовлення №' + id + ' отримано',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'Оплату карткою онлайн зафіксовано. Замовлення передано на перевірку адміністратору — після підтвердження почнемо комплектацію.',
+                'Оплату карткою онлайн зафіксовано. Букет уже збирають на складі.',
                 order,
                 '/cabinet'
             ),
             ntype: 'order_paid',
             title: 'Оплату карткою отримано',
-            body: 'Замовлення №' + id + ' оплачено карткою. Очікуйте підтвердження.',
+            body: 'Замовлення №' + id + ' оплачено. Флорист збирає букет.',
             link_url: '/cabinet'
         };
     },
@@ -135,14 +135,14 @@ const customer = {
         const id = order.id;
         const pickup = order.delivery_method === 'pickup';
         const main = pickup
-            ? 'Адміністратор підтвердив замовлення. Склад уже готує букет — повідомимо, коли можна забирати.'
-            : 'Адміністратор підтвердив замовлення. Склад комплектує букет — далі передамо кур\'єру.';
+            ? 'Замовлення вже на складі. Флорист збирає букет - повідомимо, коли можна забирати.'
+            : 'Замовлення вже на складі. Флорист збирає букет, далі передамо кур\'єру.';
         return {
-            subject: 'Замовлення №' + id + ' підтверджено',
+            subject: 'Замовлення №' + id + ' у роботі',
             text: customerText('Вітаємо, ' + customerName(order) + '!', main, order, '/cabinet'),
             ntype: 'order_confirmed',
-            title: 'Замовлення підтверджено',
-            body: 'Замовлення №' + id + ' підтверджено адміністратором.',
+            title: 'Букет збирають',
+            body: 'Замовлення №' + id + ' передано на склад.',
             link_url: '/cabinet'
         };
     },
@@ -153,7 +153,7 @@ const customer = {
             subject: 'Замовлення №' + id + ' відхилено',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'На жаль, адміністратор не зможе виконати це замовлення. Якщо оплату вже списано — кошти повернуть за правилами магазину.',
+                'На жаль, адміністратор не зможе виконати це замовлення. Якщо оплату вже списано - кошти повернуть за правилами магазину.',
                 order,
                 '/cabinet'
             ),
@@ -195,7 +195,7 @@ const customer = {
             title: pickup ? 'Готовий до самовивозу' : 'Готово до доставки',
             body: pickup
                 ? 'Замовлення №' + id + ' можна забрати в магазині.'
-                : 'Замовлення №' + id + ' зібрано — скоро передадуть кур\'єру.',
+                : 'Замовлення №' + id + ' зібрано - скоро передадуть кур\'єру.',
             link_url: '/cabinet'
         };
     },
@@ -252,6 +252,23 @@ const customer = {
         };
     },
 
+    assembledPhoto(order) {
+        const id = order.id;
+        return {
+            subject: 'Фото вашого букета №' + id,
+            text: customerText(
+                'Вітаємо, ' + customerName(order) + '!',
+                'Флорист зібрав букет і додав фото. Відкрийте кабінет, щоб подивитися, як він виглядає перед доставкою.',
+                order,
+                '/cabinet'
+            ),
+            ntype: 'order_assembled_photo',
+            title: 'Фото букета',
+            body: 'До замовлення №' + id + ' додано фото зібраного букета.',
+            link_url: '/cabinet'
+        };
+    },
+
     cancelRequestSent(order) {
         const id = order.id;
         return {
@@ -302,7 +319,7 @@ const customer = {
             subject: 'Скасування №' + id + ' відхилено',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'Адміністратор не погодив скасування — замовлення залишається активним і буде виконане.',
+                'Адміністратор не погодив скасування - замовлення залишається активним і буде виконане.',
                 order,
                 '/cabinet'
             ),
@@ -319,7 +336,7 @@ const customer = {
             subject: 'Час оплати №' + id + ' вичерпано',
             text: customerText(
                 'Вітаємо, ' + customerName(order) + '!',
-                'Замовлення скасовано автоматично — час на оплату минув. Можете оформити нове замовлення на сайті.',
+                'Замовлення скасовано автоматично - час на оплату минув. Можете оформити нове замовлення на сайті.',
                 order,
                 '/catalog'
             ),
@@ -355,15 +372,31 @@ const admin = {
         const sum = order ? money(order.total_amount) : '';
         return {
             title: 'Нове замовлення',
-            body: 'Замовлення №' + orderId + ' очікує підтвердження.',
+            body: 'Замовлення №' + orderId + ' оплачене і пішло в роботу.',
             email_subject: 'FlowersGo: нове замовлення №' + orderId,
             email_body: roleEmail(
                 'Нове замовлення!',
-                'Клієнт оформив замовлення №' + orderId + '.\nОплата: ' + pay + '\nСума: ' + sum + '\n\nПотрібне підтвердження адміністратора.',
+                'Клієнт оформив замовлення №' + orderId + '.\nОплата: ' + pay + '\nСума: ' + sum + '\n\nЯкщо є залишок - склад уже бачить його. Якщо товару бракує - замовлення залишиться в черзі «На склад».',
                 order,
                 '/admin'
             ),
             ntype: 'order_pending_admin',
+            link_url: '/admin'
+        };
+    },
+
+    stockProblem(orderId, order) {
+        return {
+            title: 'Немає залишку',
+            body: 'Замовлення №' + orderId + ' не пішло на склад - перевір залишки або відхили.',
+            email_subject: 'FlowersGo: немає залишку №' + orderId,
+            email_body: roleEmail(
+                'Замовлення не пішло на склад',
+                'Замовлення №' + orderId + ' оплачене, але на складі не вистачає товару. Оновіть залишки і натисніть «На склад», або відхиліть замовлення.',
+                order,
+                '/admin'
+            ),
+            ntype: 'order_stock_admin',
             link_url: '/admin'
         };
     },
@@ -451,11 +484,11 @@ const admin = {
     orderExpired(orderId) {
         return {
             title: 'Замовлення прострочено',
-            body: '№' + orderId + ' скасовано — не оплачено',
+            body: '№' + orderId + ' скасовано - не оплачено',
             email_subject: 'FlowersGo: №' + orderId + ' прострочено',
             email_body: roleEmail(
                 'Прострочене замовлення',
-                'Замовлення №' + orderId + ' скасовано автоматично — клієнт не встиг оплатити.',
+                'Замовлення №' + orderId + ' скасовано автоматично - клієнт не встиг оплатити.',
                 null,
                 '/admin'
             ),
@@ -487,15 +520,15 @@ const warehouse = {
         const express = order && order.delivery_method === 'express';
         return {
             title: express ? 'Експрес-замовлення!' : 'Нове на комплектацію',
-            body: 'Замовлення №' + orderId + ' — можна збирати',
+            body: 'Замовлення №' + orderId + ' - можна збирати',
             email_subject: express
                 ? 'FlowersGo: ЕКСПРЕС №' + orderId
                 : 'FlowersGo: комплектувати №' + orderId,
             email_body: roleEmail(
                 express ? 'Експрес-замовлення!' : 'Нове замовлення на склад',
                 express
-                    ? 'Терміново! Замовлення №' + orderId + ' — експрес-доставка. Комплектуйте в пріоритеті.'
-                    : 'Адмін підтвердив замовлення №' + orderId + '. Можна починати комплектацію.',
+                    ? 'Терміново! Замовлення №' + orderId + ' - експрес-доставка. Комплектуйте в пріоритеті.'
+                    : 'Замовлення №' + orderId + ' на комплектацію. Можна збирати.',
                 order,
                 '/warehouse/orders/' + orderId
             ),
@@ -527,7 +560,7 @@ const warehouse = {
             email_subject: 'FlowersGo: №' + orderId + ' скасовано',
             email_body: roleEmail(
                 'Замовлення скасовано',
-                'Замовлення №' + orderId + ' скасовано — комплектацію припиніть.',
+                'Замовлення №' + orderId + ' скасовано - комплектацію припиніть.',
                 order,
                 '/warehouse/orders'
             ),
@@ -575,13 +608,13 @@ const courier = {
         const processing = order && order.status_name === 'processing';
         return {
             title: 'Замовлення заброньовано',
-            body: '№' + orderId + ' — очікуйте збірку',
+            body: '№' + orderId + ' - очікуйте збірку',
             email_subject: 'FlowersGo: №' + orderId + ' для вас',
             email_body: roleEmail(
                 'Вітаємо, ' + name + '!',
                 processing
-                    ? 'Замовлення №' + orderId + ' призначено вам. Зараз комплектується на складі — заберете, коли буде «Готово до видачі».'
-                    : 'Замовлення №' + orderId + ' призначено вам і готове до видачі — забирайте на складі.',
+                    ? 'Замовлення №' + orderId + ' призначено вам. Зараз комплектується на складі - заберете, коли буде «Готово до видачі».'
+                    : 'Замовлення №' + orderId + ' призначено вам і готове до видачі - забирайте на складі.',
                 order,
                 '/courier/orders/' + orderId
             ),
@@ -599,9 +632,9 @@ const courier = {
             'Вам призначено замовлення №' + orderId + '.'
         ];
         if (processing) {
-            lines.push('Статус: комплектується — забереш, коли буде «Готово до видачі».');
+            lines.push('Статус: комплектується - забереш, коли буде «Готово до видачі».');
         } else {
-            lines.push('Статус: готове до видачі — забери на складі.');
+            lines.push('Статус: готове до видачі - забери на складі.');
         }
         if (order) {
             lines.push('');
@@ -619,7 +652,7 @@ const courier = {
         const name = courierName || 'Кур\'єре';
         return {
             title: 'Готово до видачі',
-            body: '№' + orderId + ' — забирай на складі',
+            body: '№' + orderId + ' - забирай на складі',
             email_subject: 'FlowersGo: №' + orderId + ' готове',
             email_body: roleEmail(
                 'Вітаємо, ' + name + '!',

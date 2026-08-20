@@ -1,4 +1,4 @@
-<h1>Реєстрація</h1>
+<h1><%= t('page.register') %></h1>
 
 <div class="auth-card">
     <form id="registerForm" class="auth-form">
@@ -42,13 +42,15 @@
             <span>Погоджуюсь з <a href="/privacy" target="_blank" rel="noopener">політикою конфіденційності</a></span>
         </label>
 
+        <%- include('../partials/honeypot') %>
+
         <button class="auth-button" type="submit" id="registerSubmitBtn">Зареєструватися</button>
     </form>
 
     <% if (typeof googleClientId !== 'undefined' && googleClientId) { %>
         <div class="auth-or"><span>або</span></div>
         <div id="googleSignInBtn" class="auth-google-btn"></div>
-        <p class="auth-hint auth-google-hint">Швидка реєстрація через Google — без пароля на сайті.</p>
+        <p class="auth-hint auth-google-hint">Швидка реєстрація через Google - без пароля на сайті.</p>
     <% } %>
 
     <div id="authError" class="auth-error" aria-live="polite"></div>
@@ -263,7 +265,7 @@
             restored: true,
             form: registerForm,
             steps: registerSteps,
-            messagePrefix: 'Продовжуємо реєстрацію — '
+            messagePrefix: 'Продовжуємо реєстрацію - '
         });
     }
 
@@ -276,6 +278,9 @@
 
     registerForm.addEventListener('submit', async (event) => {
         event.preventDefault();
+        if (registerForm.dataset.busy === '1') {
+            return;
+        }
         authError.textContent = '';
 
         const formData = new FormData(registerForm);
@@ -298,12 +303,15 @@
             phone: formData.get('phone'),
             password: password,
             password_confirm: passwordConfirm,
-            accept_terms: formData.get('accept_terms') ? '1' : ''
+            accept_terms: formData.get('accept_terms') ? '1' : '',
+            website: formData.get('website') || ''
         };
 
         submitBtn.disabled = true;
         submitBtn.textContent = 'Зачекайте…';
+        registerForm.dataset.busy = '1';
 
+        let registered = false;
         try {
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
@@ -323,6 +331,7 @@
             }
 
             sessionStorage.removeItem(draftKey);
+            registered = true;
 
             if (typeof window.showToast === 'function') {
                 window.showToast('Реєстрацію завершено', 'ok');
@@ -332,8 +341,11 @@
         } catch (err) {
             authError.textContent = 'Не вдалося з’єднатися з сервером';
         } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зареєструватися';
+            if (!registered) {
+                registerForm.dataset.busy = '';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Зареєструватися';
+            }
         }
     });
 </script>

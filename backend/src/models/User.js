@@ -203,8 +203,10 @@ const getUserid = async (id) => {
             u.first_name, u.last_name, u.email,
             u.phone, u.avatar_url, u.loyalty_points,
             COALESCE(u.email_verified, 0) AS email_verified,
+            COALESCE(u.is_public_profile, 0) AS is_public_profile,
             u.courier_work_email,
-            u.saved_delivery_street, u.saved_delivery_house, u.saved_delivery_apartment
+            u.saved_delivery_street, u.saved_delivery_house, u.saved_delivery_apartment,
+            u.createdAt
          FROM users u
          INNER JOIN roles r ON u.role_id = r.id
          WHERE u.id = ?
@@ -213,6 +215,47 @@ const getUserid = async (id) => {
     );
 
     return rows[0] || null;
+};
+
+const findPublicProfileById = async (id) => {
+    const uid = Number(id);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return null;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT
+            u.id,
+            u.first_name,
+            u.last_name,
+            u.avatar_url,
+            u.createdAt,
+            r.role_name,
+            COALESCE(u.is_public_profile, 0) AS is_public_profile,
+            COALESCE(u.is_blocked, 0) AS is_blocked
+         FROM users u
+         INNER JOIN roles r ON u.role_id = r.id
+         WHERE u.id = ?
+         LIMIT 1`,
+        [uid]
+    );
+
+    return rows[0] || null;
+};
+
+const setPublicProfileById = async (userId, isPublic) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return false;
+    }
+
+    const flag = isPublic ? 1 : 0;
+    await db.execute(
+        'UPDATE users SET is_public_profile = ? WHERE id = ?',
+        [flag, uid]
+    );
+
+    return true;
 };
 
 const findByEmailExceptUserId = async (email, excludeUserId) => {
@@ -362,14 +405,29 @@ const listForAdmin = async (search) => {
     const q = typeof search === 'string' ? search.trim() : '';
     if (q !== '') {
         const like = `%${q}%`;
-        sql += ` WHERE u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
-        params.push(like, like, like, like);
+        const asId = Number(q);
+        if (Number.isFinite(asId) && asId > 0 && String(asId) === q) {
+            sql += ` WHERE u.id = ? OR u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
+            params.push(asId, like, like, like, like);
+        } else {
+            sql += ` WHERE u.email LIKE ? OR u.phone LIKE ? OR u.first_name LIKE ? OR u.last_name LIKE ?`;
+            params.push(like, like, like, like);
+        }
     }
 
     sql += ' ORDER BY u.id DESC LIMIT 200';
 
     const [rows] = await db.execute(sql, params);
     return rows;
+};
+
+const searchForAdmin = async (search) => {
+    const q = typeof search === 'string' ? search.trim() : '';
+    if (q === '') {
+        return [];
+    }
+    const rows = await listForAdmin(q);
+    return (rows || []).slice(0, 8);
 };
 
 const updateRoleById = async (userId, roleName) => {
@@ -612,10 +670,32 @@ const isBlocked = async (userId) => {
     return !!(rows && rows[0] && Number(rows[0].is_blocked) === 1);
 };
 
+const findAuthById = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return null;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT
+            u.id, u.role_id, r.role_name,
+            COALESCE(u.is_blocked, 0) AS is_blocked
+         FROM users u
+         INNER JOIN roles r ON u.role_id = r.id
+         WHERE u.id = ?
+         LIMIT 1`,
+        [uid]
+    );
+
+    return rows[0] || null;
+};
+
 module.exports = {
     getDefaultRoleId,
     getRoleIdByName,
     getUserid,
+    findPublicProfileById,
+    setPublicProfileById,
     createUser,
     findByGoogleId,
     createGoogleUser,
@@ -628,6 +708,7 @@ module.exports = {
     updateAvatarUrlById,
     updatePasswordHashById,
     listForAdmin,
+    searchForAdmin,
     updateRoleById,
     setBlockedById,
     setCourierOnShift,
@@ -637,5 +718,6 @@ module.exports = {
     updateCourierWorkEmailById,
     resolveCourierNotifyEmail,
     listUserIdsByRole,
-    isBlocked
+    isBlocked,
+    findAuthById
 };

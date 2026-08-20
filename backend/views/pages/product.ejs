@@ -37,18 +37,18 @@ const hasAvgRating = ratedValues.length > 0 && avgRating > 0;
 const ratedCount = ratedValues.length;
 
 const ratedCountLabel = ratedCount === 1
-
-    ? '1 оцінка'
-
-    : (ratedCount >= 2 && ratedCount <= 4 ? `${ratedCount} оцінки` : `${ratedCount} оцінок`);
+    ? (lang === 'en' ? '1 rating' : '1 оцінка')
+    : (lang === 'en'
+        ? `${ratedCount} ratings`
+        : (ratedCount >= 2 && ratedCount <= 4 ? `${ratedCount} оцінки` : `${ratedCount} оцінок`));
 
 const reviewCount = safeReviews.length;
 
 const reviewCountLabel = reviewCount === 1
-
-    ? '1 відгук'
-
-    : (reviewCount >= 2 && reviewCount <= 4 ? `${reviewCount} відгуки` : `${reviewCount} відгуків`);
+    ? (lang === 'en' ? '1 review' : '1 відгук')
+    : (lang === 'en'
+        ? `${reviewCount} reviews`
+        : (reviewCount >= 2 && reviewCount <= 4 ? `${reviewCount} відгуки` : `${reviewCount} відгуків`));
 
 const inStock = Number(product.stock_quantity) > 0;
 
@@ -68,17 +68,17 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
 <section class="catalog-content product-detail-section">
 
-    <nav class="breadcrumb-nav" aria-label="Навігація">
+    <nav class="breadcrumb-nav" aria-label="<%= t('product.navAria') %>">
 
-        <a href="/">Головна</a>
-
-        <span class="breadcrumb-sep" aria-hidden="true">/</span>
-
-        <a href="/?category_id=<%= product.category_id %>"><%= product.category_name %></a>
+        <a href="/"><%= t('product.home') %></a>
 
         <span class="breadcrumb-sep" aria-hidden="true">/</span>
 
-        <span class="breadcrumb-current"><%= product.name %></span>
+        <a href="/?category_id=<%= product.category_id %>"><%= locName(product.category_name) %></a>
+
+        <span class="breadcrumb-sep" aria-hidden="true">/</span>
+
+        <span class="breadcrumb-current"><%= locName(product) %></span>
 
     </nav>
 
@@ -98,11 +98,11 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                 <% if (product.image_url) { %>
 
-                    <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-detail-image" />
+                    <img src="<%= product.image_url %>" alt="<%= locName(product) %>" class="product-detail-image" />
 
                 <% } else { %>
 
-                    <div class="product-detail-image product-detail-image--placeholder">Немає фото</div>
+                    <div class="product-detail-image product-detail-image--placeholder"><%= t('catalog.noPhoto') %></div>
 
                 <% } %>
 
@@ -114,15 +114,15 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                 <div class="product-detail-badges">
 
-                    <span class="product-detail-badge product-detail-badge--category"><%= product.category_name %></span>
+                    <span class="product-detail-badge product-detail-badge--category"><%= locName(product.category_name) %></span>
 
                     <% if (inStock) { %>
 
-                        <span class="product-detail-badge product-detail-badge--stock">В наявності</span>
+                        <span class="product-detail-badge product-detail-badge--stock"><%= t('catalog.inStock') %></span>
 
                     <% } else { %>
 
-                        <span class="product-detail-badge product-detail-badge--out">Немає в наявності</span>
+                        <span class="product-detail-badge product-detail-badge--out"><%= t('catalog.outStock') %></span>
 
                     <% } %>
 
@@ -130,11 +130,11 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
 
 
-                <h1 class="product-detail-title"><%= product.name %></h1>
+                <h1 class="product-detail-title"><%= locName(product) %></h1>
 
 
 
-                <div class="product-rating-summary" aria-label="Середня оцінка товару">
+                <div class="product-rating-summary" aria-label="<%= t('product.ratingAria') %>">
 
                     <% if (hasAvgRating) { %>
 
@@ -146,11 +146,11 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                             data-reviews-modal-open
 
-                            title="Переглянути всі відгуки"
+                            title="<%= t('product.reviewsAll') %>"
 
                         >
 
-                            <span class="star-rating" title="Середня оцінка <%= avgRating.toFixed(1) %> з 5">
+                            <span class="star-rating" title="<%= t('product.ratingOf', { value: avgRating.toFixed(1) }) %>">
 
                                 <% for (let star = 1; star <= 5; star += 1) { %>
 
@@ -168,7 +168,7 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                     <% } else { %>
 
-                        <span class="product-rating-none">Ще немає оцінок — стань першим!</span>
+                        <span class="product-rating-none"><%= t('product.noRatings') %></span>
 
                     <% } %>
 
@@ -180,11 +180,11 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                     <% if (hasDiscount) { %>
 
-                        <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+                        <span class="old-price"><%= formatMoney(basePrice) %></span>
 
                     <% } %>
 
-                    <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+                    <strong><%= formatMoney(salePrice) %></strong>
 
                 </p>
 
@@ -194,11 +194,11 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                     <% if (inStock) { %>
 
-                        На складі: <strong><%= product.stock_quantity %> <%= product.unit_type || 'шт' %></strong>
+                        <%= t('product.warehouse') %>: <strong><%= product.stock_quantity %> <%= translateUnit(product.unit_type || 'шт') %></strong>
 
                     <% } else { %>
 
-                        Очікуйте поповнення або оберіть інший товар
+                        <%= t('product.wait') %>
 
                     <% } %>
 
@@ -208,15 +208,21 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                 <div class="product-detail-order">
                     <% if (inStock) { %>
+                        <%
+                        const detailProductId = Number(product.id);
+                        const inCart = (typeof cartProductIds !== 'undefined' && Array.isArray(cartProductIds))
+                            ? cartProductIds.some((id) => Number(id) === detailProductId)
+                            : false;
+                        %>
                         <form method="post" action="/cart/add" class="cart-form cart-ajax product-detail-cart-form">
                             <input type="hidden" name="product_id" value="<%= product.id %>" />
                             <input type="hidden" name="quantity" value="1" />
-                            <button class="cart-icon-btn cart-icon-btn--large" type="submit" title="Додати в кошик" aria-label="Додати в кошик">🛒</button>
+                            <button class="cart-icon-btn cart-icon-btn--large<%= inCart ? ' cart-icon-btn--in-cart' : '' %>" type="submit" title="<%= inCart ? t('catalog.inCart') : t('catalog.addCart') %>" aria-label="<%= inCart ? t('catalog.inCart') : t('catalog.addCart') %>">🛒</button>
                         </form>
-                        <a class="product-order-btn product-order-btn--primary" href="/checkout?product_id=<%= product.id %>">Замовити зараз</a>
+                        <a class="product-order-btn product-order-btn--primary" href="/checkout?product_id=<%= product.id %>"><%= t('product.orderNow') %></a>
                     <% } else { %>
-                        <button class="cart-icon-btn cart-icon-btn--large" type="button" disabled title="Немає в наявності" aria-label="Немає в наявності">🛒</button>
-                        <button class="product-order-btn product-order-btn--primary" type="button" disabled>Замовити</button>
+                        <button class="cart-icon-btn cart-icon-btn--large" type="button" disabled title="<%= t('catalog.outStock') %>" aria-label="<%= t('catalog.outStock') %>">🛒</button>
+                        <button class="product-order-btn product-order-btn--primary" type="button" disabled><%= t('catalog.order') %></button>
                     <% } %>
                 </div>
 
@@ -225,7 +231,7 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
                 <% if (product.description && String(product.description).trim() !== '') { %>
 
                     <div class="product-detail-desc">
-                        <h2 class="product-detail-desc-title">Про товар</h2>
+                        <h2 class="product-detail-desc-title"><%= t('product.about') %></h2>
                         <p class="product-detail-desc-text"><%= product.description %></p>
                     </div>
 
@@ -235,7 +241,7 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
                 <p class="product-detail-back">
 
-                    <a href="/">← До каталогу</a>
+                    <a href="/"><%= t('product.backCatalog') %></a>
 
                 </p>
 
@@ -253,7 +259,7 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
 
             <div>
 
-                <h2 class="product-reviews-title">Відгуки покупців</h2>
+                <h2 class="product-reviews-title"><%= t('product.reviews') %></h2>
 
                 <p class="product-reviews-subtitle">
 
@@ -344,6 +350,8 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
                                 placeholder="Що сподобалось? Якість, упаковка, враження..."
 
                             ></textarea>
+
+                            <%- include('../partials/honeypot') %>
 
                             <button class="product-review-submit" type="submit">Надіслати відгук</button>
 
@@ -476,9 +484,8 @@ const starBreakdown = [5, 4, 3, 2, 1].map((star) => {
                                 <span class="reviews-modal-breakdown-star"><%= row.star %> ★</span>
 
                                 <span class="reviews-modal-breakdown-bar">
-
-                                    <span class="reviews-modal-breakdown-fill" style="width: <%= row.percent %>%"></span>
-
+                                    <% const fillPct = Math.max(0, Math.min(100, Number(row.percent) || 0)); %>
+                                    <span class="reviews-modal-breakdown-fill" <%= 'style="width:' + fillPct + '%"' %>></span>
                                 </span>
 
                                 <span class="reviews-modal-breakdown-count"><%= row.count %></span>

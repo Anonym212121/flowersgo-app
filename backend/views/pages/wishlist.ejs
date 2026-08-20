@@ -3,22 +3,21 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
 %>
 
 <section class="catalog-content">
-    <h1 class="catalog-title">Обране</h1>
+    <h1 class="catalog-title"><%= t('page.wishlist') %></h1>
 
     <% if (safeProducts.length === 0) { %>
         <div class="catalog-empty">
-            <p class="catalog-empty__title">У обраному ще нічого немає</p>
-            <p class="catalog-empty__text">Натисни сердечко на картці товару в каталогу — і букет зʼявиться тут.</p>
+            <p class="catalog-empty__title"><%= t('wish.emptyTitle') %></p>
+            <p class="catalog-empty__text"><%= t('wish.emptyText') %></p>
             <div class="catalog-empty__actions">
-                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary">Обрати букети</a>
-                <a href="/#catalog-hit-root" class="catalog-empty__btn catalog-empty__btn--secondary">Хіти сезону</a>
+                <a href="/" class="catalog-empty__btn catalog-empty__btn--primary"><%= t('wish.pickBouquets') %></a>
+                <a href="/#catalog-hit-root" class="catalog-empty__btn catalog-empty__btn--secondary"><%= t('wish.seasonHits') %></a>
             </div>
         </div>
     <% } else { %>
         <div class="products-grid">
             <% for (const product of safeProducts) { %>
                 <article class="product-card">
-                    <a href="/product/<%= product.id %>" class="product-card-link">
                     <div class="product-image-wrap">
                         <% const basePrice = Number(product.base_price || 0); %>
                         <% const salePrice = Number(product.sale_price || 0); %>
@@ -27,25 +26,36 @@ const safeProducts = typeof products !== 'undefined' && Array.isArray(products) 
                         <% if (discountPercent > 0) { %>
                             <span class="discount-badge"><%= discountPercent %>%</span>
                         <% } %>
+                        <a href="/product/<%= product.id %>" class="product-card-image-link" tabindex="-1">
+                            <% if (product.image_url) { %>
+                                <img src="<%= product.image_url %>" alt="<%= locName(product) %>" class="product-image" />
+                            <% } else { %>
+                                <div class="product-image product-image--placeholder"><%= t('catalog.noPhoto') %></div>
+                            <% } %>
+                        </a>
                         <% if (product.image_url) { %>
-                            <img src="<%= product.image_url %>" alt="<%= product.name %>" class="product-image" />
-                        <% } else { %>
-                            <div class="product-image product-image--placeholder">Немає фото</div>
+                            <button type="button" class="product-preview-btn" data-preview-src="<%= product.image_url %>" data-preview-alt="<%= locName(product) %>" title="<%= t('catalog.preview') %>" aria-label="<%= t('catalog.preview') %> <%= locName(product) %>">
+                                <svg class="product-preview-btn__icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+                                </svg>
+                            </button>
                         <% } %>
                     </div>
 
-                    <h4 class="product-title"><%= product.name %></h4>
+                    <a href="/product/<%= product.id %>" class="product-card-link">
+                    <h4 class="product-title"><%= locName(product) %></h4>
                     <p class="product-price">
                         <% if (hasDiscount) { %>
-                            <span class="old-price"><%= basePrice.toLocaleString('uk-UA') %> грн</span>
+                            <span class="old-price"><%= formatMoney(basePrice) %></span>
                         <% } %>
-                        <strong><%= salePrice.toLocaleString('uk-UA') %> грн</strong>
+                        <strong><%= formatMoney(salePrice) %></strong>
                     </p>
                     </a>
 
                     <form method="post" action="/wishlist/remove" class="wishlist-ajax">
                         <input type="hidden" name="product_id" value="<%= product.id %>" />
-                        <button class="product-order-btn" type="submit">Прибрати з обраного</button>
+                        <button class="product-order-btn" type="submit"><%= t('catalog.removeWish') %></button>
                     </form>
                 </article>
             <% } %>

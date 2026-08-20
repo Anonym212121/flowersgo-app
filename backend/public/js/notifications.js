@@ -5,7 +5,6 @@
     const listEl = document.getElementById('navNotifyList');
     const emptyEl = document.getElementById('navNotifyEmpty');
     const readAllBtn = document.getElementById('navNotifyReadAll');
-    const settingsEl = document.getElementById('navNotifySettings');
     const pagerEl = document.getElementById('navNotifyPager');
     const pagerInfoEl = document.getElementById('navNotifyPagerInfo');
     const pagerMoreBtn = document.getElementById('navNotifyMore');
@@ -21,6 +20,7 @@
     let loadedCount = 0;
     let totalCount = 0;
     let loadingList = false;
+    let refreshBusy = false;
 
     const formatTime = (raw) => {
         if (!raw) {
@@ -187,9 +187,17 @@
     };
 
     const refreshNotifications = async () => {
-        await loadCount();
-        if (panelOpen && !panel.hidden) {
-            await loadList(true);
+        if (refreshBusy || document.hidden) {
+            return;
+        }
+        refreshBusy = true;
+        try {
+            await loadCount();
+            if (panelOpen && !panel.hidden) {
+                await loadList(true);
+            }
+        } finally {
+            refreshBusy = false;
         }
     };
 
@@ -205,18 +213,20 @@
 
     btn.addEventListener('click', async (e) => {
         e.stopPropagation();
+        const settingsPanel = document.getElementById('navSettingsPanel');
+        const settingsBtn = document.getElementById('navSettingsBtn');
+        if (settingsPanel) {
+            settingsPanel.hidden = true;
+        }
+        if (settingsBtn) {
+            settingsBtn.setAttribute('aria-expanded', 'false');
+        }
         const open = panel.hidden;
         panel.hidden = !open;
         panelOpen = open;
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
-            if (settingsEl && typeof window.renderAlertSettingsBtn === 'function') {
-                window.renderAlertSettingsBtn(settingsEl);
-            }
             await loadList(true);
-            if (window.SiteAlerts && typeof window.SiteAlerts.requestPushPermission === 'function') {
-                await window.SiteAlerts.requestPushPermission();
-            }
         }
     });
 
@@ -304,7 +314,18 @@
         if (window.SiteNotifyAuto && typeof window.SiteNotifyAuto.register === 'function') {
             window.SiteNotifyAuto.register('notifications', refreshNotifications);
         } else {
-            setInterval(refreshNotifications, 8000);
+            setInterval(refreshNotifications, 30000);
         }
+
+        document.addEventListener('realtime:message', (event) => {
+            const data = event.detail;
+            if (!data || data.type !== 'notification') {
+                return;
+            }
+            refreshNotifications();
+            if (typeof window.showToast === 'function' && data.title) {
+                window.showToast(data.title, 'ok');
+            }
+        });
     })();
 })();

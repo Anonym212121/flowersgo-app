@@ -38,7 +38,7 @@ const constructorPage = async (req, res) => {
             templateSlug = req.query.template.trim();
         }
 
-        return renderLayout(res, 'Конструктор букета', 'pages/constructor', {
+        return renderLayout(res, res.locals.t ? res.locals.t('page.constructor') : 'Конструктор букета', 'pages/constructor', {
             flowerGroups,
             packagingOptions,
             minStems: settings.min_stems,
@@ -59,6 +59,7 @@ const calcPayloadJson = (result) => {
         total: result.total,
         flowersSum: result.flowersSum,
         stemTotal: result.stemTotal,
+        evenStems: !!result.evenStems,
         minStems: result.minStems,
         summary: result.summary,
         packagingLabel: result.packaging ? result.packaging.label : '',
@@ -132,7 +133,7 @@ const savePreviewJson = async (req, res) => {
         }
 
         const image = req.body.image;
-        const saved = bouquetPreviewService.savePreviewImage(previewKey, image);
+        const saved = await bouquetPreviewService.savePreviewImage(previewKey, image);
         if (!saved.ok) {
             return res.status(400).json(saved);
         }

@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const ProductColorVariant = require('../models/ProductColorVariant');
+const cloudinaryService = require('../services/cloudinaryService');
 
 const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads', 'products');
 
@@ -67,7 +68,16 @@ const uploadVariantImage = async (req, res) => {
             return res.status(404).json({ message: 'Колір не знайдено' });
         }
 
-        const publicUrl = `/uploads/products/${req.file.filename}`;
+        const stored = await cloudinaryService.storeMulterFile(
+            req.file,
+            'flowersgo/products',
+            '/uploads/products/' + req.file.filename
+        );
+        if (!stored.ok) {
+            return res.status(500).json({ message: stored.message || 'Не вдалося зберегти фото' });
+        }
+
+        const publicUrl = stored.url;
         const updated = await ProductColorVariant.updateImageUrl(variantId, publicUrl);
         if (!updated) {
             try {

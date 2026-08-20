@@ -7,7 +7,7 @@ const seedDefaults = async () => {
         { name: 'confirmed', label: 'Підтверджено', sort: 2, initial: 0, warehouse: 1, courier: 0 },
         { name: 'processing', label: 'Комплектується', sort: 3, initial: 0, warehouse: 1, courier: 0 },
         { name: 'ready_for_pickup', label: 'Готово до видачі', sort: 4, initial: 0, warehouse: 1, courier: 1 },
-        { name: 'shipped', label: 'В дорозі', sort: 5, initial: 0, warehouse: 0, courier: 1 },
+        { name: 'shipped', label: 'В дорозі', sort: 5, initial: 0, warehouse: 1, courier: 1 },
         { name: 'delivered', label: 'Доставлено', sort: 6, initial: 0, warehouse: 1, courier: 1 },
         { name: 'accepted', label: 'Завершено', sort: 7, initial: 0, warehouse: 0, courier: 0 },
         { name: 'rejected', label: 'Не прийнято', sort: 8, initial: 0, warehouse: 0, courier: 0 },

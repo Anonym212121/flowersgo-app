@@ -189,7 +189,7 @@ const buildRevenuePeriod = ({ mode, date, month, dateFrom, dateTo }) => {
         return {
             from: fromDay + ' 00:00:00',
             toExclusive,
-            label: 'Період ' + fromLabel + ' — ' + toLabel
+            label: 'Період ' + fromLabel + ' - ' + toLabel
         };
     }
 

@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const ProductModel = require('./Product');
+const checkUserContent = require('../utils/userContentGuard');
 
 const listVisibleByProductId = async (productId) => {
     const id = Number(productId);
@@ -9,7 +10,8 @@ const listVisibleByProductId = async (productId) => {
 
     const [rows] = await db.execute(
         `SELECT r.id, r.rating, r.comment, r.\`createdAt\`,
-                u.first_name, u.last_name, u.avatar_url
+                u.id AS user_id, u.first_name, u.last_name, u.avatar_url,
+                COALESCE(u.is_public_profile, 0) AS is_public_profile
          FROM reviews r
          INNER JOIN users u ON r.user_id = u.id
          WHERE r.product_id = ? AND r.is_visible = 1
@@ -20,6 +22,22 @@ const listVisibleByProductId = async (productId) => {
     return rows;
 };
 
+const countRecentByUser = async (userId, minutes) => {
+    const uid = Number(userId);
+    const mins = Math.floor(Number(minutes));
+    if (!Number.isFinite(uid) || uid <= 0 || !Number.isFinite(mins) || mins <= 0) {
+        return 0;
+    }
+
+    const [rows] = await db.execute(
+        `SELECT COUNT(*) AS c FROM reviews
+         WHERE user_id = ? AND \`createdAt\` >= DATE_SUB(NOW(), INTERVAL ? MINUTE)`,
+        [uid, mins]
+    );
+
+    return Number(rows[0] && rows[0].c) || 0;
+};
+
 const create = async ({ user_id, product_id, order_id, rating, comment }) => {
     const uid = Number(user_id);
     const pid = Number(product_id);
@@ -27,10 +45,11 @@ const create = async ({ user_id, product_id, order_id, rating, comment }) => {
         return false;
     }
 
-    const text = typeof comment === 'string' ? comment.trim() : '';
-    if (text.length < 2 || text.length > 2000) {
+    const check = checkUserContent(comment, { minLen: 2, maxLen: 2000 });
+    if (!check.ok) {
         return false;
     }
+    const text = check.text;
 
     let orderId = null;
     if (order_id != null && order_id !== '') {
@@ -160,6 +179,26 @@ const listByUserId = async (userId) => {
     return rows;
 };
 
+const listVisiblePublicByUserId = async (userId) => {
+    const uid = Number(userId);
+    if (!Number.isFinite(uid) || uid <= 0) {
+        return [];
+    }
+
+    const [rows] = await db.execute(
+        `SELECT r.id, r.product_id, r.rating, r.comment, r.\`createdAt\`,
+                p.name AS product_name
+         FROM reviews r
+         INNER JOIN products p ON r.product_id = p.id
+         WHERE r.user_id = ? AND r.is_visible = 1
+         ORDER BY r.id DESC
+         LIMIT 50`,
+        [uid]
+    );
+
+    return rows;
+};
+
 const belongsToUser = async (reviewId, userId) => {
     const rid = Number(reviewId);
     const uid = Number(userId);
@@ -212,10 +251,11 @@ const createChangeRequest = async (payload) => {
     let new_comment = null;
 
     if (request_type === 'edit') {
-        const text = typeof payload.new_comment === 'string' ? payload.new_comment.trim() : '';
-        if (text.length < 2 || text.length > 2000) {
+        const check = checkUserContent(payload.new_comment, { minLen: 2, maxLen: 2000 });
+        if (!check.ok) {
             return false;
         }
+        const text = check.text;
         const r = Number(payload.new_rating);
         if (!r || r < 1 || r > 5) {
             return false;
@@ -332,6 +372,7 @@ const applyDeleteRequestById = async (requestId) => {
 
 module.exports = {
     listVisibleByProductId,
+    countRecentByUser,
     create,
     approveById,
     deleteById,
@@ -339,6 +380,7 @@ module.exports = {
     syncAverageForProduct,
     listPendingForAdmin,
     listByUserId,
+    listVisiblePublicByUserId,
     belongsToUser,
     createChangeRequest,
     listChangeRequestsForAdmin,

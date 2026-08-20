@@ -1,11 +1,78 @@
 const path = require('path');
+const http = require('http');
 const express = require('express');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('./config/db');
 const app = express();
-app.set('trust proxy', 1);
+if (process.env.NODE_ENV === 'production' || process.env.TRUST_PROXY === '1') {
+    app.set('trust proxy', 1);
+}
 const rootDir = path.join(__dirname, '..');
 const bodyLimit = '12mb';
+const createRateLimit = require('./middleware/rateLimit');
+const securityHeaders = require('./middleware/securityHeaders');
+const sameOrigin = require('./middleware/sameOrigin');
+
+const isLiqpayCallbackPath = (req) => {
+    const url = String(req.originalUrl || '');
+    return url.indexOf('/payment/liqpay/callback') !== -1;
+};
+
+app.use(securityHeaders);
+app.use(sameOrigin);
+app.use(createRateLimit({
+    windowMs: 60 * 1000,
+    max: 180,
+    scope: 'global',
+    message: 'Забагато запитів. Спробуйте трохи пізніше.',
+    skip: (req) => {
+        const url = String(req.originalUrl || '');
+        if (isLiqpayCallbackPath(req)) {
+            return true;
+        }
+        if (url.indexOf('/ws') === 0 || url === '/ws') {
+            return true;
+        }
+        if (req.method === 'GET' && /\.(css|js|png|jpe?g|gif|svg|webp|ico|woff2?|map)$/i.test(String(req.path || ''))) {
+            return true;
+        }
+        return false;
+    }
+}));
+
+const jsonBodyParser = express.json({ limit: bodyLimit });
+const formBodyParser = express.urlencoded({ extended: true, limit: bodyLimit });
+const liqpayBodyParser = express.urlencoded({ extended: true, limit: '32kb' });
+const liqpayCallbackLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 40,
+    scope: 'liqpay-callback',
+    message: 'Забагато запитів. Спробуйте трохи пізніше.'
+});
+
+app.use((req, res, next) => {
+    if (String(req.method || '').toUpperCase() !== 'POST' || !isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return liqpayCallbackLimit(req, res, (err) => {
+        if (err) {
+            return next(err);
+        }
+        return liqpayBodyParser(req, res, next);
+    });
+});
+app.use((req, res, next) => {
+    if (isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return jsonBodyParser(req, res, next);
+});
+app.use((req, res, next) => {
+    if (isLiqpayCallbackPath(req)) {
+        return next();
+    }
+    return formBodyParser(req, res, next);
+});
 
 const wantsJson = (req) => {
     if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
@@ -17,8 +84,10 @@ const wantsJson = (req) => {
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(rootDir, 'views'));
-app.use(express.json({ limit: bodyLimit }));
-app.use(express.urlencoded({ extended: true, limit: bodyLimit }));
+
+const i18n = require('./utils/i18n');
+const localeContext = require('./middleware/localeContext');
+app.use(localeContext);
 
 const pagesRoutes = require('./routes/pagesRoutes');
 app.use('/', pagesRoutes);
@@ -101,10 +170,12 @@ const seedDefaults = require('./services/seedDefaults');
 const ensureAdminSchema = require('./services/ensureAdminSchema');
 const seedLegalPages = require('./services/seedLegalPages');
 const { startOrderExpiryJob } = require('./services/orderExpiryService');
+const realtimeService = require('./services/realtimeService');
 
 const PORT = process.env.PORT || 5000;
 const start = async () => {
     try {
+        await i18n.initI18n();
         await seedDefaults();
         await ensureAdminSchema();
         await seedLegalPages();
@@ -113,8 +184,15 @@ const start = async () => {
         console.error('Seed error:', err && err.message ? err.message : err);
     }
 
-    app.listen(PORT, () => {
+    const server = http.createServer(app);
+    realtimeService.attach(server);
+    server.listen(PORT, () => {
         console.log(`: ${PORT}`);
     });
 };
-start();
+
+module.exports = app;
+
+if (require.main === module) {
+    start();
+}

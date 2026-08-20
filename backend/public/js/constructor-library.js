@@ -20,7 +20,7 @@
     function formatPrice(value) {
         var n = Number(value);
         if (!Number.isFinite(n)) {
-            return '—';
+            return '-';
         }
         return n.toFixed(0) + ' грн';
     }
@@ -70,6 +70,7 @@
                 '<button type="button" class="auth-button auth-button--ghost constructor-library-edit" data-slug="' + escapeHtml(t.slug) + '">Редагувати</button>' +
                 '<button type="button" class="auth-button constructor-library-buy"' +
                 ' data-slug="' + escapeHtml(t.slug) + '"' +
+                ' data-stem-total="' + escapeHtml(String(t.stem_total || 0)) + '"' +
                 (t.available ? '' : ' disabled') +
                 '>Купити</button>' +
                 '</div></div></article>';
@@ -112,7 +113,7 @@
                         window.location.href = '/constructor?template=' + encodeURIComponent(slug);
                         return;
                     } catch (e) {
-                        throw new Error('Конструктор ще завантажується — спробуй ще раз');
+                        throw new Error('Конструктор ще завантажується - спробуй ще раз');
                     }
                 }
                 var target = document.querySelector('.constructor-flowers');
@@ -129,39 +130,53 @@
     }
 
     function onBuyClick(btn) {
+        if (btn.dataset.buyBusy === '1') {
+            return;
+        }
         var slug = btn.getAttribute('data-slug');
         if (!slug) {
             return;
         }
-        btn.disabled = true;
-        fetch('/constructor/templates/' + encodeURIComponent(slug) + '/add', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: '{}'
-        })
-            .then(function (res) {
-                return res.json().then(function (data) {
-                    if (!res.ok || !data.ok) {
-                        throw new Error((data && data.message) || 'Помилка');
+
+        var doBuy = function () {
+            btn.dataset.buyBusy = '1';
+            btn.disabled = true;
+            fetch('/constructor/templates/' + encodeURIComponent(slug) + '/add', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: '{}'
+            })
+                .then(function (res) {
+                    return res.json().then(function (data) {
+                        if (!res.ok || !data.ok) {
+                            throw new Error((data && data.message) || 'Помилка');
+                        }
+                        return data;
+                    });
+                })
+                .then(function (data) {
+                    toast(data.message || 'Додано в кошик', true);
+                    if (typeof window.updateNavCartCount === 'function' && data.count != null) {
+                        window.updateNavCartCount(data.count);
                     }
-                    return data;
+                    window.location.href = data.redirect || '/cart';
+                })
+                .catch(function (err) {
+                    toast(err.message || 'Не вдалося додати', false);
+                    btn.dataset.buyBusy = '';
+                    btn.disabled = false;
                 });
-            })
-            .then(function (data) {
-                toast(data.message || 'Додано в кошик', true);
-                if (typeof window.updateNavCartCount === 'function' && data.count != null) {
-                    window.updateNavCartCount(data.count);
-                }
-                window.location.href = data.redirect || '/cart';
-            })
-            .catch(function (err) {
-                toast(err.message || 'Не вдалося додати', false);
-                btn.disabled = false;
-            });
+        };
+
+        if (typeof window.confirmEvenStemBouquet === 'function') {
+            window.confirmEvenStemBouquet(btn.getAttribute('data-stem-total'), doBuy);
+            return;
+        }
+        doBuy();
     }
 
     grid.addEventListener('click', function (e) {

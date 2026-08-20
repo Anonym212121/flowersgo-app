@@ -66,7 +66,7 @@ const saveForAdmin = async (req, res) => {
 
         if (slug === 'delivery-terms' && body_text.indexOf('[тарифи доставки]') === -1) {
             return res.status(400).json({
-                message: 'У умовах доставки залиште рядок [тарифи доставки] — там показуються тарифи'
+                message: 'У умовах доставки залиште рядок [тарифи доставки] - там показуються тарифи'
             });
         }
 

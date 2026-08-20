@@ -5,6 +5,10 @@ const {
     extractBouquetNote
 } = require('./orderDeliveryLegacyParse');
 
+const toFlag = (value) => {
+    return value === true || value === 1 || value === '1' || value === 'on' ? 1 : 0;
+};
+
 const trimText = (raw, maxLen) => {
     if (typeof raw !== 'string') {
         return '';
@@ -21,7 +25,7 @@ const trimText = (raw, maxLen) => {
 
 const formatDeliveryPlaceFromRow = (row) => {
     if (!row) {
-        return '—';
+        return '-';
     }
     if (row.delivery_method === 'pickup') {
         return 'Самовивіз';
@@ -79,6 +83,10 @@ const greetingCardTextFromRow = (row) => {
     return trimText(row.greeting_card_text, 500);
 };
 
+const doNotCallRecipientFromRow = (row) => {
+    return toFlag(row && row.do_not_call_recipient) === 1;
+};
+
 const buildDeliverySummary = (payload) => {
     const parts = [];
     const customerName = customerNameFromRow(payload);
@@ -112,10 +120,13 @@ const buildDeliverySummary = (payload) => {
         if (note) {
             parts.push(note);
         }
+        if (doNotCallRecipientFromRow(payload)) {
+            parts.push('Не дзвонити одержувачу (сюрприз)');
+        }
     }
 
     const place = formatDeliveryPlaceFromRow(payload);
-    if (place && place !== '—') {
+    if (place && place !== '-') {
         parts.push('');
         parts.push('Адреса доставки:');
         parts.push(place);
@@ -138,7 +149,7 @@ const buildDeliverySummary = (payload) => {
 
 const formatOrderDeliveryDisplay = (row) => {
     if (!row) {
-        return '—';
+        return '-';
     }
 
     const summary = typeof row.delivery_address === 'string' ? row.delivery_address.trim() : '';
@@ -146,7 +157,7 @@ const formatOrderDeliveryDisplay = (row) => {
         return summary;
     }
 
-    return buildDeliverySummary(row) || summary || '—';
+    return buildDeliverySummary(row) || summary || '-';
 };
 
 const normalizeOrderDeliveryPayload = (payload) => {
@@ -170,6 +181,7 @@ const normalizeOrderDeliveryPayload = (payload) => {
         recipient_note: trimText(body.recipient_note, 500) || null,
         bouquet_note: trimText(body.bouquet_note, 2000) || null,
         greeting_card_text: trimText(body.greeting_card_text, 500) || null,
+        do_not_call_recipient: toFlag(body.do_not_call_recipient),
         delivery_method,
         receiver_name: trimText(body.receiver_name, 200) || null,
         receiver_phone: trimText(body.receiver_phone, 20) || null
@@ -183,6 +195,7 @@ module.exports = {
     recipientNoteFromRow,
     bouquetNoteFromRow,
     greetingCardTextFromRow,
+    doNotCallRecipientFromRow,
     buildDeliverySummary,
     formatOrderDeliveryDisplay,
     normalizeOrderDeliveryPayload

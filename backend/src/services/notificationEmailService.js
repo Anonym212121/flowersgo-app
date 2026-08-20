@@ -17,7 +17,7 @@ const buildText = (title, body, linkUrl) => {
         const link = linkUrl.startsWith('http') ? linkUrl : baseUrl() + linkUrl;
         text += '\n\nВідкрити в системі: ' + link;
     }
-    text += '\n\n— FlowersGo';
+    text += '\n\n- FlowersGo';
     return text;
 };
 
