@@ -45,7 +45,7 @@ body {
         radial-gradient(circle at 92% 4%, rgba(56, 189, 248, 0.1), transparent 32%),
         radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.07), transparent 40%);
     background-repeat: repeat, no-repeat, no-repeat, no-repeat;
-    background-size: 420px auto, auto, auto, auto;
+    background-size: 720px auto, auto, auto, auto;
     background-position: center top, 0 0, 0 0, 0 0;
     background-color: var(--bg);
 }
@@ -910,7 +910,7 @@ body {
         radial-gradient(circle at 10% 8%, rgba(56, 189, 248, 0.1), transparent 38%),
         radial-gradient(circle at 90% 0%, rgba(16, 185, 129, 0.08), transparent 34%);
     background-repeat: repeat, no-repeat, no-repeat;
-    background-size: 420px auto, auto, auto;
+    background-size: 720px auto, auto, auto;
     background-position: center top, 0 0, 0 0;
     background-color: var(--bg);
 }
